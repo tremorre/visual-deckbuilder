@@ -897,48 +897,15 @@ function renderPiles() {
   container.innerHTML = '';
   const zone = STATE.zones[STATE.focusedZone];
 
-  // Bucket each pile by the head card's group key (CMC bucket or maintype).
-  // Sections appear in sortVal order so even manually-rearranged piles still
-  // group sensibly until the user re-sorts.
-  const sectionMap = new Map();
+  // Render piles in their stored zone.piles order — no automatic bucketing
+  // by type/CMC. Users arrange piles freely (or click Re-sort to group them
+  // by the current pile-sort mode), and drops always land where the user
+  // dropped them. An inter-pile gap drop target sits before every pile.
   zone.piles.forEach((pile, pileIdx) => {
     if (pile.length === 0) return;
-    const card = STATE.byId.get(pile[0].cardId);
-    if (!card) return;
-    let key, label, sortVal;
-    if (STATE.pileSort === 'cmc') {
-      const b = cmcBucket(card);
-      key = b.key; label = b.label; sortVal = b.sortVal;
-    } else {
-      key = card.maintype || '?';
-      label = card.maintype || '?';
-      sortVal = typeRank(card);
-    }
-    let s = sectionMap.get(key);
-    if (!s) { s = { key, label, sortVal, piles: [] }; sectionMap.set(key, s); }
-    s.piles.push({ pile, pileIdx });
+    container.appendChild(makePileGap(pileIdx));
+    container.appendChild(makePileEl(pile, pileIdx));
   });
-  const sections = Array.from(sectionMap.values()).sort((a, b) => a.sortVal - b.sortVal);
-
-  for (const section of sections) {
-    const sectEl = document.createElement('div');
-    sectEl.className = 'pile-section';
-    const h = document.createElement('div');
-    h.className = 'pile-section-header';
-    const total = section.piles.reduce((s, p) => s + p.pile.length, 0);
-    h.textContent = `${section.label} (${total})`;
-    sectEl.appendChild(h);
-    const pilesEl = document.createElement('div');
-    pilesEl.className = 'pile-section-piles';
-    section.piles.forEach((entry, i) => {
-      // Insert a gap drop target before every pile (including the first), so
-      // the user can drop a card to create a new pile at that exact slot.
-      pilesEl.appendChild(makePileGap(entry.pileIdx));
-      pilesEl.appendChild(makePileEl(entry.pile, entry.pileIdx));
-    });
-    sectEl.appendChild(pilesEl);
-    container.appendChild(sectEl);
-  }
 
   // Trailing "new pile" drop zone — always at the very end
   const np = document.createElement('div');

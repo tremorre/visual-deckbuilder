@@ -293,32 +293,12 @@ main {
   overflow: auto;
   padding: 16px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 18px;
-}
-
-.pile-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-.pile-section-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #888;
-  border-bottom: 1px dotted #383838;
-  padding: 0 0 3px 0;
-}
-.pile-section-piles {
-  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  /* Inter-pile spacing is provided by .pile-gap drop targets so they're
-     hit-testable. Row gaps remain a normal flex gap. */
+  /* Horizontal spacing between piles is provided by .pile-gap drop targets
+     so they're hit-testable; the gap divs are 14px wide and act as the
+     visible separator. Row gaps wrap normally. */
   column-gap: 0;
   row-gap: 14px;
 }
