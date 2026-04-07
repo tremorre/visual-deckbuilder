@@ -1,6 +1,7 @@
 // Revolution Deckbuilder — single-page JS app
-// All card data is loaded once by querying cards.db in the browser via sql.js;
-// everything else (search, pile layout, drag/drop, .cod import/export) runs
+// All card data is loaded once from a bundled JSON file (mtgjson-style
+// AllSetsEternal.json) and translated into the in-memory STATE.cards index.
+// Everything else (search, pile layout, drag/drop, .cod import/export) runs
 // in the browser too. No backend required.
 
 'use strict';
@@ -14,16 +15,18 @@ const IMG_BASE = 'https://raw.githubusercontent.com/cajunwritescode/Revolution/r
 const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolution/refs/heads/main/AllSetsEternal.json';
 
 // localStorage key for the refreshed snapshot. Once the user has refreshed,
-// subsequent loads use this and skip the bundled cards.db (and the sql.js
-// wasm) entirely.
-const STORAGE_KEY = 'rev-deckbuilder-cards-v1';
+// subsequent loads use this and skip even the bundled cards.json fetch.
+// Bumped to v2 with the JSON migration so any v1 snapshots (which lacked
+// imgVersion / cache-busting) get reloaded fresh from cards.json.
+const STORAGE_KEY = 'rev-deckbuilder-cards-v2';
+const STORAGE_KEY_LEGACY = 'rev-deckbuilder-cards-v1';
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 
 const STATE = {
-  cards: [],            // full card list, built from cards.db via sql.js
+  cards: [],            // full card list, parsed from the bundled cards.json
   byId: new Map(),      // id -> card
   byName: new Map(),    // name -> card
   uuidMap: {},          // uuid -> { cardId, set, num }
@@ -71,6 +74,9 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
 // ---------------------------------------------------------------------------
 
 (async function init() {
+  // One-time cleanup of the v1 snapshot (lacked imgVersion / cache-busting).
+  try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (_) {}
+
   let data = null;
   try {
     const cached = localStorage.getItem(STORAGE_KEY);
@@ -79,7 +85,10 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
     console.warn('Could not read cached card data:', e);
   }
   if (!data) {
-    data = await loadCardsFromDb();
+    const res = await fetch('cards.json');
+    if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
+    const json = await res.json();
+    data = parseAllSetsJson(json);
   }
   applyCardData(data);
 
@@ -94,7 +103,11 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
   setFocusedZone('main');
   document.getElementById('search').focus();
 })().catch(err => {
-  document.body.innerHTML = '<pre style="color:#f88;padding:20px">' + (err.stack || err) + '</pre>';
+  const pre = document.createElement('pre');
+  pre.style.cssText = 'color:#f88;padding:20px';
+  pre.textContent = err && (err.stack || err.message) ? (err.stack || err.message) : String(err);
+  document.body.innerHTML = '';
+  document.body.appendChild(pre);
 });
 
 // Swap STATE over to a fresh card index. Re-maps any existing zone-instance
@@ -215,6 +228,10 @@ function parseAllSetsJson(json) {
       const num = c.number != null ? String(c.number) : '';
       const cmcVal = c.manaValue != null ? c.manaValue
                      : (c.convertedManaCost != null ? c.convertedManaCost : 0);
+      // Cajun re-purposes the mtgjson `multiverseId` field as a YYYYMMDD
+      // updated-at stamp for the card's image. Storing it here lets imgUrl()
+      // append it as a query string so browsers re-fetch when art changes.
+      const imgVersion = (c.identifiers && c.identifiers.multiverseId) || 0;
       const card = {
         id,
         name,
@@ -238,6 +255,7 @@ function parseAllSetsJson(json) {
                    || ((c.relatedCards && Array.isArray(c.relatedCards.spellbook))
                          ? c.relatedCards.spellbook.join('; ')
                          : ''),
+        imgVersion,
       };
       cards.push(card);
       if (c.uuid) uuidMap[c.uuid] = { cardId: id, set: code, num };
@@ -313,107 +331,22 @@ function compareCards(a, b, mode) {
 }
 
 function imgUrl(card) {
-  return `${IMG_BASE}/${card.set}/${encodeURIComponent(card.num)}.jpg`;
-}
-
-// ---------------------------------------------------------------------------
-// Card-index loader (sql.js)
-// ---------------------------------------------------------------------------
-
-// Reads cards.db in the browser and returns the same {cards, sets, uuidMap}
-// shape that the old Python backend's /api/cards.json used to return. The
-// queries here mirror server.py's load_cards().
-async function loadCardsFromDb() {
-  const [SQL, dbBuf] = await Promise.all([
-    initSqlJs({ locateFile: f => `vendor/${f}` }),
-    fetch('cards.db').then(r => {
-      if (!r.ok) throw new Error('failed to load cards.db');
-      return r.arrayBuffer();
-    }),
-  ]);
-  const db = new SQL.Database(new Uint8Array(dbBuf));
-
-  // Sets.
-  const sets = {};
-  const setCodes = new Set();
-  const setRows = db.exec('SELECT code, longname, releasedate FROM sets');
-  if (setRows.length) {
-    for (const row of setRows[0].values) {
-      const [code, longname, releasedate] = row;
-      sets[code] = { code, longname, releasedate };
-      setCodes.add(code);
-    }
-  }
-
-  // Strip trailing _<setcode> tokens repeatedly. Mirrors server.py canonical().
-  function canonical(name) {
-    while (name.includes('_')) {
-      const i = name.lastIndexOf('_');
-      const tail = name.slice(i + 1);
-      if (setCodes.has(tail)) name = name.slice(0, i);
-      else break;
-    }
-    return name;
-  }
-
-  // Cards. Same WHERE clause as the backend: front faces only, drop tokens.
-  const cards = [];
-  const cardRows = db.exec(`
-    SELECT id, name, text, type, maintype, cmc, manacost, colors, coloridentity,
-           power, toughness, layout, side, set_code, set_num, rarity,
-           fmt_revolution, fmt_eternal, related
-    FROM cards
-    WHERE (side = 'front' OR side = '' OR side IS NULL)
-      AND set_code != 'TK'
-    ORDER BY name
-  `);
-  if (cardRows.length) {
-    for (const row of cardRows[0].values) {
-      const [id, name, text, type_, maintype, cmc, manacost, colors, coloridentity,
-             power, toughness, layout, _side, set_code, set_num, rarity,
-             fmt_rev, fmt_eternal, related] = row;
-      cards.push({
-        id,
-        name,
-        canonical: canonical(name),
-        text: text || '',
-        type: type_ || '',
-        maintype: maintype || '',
-        cmc: cmc != null ? cmc : 0,
-        manacost: manacost || '',
-        colors: colors || '',
-        ci: coloridentity || '',
-        power: power || '',
-        toughness: toughness || '',
-        layout: layout || 'normal',
-        set: set_code,
-        num: set_num,
-        rarity: rarity || '',
-        fmt_rev: fmt_rev || '',
-        fmt_eternal: fmt_eternal || '',
-        related: related || '',
-      });
-    }
-  }
-
-  // uuid -> printing, for resolving .cod imports.
-  const uuidMap = {};
-  const uuidRows = db.exec('SELECT card_id, set_code, set_num, uuid FROM card_sets');
-  if (uuidRows.length) {
-    for (const row of uuidRows[0].values) {
-      const [cardId, set_code, set_num, uuid] = row;
-      if (uuid) uuidMap[uuid] = { cardId, set: set_code, num: set_num };
-    }
-  }
-
-  db.close();
-  return { cards, sets, uuidMap };
+  const base = `${IMG_BASE}/${card.set}/${encodeURIComponent(card.num)}.jpg`;
+  // Cache-busting via cajun's repurposed multiverseId stamp: when an image
+  // is updated upstream, the YYYYMMDD changes, so the URL changes, so the
+  // browser re-fetches instead of serving its cached copy.
+  return card.imgVersion ? `${base}?v=${card.imgVersion}` : base;
 }
 
 function colorizedMana(cost) {
-  // Just colorize WUBRG letters; leave numbers/X alone.
+  // Just colorize WUBRG letters; leave numbers/X alone. Escape HTML entities
+  // first so a card data source (upstream JSON, tampered localStorage) can't
+  // sneak markup through this path into the DOM. The entity expansions
+  // (&amp;, &lt;, etc.) don't contain any uppercase WUBRG, so colorizing the
+  // escaped string still hits the right letters.
   if (!cost) return '';
-  return cost.replace(/W/g, '<span class="mana-w">W</span>')
+  return escapeHtml(cost)
+             .replace(/W/g, '<span class="mana-w">W</span>')
              .replace(/U/g, '<span class="mana-u">U</span>')
              .replace(/B/g, '<span class="mana-b">B</span>')
              .replace(/R/g, '<span class="mana-r">R</span>')
@@ -530,13 +463,19 @@ function renderSearchResults() {
       STATE.search.selectedIdx = i;
       renderSearchResults();
     });
-    el.addEventListener('mousedown', (ev) => {
-      ev.preventDefault();
+    // preventDefault on mousedown stops the search input from blurring on
+    // mouse users; the actual add happens in click, which fires reliably on
+    // touch devices / assistive tech where mousedown may not.
+    el.addEventListener('mousedown', (ev) => ev.preventDefault());
+    el.addEventListener('click', (ev) => {
       const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
       addCardToZone(card.id, zone);
       renderZoneList(zone);
       renderZoneCount(zone);
       if (STATE.focusedZone === zone) renderPiles();
+      // Touch/assistive-tech paths may have blurred the input; re-focus so
+      // the user can keep typing.
+      document.getElementById('search').focus();
     });
     results.appendChild(el);
   });
