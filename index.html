@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Revolution Deckbuilder</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="Search by card name..." autocomplete="off" spellcheck="false">
+    <div id="search-results" class="hidden"></div>
+  </div>
+  <div class="search-hints">
+    <span><kbd>↑</kbd><kbd>↓</kbd> nav</span>
+    <span><kbd>Tab</kbd> pick</span>
+    <span><kbd>Enter</kbd> main</span>
+    <span><kbd>Shift</kbd>+<kbd>Enter</kbd> maybe</span>
+    <span><kbd>Alt</kbd>+<kbd>Enter</kbd> side</span>
+  </div>
+  <div class="toolbar">
+    <button id="btn-import" title="Import .cod or .txt (autodetected)">Import</button>
+    <input type="file" id="file-import" accept=".cod,.xml,.txt,.dec" hidden>
+    <button id="btn-export-cod">Export .cod</button>
+    <button id="btn-export-txt">Export .txt</button>
+    <button id="btn-clear" class="danger">Clear deck</button>
+    <div class="format-toggle">
+      <span>Format:</span>
+      <button class="format-btn active" data-format="standard">Standard</button>
+      <button class="format-btn" data-format="eternal">Eternal</button>
+    </div>
+    <button id="btn-refresh" title="Re-fetch card data from the upstream Revolution repo">&#x21bb; Refresh data</button>
+  </div>
+</header>
+
+<main>
+  <aside class="zones">
+    <div class="sort-bar">
+      <span>Sort:</span>
+      <button class="sort-btn active" data-list-sort="type">Type</button>
+      <button class="sort-btn" data-list-sort="cmc">Mana</button>
+    </div>
+    <section class="zone" data-zone="main">
+      <header>
+        <span class="zone-title">Main</span>
+        <span class="zone-count" id="count-main">0</span>
+      </header>
+      <div class="zone-list" id="list-main"></div>
+    </section>
+    <section class="zone" data-zone="side">
+      <header>
+        <span class="zone-title">Sideboard</span>
+        <span class="zone-count" id="count-side">0</span>
+      </header>
+      <div class="zone-list" id="list-side"></div>
+    </section>
+    <section class="zone" data-zone="maybe">
+      <header>
+        <span class="zone-title">Maybeboard</span>
+        <span class="zone-count" id="count-maybe">0</span>
+      </header>
+      <div class="zone-list" id="list-maybe"></div>
+    </section>
+  </aside>
+
+  <section class="piles-pane">
+    <div class="piles-header">
+      <h2 id="pile-title">Main</h2>
+      <div class="piles-sort">
+        <span>Pile sort:</span>
+        <button class="sort-btn active" data-pile-sort="type">Type</button>
+        <button class="sort-btn" data-pile-sort="cmc">Mana</button>
+        <button id="btn-resort">Re-sort</button>
+      </div>
+    </div>
+    <div id="piles" class="piles"></div>
+  </section>
+</main>
+
+<div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
+<!-- Always-rendered, near-invisible image used as the drag preview for
+     deck-list rows (where there's no card image in the source element).
+     showPreview() updates its src on hover so it's loaded before dragstart. -->
+<img id="drag-img" alt="">
+
+
+
+<script src="vendor/sql-wasm.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

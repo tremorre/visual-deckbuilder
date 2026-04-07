@@ -1,0 +1,545 @@
+/* Revolution Deckbuilder styles */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  background: #1a1a1c;
+  color: #e6e6e6;
+  height: 100vh;
+  overflow: hidden;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: #232328;
+  border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  width: 320px;
+  flex-shrink: 0;
+}
+
+#search {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 3px;
+  outline: none;
+}
+#search:focus { border-color: #6ab0ff; }
+
+#search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: #1c1c20;
+  border: 1px solid #555;
+  border-radius: 3px;
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+#search-results .result {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #2a2a2e;
+}
+#search-results .result:last-child { border-bottom: none; }
+#search-results .result.selected {
+  background: #2d4666;
+}
+#search-results .result .name { font-weight: 500; }
+#search-results .result .meta {
+  color: #888;
+  font-size: 11px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+#search-results .result .mana {
+  color: #c5c5c5;
+  font-size: 11px;
+}
+
+.search-hints {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: #888;
+}
+.search-hints kbd {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 2px;
+  padding: 0 4px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 10px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+
+button {
+  background: #2c2c33;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+button:hover { background: #38383f; }
+button.active { background: #2d4666; border-color: #6ab0ff; color: #fff; }
+button.danger { color: #ff7777; }
+button.danger:hover { background: #4a1e1e; }
+
+.format-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #aaa;
+  margin-left: 8px;
+}
+.format-toggle .format-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 50px);
+}
+
+/* Zones (left sidebar) — main is never truncated. The whole sidebar scrolls;
+   each zone sizes to its content. */
+.zones {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e22;
+  border-right: 1px solid #333;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #2c2c30;
+  flex-shrink: 0;
+}
+
+.zone.focused {
+  background: #23272d;
+}
+.zone.focused > header {
+  background: #2d4666;
+  color: #fff;
+}
+
+.zone > header {
+  position: sticky;
+  top: 28px; /* leave room for the sticky sort-bar above */
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  background: #25252a;
+  border-bottom: 1px solid #2c2c30;
+  cursor: pointer;
+  user-select: none;
+}
+.zone .zone-title {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.zone .zone-count {
+  font-size: 11px;
+  color: #888;
+}
+.zone.focused .zone-count { color: #cce; }
+
+.zone-list {
+  /* No internal scroll — the whole sidebar scrolls instead. */
+  padding: 2px 0;
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  line-height: 1.35;
+}
+
+.zone-list .type-group {
+  margin-top: 4px;
+}
+.zone-list .type-group-header {
+  padding: 2px 8px;
+  color: #777;
+  font-weight: 600;
+  border-bottom: 1px dotted #333;
+}
+.zone-list .row {
+  display: flex;
+  gap: 6px;
+  padding: 1px 8px;
+  cursor: grab;
+  white-space: nowrap;
+}
+.zone-list .row:hover {
+  background: #2a3340;
+}
+.zone-list .row.illegal {
+  background: rgba(170, 40, 40, 0.18);
+  color: #ff9c9c;
+}
+.zone-list .row.illegal .qty,
+.zone-list .row.illegal .cmc {
+  color: #d56;
+}
+.zone-list .row.illegal:hover {
+  background: rgba(170, 40, 40, 0.32);
+}
+.zone-list .row .qty {
+  color: #888;
+  width: 14px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.zone-list .row .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zone-list .row .cmc {
+  color: #66a;
+  font-size: 10px;
+}
+
+.sort-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #25252a;
+  border-bottom: 1px solid #2c2c30;
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
+}
+.sort-bar .sort-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+/* Pile area (right pane) */
+.piles-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.piles-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2c2c30;
+  background: #1e1e22;
+}
+.piles-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.piles-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #888;
+}
+
+.piles {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.pile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.pile-section-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #888;
+  border-bottom: 1px dotted #383838;
+  padding: 0 0 3px 0;
+}
+.pile-section-piles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  /* Inter-pile spacing is provided by .pile-gap drop targets so they're
+     hit-testable. Row gaps remain a normal flex gap. */
+  column-gap: 0;
+  row-gap: 14px;
+}
+
+/* Drop target between two piles. Splices a new pile in at that exact slot
+   when a card is dropped here. A faint vertical bar is visible at rest so
+   users can spot the drop targets; it brightens while a drag is in flight
+   and fully lights up on hover-during-drag. */
+.pile-gap {
+  width: 14px;
+  min-height: 40px;
+  align-self: stretch;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 4px;
+  transition: background 0.12s;
+}
+.pile-gap::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1px;
+  transition: background 0.12s, width 0.12s;
+}
+.pile-gap.drag-over {
+  background: rgba(106, 176, 255, 0.38);
+  outline: 2px dashed #6ab0ff;
+}
+.pile-gap.drag-over::before {
+  background: #fff;
+  width: 4px;
+  margin-left: -2px;
+}
+
+.pile {
+  position: relative;
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* Make the entire vertical span of the pile clickable as a drop target */
+.pile.drag-over {
+  outline: 2px dashed #6ab0ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.pile.drag-over::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: rgba(106, 176, 255, 0.05);
+  pointer-events: none;
+}
+
+.pile .card-slot {
+  position: absolute;
+  width: 130px;
+  /* card aspect 488/680 ≈ 0.718 */
+  height: 181px;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  cursor: grab;
+  background: #2a2a2e;
+  user-select: none;
+  border: 1px solid #000;
+}
+.pile .card-slot img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+.pile .card-slot.no-image {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 8px;
+  font-size: 10px;
+  color: #ccc;
+  text-align: center;
+}
+.pile .card-slot.dragging {
+  opacity: 0.3;
+}
+.pile .card-slot.selected {
+  outline: 3px solid #ffcc44;
+  outline-offset: -2px;
+  z-index: 20;
+}
+
+/* Rubber-band region-select rectangle, drawn while the user drags on the
+   empty background of the pile pane. */
+.region-select {
+  position: fixed;
+  z-index: 50;
+  background: rgba(106, 176, 255, 0.15);
+  border: 1px solid #6ab0ff;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.pile .card-slot.illegal {
+  border: 2px solid #c33;
+  box-shadow: 0 0 0 1px #c33, 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.pile .card-slot.illegal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(190, 30, 30, 0.22);
+  pointer-events: none;
+}
+
+/* Overlay action buttons (+ / − / ↔) anchored to the top-right of each card slot */
+.slot-buttons {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  gap: 2px;
+  z-index: 5;
+  /* don't capture drag — but children still receive clicks */
+  pointer-events: none;
+}
+.slot-btn {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.12s, background 0.12s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.pile .card-slot:hover .slot-btn {
+  opacity: 0.85;
+}
+.slot-btn:hover {
+  opacity: 1 !important;
+  background: rgba(40, 90, 160, 0.95);
+  border-color: #6ab0ff;
+}
+
+.pile .pile-height-spacer {
+  width: 130px;
+}
+
+/* "New pile" drop zone at the end */
+.new-pile {
+  width: 130px;
+  height: 181px;
+  border: 2px dashed #444;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  font-size: 11px;
+  cursor: default;
+  flex-shrink: 0;
+}
+.new-pile.drag-over {
+  border-color: #6ab0ff;
+  color: #6ab0ff;
+  background: rgba(106, 176, 255, 0.05);
+}
+
+.zone.drag-over {
+  background: rgba(106, 176, 255, 0.10);
+  outline: 1px dashed #6ab0ff;
+  outline-offset: -2px;
+}
+
+.hidden { display: none !important; }
+
+/* Always-rendered, invisible drag preview img. Must be in the viewport with
+   non-zero rendered size for setDragImage to use it (Firefox in particular
+   refuses display:none / off-screen elements). */
+#drag-img {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 180px;
+  height: auto;
+  opacity: 0.001;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Floating card preview shown on hover in the deck list */
+#card-preview {
+  position: fixed;
+  pointer-events: none;
+  z-index: 200;
+  width: 240px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  background: #000;
+}
+#card-preview img {
+  width: 100%;
+  display: block;
+}
+
+/* Mana symbol coloring (subtle inline) */
+.mana-w { color: #f8e8a8; }
+.mana-u { color: #87b8e8; }
+.mana-b { color: #b48bd8; }
+.mana-r { color: #e88787; }
+.mana-g { color: #87c887; }
+.mana-c { color: #c0c0c0; }
