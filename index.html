@@ -19,10 +19,13 @@
     <span><kbd>Alt</kbd>+<kbd>Enter</kbd> side</span>
   </div>
   <div class="toolbar">
-    <button id="btn-import" title="Import .cod or .txt (autodetected)">Import</button>
+    <button id="btn-import" title="Import .cod or .txt file (autodetected)">Import file</button>
     <input type="file" id="file-import" accept=".cod,.xml,.txt,.dec" hidden>
-    <button id="btn-export-cod">Export .cod</button>
-    <button id="btn-export-txt">Export .txt</button>
+    <button id="btn-paste-import" title="Paste a deck list and edit before importing">Import text</button>
+    <button id="btn-copy-txt" title="Copy the .txt deck list to clipboard">Export to clipboard</button>
+    <button id="btn-export-cod" title="Save a Cockatrice .cod file (chooses where on supported browsers)">Export to cod</button>
+    <!-- Saved decks: implemented but disabled for now. Remove the `hidden` class to re-enable. -->
+    <button id="btn-saved-decks" class="hidden" title="Save / load decks in your browser">Saved decks</button>
     <button id="btn-clear" class="danger">Clear deck</button>
     <div class="format-toggle">
       <span>Format:</span>
@@ -76,6 +79,37 @@
     <div id="piles" class="piles"></div>
   </section>
 </main>
+
+<div id="saved-decks-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Saved decks</h3>
+    <p class="modal-help">Decks are stored in this browser's local storage. They survive refreshes but won't follow you to other devices.</p>
+    <div class="save-row">
+      <input id="save-deck-name" type="text" placeholder="Deck name" spellcheck="false">
+      <button id="save-deck-btn" class="primary">Save current deck</button>
+    </div>
+    <div class="saved-decks-list-wrap">
+      <div id="saved-decks-list"></div>
+    </div>
+    <div class="modal-buttons">
+      <button id="saved-decks-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="paste-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Paste deck list</h3>
+    <p class="modal-help">Plain text (<code>4 Card Name</code> per line, blank line between zones) or a Cockatrice <code>.cod</code> XML — auto-detected. <kbd>Ctrl</kbd>+<kbd>Enter</kbd> imports.</p>
+    <textarea id="paste-textarea" rows="20" spellcheck="false" placeholder="4 Forest&#10;4 Llanowar Elves&#10;..."></textarea>
+    <div class="modal-buttons">
+      <button id="paste-cancel">Cancel</button>
+      <button id="paste-confirm" class="primary">Import</button>
+    </div>
+  </div>
+</div>
 
 <div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
 <!-- Always-rendered, near-invisible image used as the drag preview for

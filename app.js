@@ -1148,7 +1148,9 @@ function wireToolbar() {
     ev.target.value = '';
   });
   document.getElementById('btn-export-cod').addEventListener('click', exportCod);
-  document.getElementById('btn-export-txt').addEventListener('click', exportTxt);
+  wirePasteImport();
+  wireCopyTxt();
+  wireSavedDecks();
   document.getElementById('btn-clear').addEventListener('click', () => {
     if (!confirm('Clear all zones?')) return;
     STATE.zones.main.piles = [];
@@ -1477,7 +1479,7 @@ function downloadFile(filename, contents, mime) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 }
 
-function exportCod() {
+function buildCodXml() {
   const main  = aggregateZone('main');
   const side  = aggregateZone('side');
   const maybe = aggregateZone('maybe');
@@ -1500,27 +1502,284 @@ function exportCod() {
     return `    <zone name="${name}">\n${lines.join('\n')}\n    </zone>\n`;
   }
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <cockatrice_deck version="1">
     <deckname></deckname>
     <comments></comments>
     <tags/>
 ${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', maybe)}</cockatrice_deck>
 `;
-
-  downloadFile('deck.cod', xml, 'application/xml');
 }
 
-function exportTxt() {
-  //   "<count> <name>" lines, with a blank line separating zones.
-  // We write main, then side, then maybe (if present). No header line —
-  // the imported title line, if any, isn't tracked in state.
+// Save a Cockatrice .cod file. On browsers that support the File System
+// Access API (Chromium-family) the user gets a real "save as" dialog and
+// picks where the file goes. On other browsers (Firefox, Safari) we fall
+// back to the standard download-to-Downloads-folder behaviour.
+async function exportCod() {
+  const xml = buildCodXml();
+  const filename = 'deck.cod';
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: 'Cockatrice deck',
+          accept: { 'application/xml': ['.cod'] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(xml);
+      await writable.close();
+      return;
+    } catch (e) {
+      // User cancelled the dialog — that's not an error, just bail.
+      if (e && e.name === 'AbortError') return;
+      // Anything else: log and fall through to the download fallback so
+      // the user still gets their file.
+      console.warn('showSaveFilePicker failed, falling back to download:', e);
+    }
+  }
+  downloadFile(filename, xml, 'application/xml');
+}
+
+// ---------------------------------------------------------------------------
+// Paste-import modal + clipboard copy
+// ---------------------------------------------------------------------------
+
+function wirePasteImport() {
+  const modal = document.getElementById('paste-modal');
+  const textarea = document.getElementById('paste-textarea');
+  const open = () => {
+    textarea.value = '';
+    modal.classList.remove('hidden');
+    // Defer focus until after the modal is shown so the cursor lands in the
+    // textarea reliably across browsers.
+    setTimeout(() => textarea.focus(), 0);
+  };
+  const close = () => modal.classList.add('hidden');
+  const submit = () => {
+    const text = textarea.value;
+    if (!text.trim()) { close(); return; }
+    importDeck(text, 'pasted.txt');
+    close();
+  };
+
+  document.getElementById('btn-paste-import').addEventListener('click', open);
+  document.getElementById('paste-cancel').addEventListener('click', close);
+  document.getElementById('paste-confirm').addEventListener('click', submit);
+  modal.querySelector('.modal-backdrop').addEventListener('click', close);
+  // Esc closes the modal; Ctrl/Cmd+Enter inside the textarea submits.
+  document.addEventListener('keydown', (ev) => {
+    if (modal.classList.contains('hidden')) return;
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+    else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+      ev.preventDefault();
+      submit();
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Saved decks (localStorage)
+// ---------------------------------------------------------------------------
+
+const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
+
+function listSavedDecks() {
+  // Returns [{ name, savedAt }] sorted by savedAt descending (newest first).
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(SAVED_DECK_PREFIX)) continue;
+    try {
+      const obj = JSON.parse(localStorage.getItem(key));
+      if (obj && typeof obj.name === 'string') {
+        out.push({ name: obj.name, savedAt: obj.savedAt || '' });
+      }
+    } catch (_) { /* ignore corrupted entries */ }
+  }
+  out.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+  return out;
+}
+
+function saveDeckToStorage(name) {
+  // Serialize the current zones as arrays of card-name arrays so the deck
+  // survives a refresh of the underlying card-data (where ids change).
+  const zones = {};
+  for (const z of ['main', 'side', 'maybe']) {
+    zones[z] = STATE.zones[z].piles.map(pile => pile.map(inst => {
+      const c = STATE.byId.get(inst.cardId);
+      return c ? c.name : null;
+    }).filter(n => n != null));
+  }
+  const payload = {
+    name,
+    savedAt: new Date().toISOString(),
+    zones,
+  };
+  localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
+}
+
+function loadDeckFromStorage(name) {
+  const raw = localStorage.getItem(SAVED_DECK_PREFIX + name);
+  if (!raw) return false;
+  let payload;
+  try { payload = JSON.parse(raw); }
+  catch (_) { return false; }
+  if (!payload || !payload.zones) return false;
+
+  // Replace all zones, resolving card names against the current card index.
+  // Cards that no longer exist (renamed / removed upstream) are dropped.
+  const unknown = [];
+  for (const z of ['main', 'side', 'maybe']) {
+    const piles = (payload.zones[z] || []).map(pileNames => {
+      const pile = [];
+      for (const name of pileNames) {
+        const card = STATE.byName.get(name);
+        if (!card) {
+          // Fall back: any card with the same canonical (handles split-card
+          // naming inconsistencies the same way refresh-migration does).
+          const fallback = STATE.cards.find(c => c.canonical === canonicalName(name));
+          if (fallback) pile.push({ uid: newUid(), cardId: fallback.id });
+          else unknown.push(name);
+          continue;
+        }
+        pile.push({ uid: newUid(), cardId: card.id });
+      }
+      return pile;
+    }).filter(p => p.length > 0);
+    STATE.zones[z].piles = piles;
+  }
+  STATE.selection.clear();
+  renderAll();
+  if (unknown.length > 0) reportUnknown(unknown);
+  return true;
+}
+
+function deleteDeckFromStorage(name) {
+  localStorage.removeItem(SAVED_DECK_PREFIX + name);
+}
+
+function deckIsEmpty() {
+  return Object.keys(STATE.zones).every(z => totalCount(z) === 0);
+}
+
+function wireSavedDecks() {
+  const modal = document.getElementById('saved-decks-modal');
+  const nameInput = document.getElementById('save-deck-name');
+  const listEl = document.getElementById('saved-decks-list');
+
+  function renderList() {
+    listEl.innerHTML = '';
+    const decks = listSavedDecks();
+    if (decks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'saved-decks-empty';
+      empty.textContent = 'No saved decks yet.';
+      listEl.appendChild(empty);
+      return;
+    }
+    for (const { name, savedAt } of decks) {
+      const row = document.createElement('div');
+      row.className = 'saved-deck-row';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'deck-name';
+      nameEl.textContent = name;
+      row.appendChild(nameEl);
+
+      const metaEl = document.createElement('span');
+      metaEl.className = 'deck-meta';
+      metaEl.textContent = savedAt ? new Date(savedAt).toLocaleString() : '';
+      row.appendChild(metaEl);
+
+      const loadBtn = document.createElement('button');
+      loadBtn.textContent = 'Load';
+      loadBtn.addEventListener('click', () => {
+        if (!deckIsEmpty() && !confirm('Replace the current deck with "' + name + '"?')) return;
+        const ok = loadDeckFromStorage(name);
+        if (!ok) { alert('Could not load deck "' + name + '"'); return; }
+        close();
+      });
+      row.appendChild(loadBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.className = 'danger';
+      delBtn.addEventListener('click', () => {
+        if (!confirm('Delete saved deck "' + name + '"? This cannot be undone.')) return;
+        deleteDeckFromStorage(name);
+        renderList();
+      });
+      row.appendChild(delBtn);
+
+      listEl.appendChild(row);
+    }
+  }
+
+  const open = () => {
+    nameInput.value = '';
+    renderList();
+    modal.classList.remove('hidden');
+    setTimeout(() => nameInput.focus(), 0);
+  };
+  const close = () => modal.classList.add('hidden');
+
+  function doSave() {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const existing = localStorage.getItem(SAVED_DECK_PREFIX + name);
+    if (existing && !confirm('Overwrite the existing saved deck "' + name + '"?')) return;
+    try {
+      saveDeckToStorage(name);
+    } catch (e) {
+      alert('Could not save deck: ' + (e && e.message ? e.message : e));
+      return;
+    }
+    nameInput.value = '';
+    renderList();
+  }
+
+  document.getElementById('btn-saved-decks').addEventListener('click', open);
+  document.getElementById('saved-decks-close').addEventListener('click', close);
+  document.getElementById('save-deck-btn').addEventListener('click', doSave);
+  modal.querySelector('.modal-backdrop').addEventListener('click', close);
+  nameInput.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); doSave(); }
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (modal.classList.contains('hidden')) return;
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+  });
+}
+
+function wireCopyTxt() {
+  const btn = document.getElementById('btn-copy-txt');
+  btn.addEventListener('click', async () => {
+    const text = buildTxtExport();
+    const original = btn.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied \u2713';
+    } catch (e) {
+      console.error(e);
+      btn.textContent = 'Copy failed';
+      alert('Could not copy to clipboard: ' + (e && e.message ? e.message : e));
+    }
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+// Build the plain decklist text used by Export to clipboard:
+//   "<count> <name>" lines, with a blank line separating zones.
+// We write main, then side, then maybe (if present). No header line —
+// the imported title line, if any, isn't tracked in state.
+function buildTxtExport() {
   const sections = [];
   for (const zone of ['main', 'side', 'maybe']) {
     const items = aggregateZone(zone);
     if (items.length === 0) continue;
     sections.push(items.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
   }
-  const text = sections.join('\n\n') + '\n';
-  downloadFile('deck.txt', text, 'text/plain');
+  return sections.join('\n\n') + '\n';
 }

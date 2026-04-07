@@ -486,6 +486,153 @@ main {
 
 .hidden { display: none !important; }
 
+/* Generic modal: backdrop + centred content. Currently only used by the
+   paste-import dialog but generic enough to reuse. */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.modal-content {
+  position: relative;
+  background: #232328;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 16px 20px;
+  min-width: 480px;
+  max-width: 80vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+}
+.modal-content h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.modal-help {
+  margin: 0;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.5;
+}
+.modal-help code {
+  background: #111;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 10px;
+  color: #cce;
+}
+.modal-help kbd {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 2px;
+  padding: 0 4px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 10px;
+}
+#paste-textarea {
+  width: 480px;
+  max-width: 70vw;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 8px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+  min-height: 240px;
+}
+#paste-textarea:focus { outline: none; border-color: #6ab0ff; }
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.modal-buttons button.primary,
+button.primary {
+  background: #2d4666;
+  border-color: #6ab0ff;
+  color: #fff;
+}
+.modal-buttons button.primary:hover,
+button.primary:hover { background: #355380; }
+
+/* Saved-decks modal */
+.save-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.save-row input {
+  flex: 1;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+}
+.save-row input:focus { outline: none; border-color: #6ab0ff; }
+
+.saved-decks-list-wrap {
+  border: 1px solid #333;
+  border-radius: 3px;
+  background: #1a1a1c;
+  max-height: 320px;
+  overflow-y: auto;
+}
+#saved-decks-list {
+  display: flex;
+  flex-direction: column;
+}
+.saved-deck-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2e;
+}
+.saved-deck-row:last-child { border-bottom: none; }
+.saved-deck-row .deck-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saved-deck-row .deck-meta {
+  font-size: 10px;
+  color: #888;
+  white-space: nowrap;
+}
+.saved-deck-row button {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.saved-decks-empty {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 11px;
+  font-style: italic;
+}
+
 /* Always-rendered, invisible drag preview img. Must be in the viewport with
    non-zero rendered size for setDragImage to use it (Firefox in particular
    refuses display:none / off-screen elements). */
