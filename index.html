@@ -28,15 +28,17 @@
     <!-- Saved decks: implemented but disabled for now. Remove the `hidden` class to re-enable. -->
     <button id="btn-saved-decks" class="hidden" title="Save / load decks in your browser">Saved decks</button>
     <button id="btn-clear" class="danger">Clear deck</button>
-    <div class="format-toggle">
-      <span>Format:</span>
-      <button class="format-btn active" data-format="standard">Standard</button>
-      <button class="format-btn" data-format="eternal">Eternal</button>
-      <button class="format-btn" data-format="range" title="Restrict legality to cards from a chosen range of sets">Sets</button>
-      <div id="range-pickers" class="range-pickers hidden">
-        <select id="range-start" title="Earliest set in the range"></select>
-        <span class="range-dash">&ndash;</span>
-        <select id="range-end" title="Latest set in the range"></select>
+    <div class="format-dropdown">
+      <button id="format-btn" class="format-dropdown-btn">Standard &#x25BE;</button>
+      <div id="format-menu" class="format-dropdown-menu hidden">
+        <button data-format="standard">Standard</button>
+        <button data-format="eternal">Eternal</button>
+        <button data-format="range" title="Restrict legality to cards from a chosen range of sets">Sets</button>
+        <div id="range-pickers" class="range-pickers hidden">
+          <select id="range-start" title="Earliest set in the range"></select>
+          <span class="range-dash">&ndash;</span>
+          <select id="range-end" title="Latest set in the range"></select>
+        </div>
       </div>
     </div>
     <button id="btn-refresh" title="Re-fetch card data from the upstream Revolution repo">&#x21bb; Refresh data</button>

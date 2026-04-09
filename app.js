@@ -122,7 +122,6 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
   wireSelectionClear();
   wireRegionSelect();
   setFocusedZone('main');
-  document.getElementById('search').focus();
 })().catch(err => {
   const pre = document.createElement('pre');
   pre.style.cssText = 'color:#f88;padding:20px';
@@ -524,10 +523,15 @@ function renderRangePickers() {
   if (STATE.rangeEnd)   endSel.value   = STATE.rangeEnd;
 }
 
-// Sync the visible state of the format toggle (active button + range picker
-// visibility) with STATE. Call after STATE.format / range bounds change.
+// Format labels for the dropdown trigger button.
+const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets' };
+
+// Sync the visible state of the format dropdown (trigger label, active menu
+// item, range picker visibility) with STATE.
 function syncFormatUI() {
-  document.querySelectorAll('.format-btn').forEach(b => {
+  const btn = document.getElementById('format-btn');
+  if (btn) btn.textContent = (FORMAT_LABELS[STATE.format] || 'Standard') + ' \u25BE';
+  document.querySelectorAll('#format-menu button').forEach(b => {
     b.classList.toggle('active', b.dataset.format === STATE.format);
   });
   const wrap = document.getElementById('range-pickers');
@@ -1161,6 +1165,13 @@ function renderPiles() {
   container.appendChild(makePileGap(zone.piles.length));
 }
 
+// Clear drag-over highlight from all drop targets except the given element.
+function clearOtherDragOver(except) {
+  for (const el of document.querySelectorAll('#piles .drag-over')) {
+    if (el !== except) el.classList.remove('drag-over');
+  }
+}
+
 // Build a gap drop target. Dropping a card here splices a NEW pile into the
 // focused zone at the given index. Used both between piles (inside
 // pile-wrappers) and as the trailing drop target at the end of the row.
@@ -1171,6 +1182,7 @@ function makePileGap(insertIdx) {
   g.addEventListener('dragover', (ev) => {
     ev.preventDefault();
     ev.dataTransfer.dropEffect = 'move';
+    clearOtherDragOver(g);
     g.classList.add('drag-over');
   });
   g.addEventListener('dragleave', () => g.classList.remove('drag-over'));
@@ -1257,24 +1269,36 @@ function makeSlotButtons(inst, card) {
     const found = findInstance(inst.uid);
     if (!found) return;
     addCardToZone(card.id, found.zoneName);
+    STATE.selection.clear();
     renderAll();
   }));
   wrap.appendChild(makeBtn('\u2212', 'Remove this copy', () => {
     removeInstance(inst.uid);
+    STATE.selection.clear();
     renderAll();
   }));
   wrap.appendChild(makeBtn('\u2194', 'Move to/from sideboard', () => {
     const found = findInstance(inst.uid);
     if (!found) return;
     const target = (found.zoneName === 'side') ? 'main' : 'side';
-    moveInstanceToZone(inst.uid, target);
+    if (STATE.selection.size > 0 && STATE.selection.has(inst.uid)) {
+      for (const uid of [...STATE.selection]) moveInstanceToZone(uid, target);
+    } else {
+      moveInstanceToZone(inst.uid, target);
+    }
+    STATE.selection.clear();
     renderAll();
   }));
   wrap.appendChild(makeBtn('?', 'Move to/from maybeboard', () => {
     const found = findInstance(inst.uid);
     if (!found) return;
     const target = (found.zoneName === 'maybe') ? 'main' : 'maybe';
-    moveInstanceToZone(inst.uid, target);
+    if (STATE.selection.size > 0 && STATE.selection.has(inst.uid)) {
+      for (const uid of [...STATE.selection]) moveInstanceToZone(uid, target);
+    } else {
+      moveInstanceToZone(inst.uid, target);
+    }
+    STATE.selection.clear();
     renderAll();
   }));
 
@@ -1312,7 +1336,10 @@ function makePileEl(pile, pileIdx) {
       });
       slot.appendChild(img);
       if (inst.flipped && card.back) slot.classList.add('flipped');
-      slot.title = `${card.canonical}\n${card.type}\n${card.manacost || ''}`.trim();
+      const titleParts = [card.canonical, card.type, card.manacost || ''];
+      if (card.text) titleParts.push('', card.text);
+      if (card.power || card.toughness) titleParts.push(`${card.power}/${card.toughness}`);
+      slot.title = titleParts.join('\n').trim();
     } else {
       slot.classList.add('no-image');
       slot.textContent = '???';
@@ -1335,11 +1362,15 @@ function makePileEl(pile, pileIdx) {
       ev.dataTransfer.effectAllowed = 'move';
       const uids = uidsToDrag(inst.uid);
       ev.dataTransfer.setData('text/uids', uids.join(','));
-      // Use the slot's already-loaded card image as the drag preview, so
-      // overlay buttons / illegal tint don't show in the ghost.
-      const slotImg = slot.querySelector('img');
-      if (slotImg && slotImg.complete && slotImg.naturalWidth > 0) {
-        ev.dataTransfer.setDragImage(slotImg, slotImg.offsetWidth / 2, 30);
+      // Use the dedicated drag-img element (sized consistently) as the
+      // drag preview so the ghost matches pile-slot dimensions.
+      const dragImg = document.getElementById('drag-img');
+      if (dragImg) {
+        const face = currentFace(inst, card);
+        dragImg.src = imgUrl(face);
+        if (dragImg.complete && dragImg.naturalWidth > 0) {
+          ev.dataTransfer.setDragImage(dragImg, dragImg.offsetWidth / 2, 30);
+        }
       }
       slot.classList.add('dragging');
       STATE.dragging = { uids };
@@ -1360,7 +1391,7 @@ function makePileEl(pile, pileIdx) {
     // inst.flipped fresh each time so flipping a card and then re-hovering
     // pops up the back image.
     if (card) {
-      slot.addEventListener('mouseenter', (ev) => showPreview(currentFace(inst, card), ev));
+      slot.addEventListener('mouseenter', (ev) => showPreview(currentFace(inst, card), ev, slot));
       slot.addEventListener('mousemove', positionPreview);
       slot.addEventListener('mouseleave', hidePreview);
     }
@@ -1382,6 +1413,7 @@ function makePileEl(pile, pileIdx) {
   el.addEventListener('dragover', (ev) => {
     ev.preventDefault();
     ev.dataTransfer.dropEffect = 'move';
+    clearOtherDragOver(el);
     el.classList.add('drag-over');
   });
   el.addEventListener('dragleave', (ev) => {
@@ -1506,15 +1538,32 @@ function wireToolbar() {
     STATE.zones.maybe.piles = [];
     renderAll();
   });
-  document.querySelectorAll('.format-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // Format dropdown: toggle menu on trigger click, pick on item click.
+  const formatBtn = document.getElementById('format-btn');
+  const formatMenu = document.getElementById('format-menu');
+  formatBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    formatMenu.classList.toggle('hidden');
+  });
+  formatMenu.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
       STATE.format = btn.dataset.format;
+      // Keep menu open when "Sets" is picked so range pickers are accessible.
+      if (btn.dataset.format !== 'range') formatMenu.classList.add('hidden');
       savePrefs();
       syncFormatUI();
       runSearch(document.getElementById('search').value);
-      // Re-render decks so illegal-card highlighting updates immediately.
       renderAll();
     });
+  });
+  // Clicks inside the range pickers shouldn't close the menu.
+  document.getElementById('range-pickers').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+  });
+  // Close format dropdown when clicking elsewhere.
+  document.addEventListener('click', () => {
+    formatMenu.classList.add('hidden');
   });
   // Range pickers: changing either bound updates STATE, persists, and
   // re-renders. Start can't be after end (and vice versa) — if the user
@@ -1618,13 +1667,16 @@ function wireRegionSelect() {
 
   pilesEl.addEventListener('mousedown', (ev) => {
     if (ev.button !== 0) return;
-    // Ignore mousedowns that originated on anything interactive — let those
-    // elements handle it (card drag, buttons, existing drop targets, etc).
-    if (ev.target.closest('.card-slot, .slot-btn, .pile-gap')) return;
+    // Ignore mousedowns that originated on card slots or their buttons —
+    // let those elements handle drag/click. Pile-gaps are NOT excluded so
+    // they can serve as the starting corner of a region select.
+    if (ev.target.closest('.card-slot, .slot-btn')) return;
     ev.preventDefault();
+    document.getElementById('search').blur();
     const additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
-    if (!additive) {
+    if (!additive && STATE.selection.size > 0) {
       STATE.selection.clear();
+      renderPiles();
     }
     const baseSelection = new Set(STATE.selection);
     const rectEl = document.createElement('div');
@@ -1683,9 +1735,11 @@ function wireRegionSelect() {
 // pending timer, so quick passes never show anything.
 const PREVIEW_DELAY_MS = 250;
 let _previewTimer = null;
+let _previewAvoidEl = null;  // element the preview must not cover (pile slots)
 
-function showPreview(card, ev) {
+function showPreview(card, ev, avoidEl) {
   if (_previewTimer) clearTimeout(_previewTimer);
+  _previewAvoidEl = avoidEl || null;
   // Capture cursor position now; the timer fires later when ev is stale.
   const startEv = { clientX: ev.clientX, clientY: ev.clientY };
   _previewTimer = setTimeout(() => {
@@ -1693,10 +1747,21 @@ function showPreview(card, ev) {
     const el = document.getElementById('card-preview');
     const img = document.getElementById('card-preview-img');
     const url = imgUrl(card);
-    img.src = url;
     img.alt = card.canonical;
-    el.classList.remove('hidden');
-    positionPreview(startEv);
+    // Hide while loading so the old image never flashes for a different card.
+    el.classList.add('hidden');
+    const show = () => {
+      el.classList.remove('hidden');
+      positionPreview(startEv);
+    };
+    if (img.src === url || img.src === new URL(url, location.href).href) {
+      // Already loaded (same card re-hovered) — show immediately.
+      img.src = url;
+      show();
+    } else {
+      img.onload = () => { img.onload = null; show(); };
+      img.src = url;
+    }
     // Preload into the dedicated drag-preview img so a subsequent dragstart
     // from this row can use it as the drag preview image.
     const dragImg = document.getElementById('drag-img');
@@ -1708,13 +1773,26 @@ function positionPreview(ev) {
   const el = document.getElementById('card-preview');
   if (el.classList.contains('hidden')) return;
   const w = el.offsetWidth, h = 336;
-  let x = ev.clientX + 16;
-  let y = ev.clientY - h / 2;
-  if (x + w > window.innerWidth) x = ev.clientX - w - 16;
-  if (y < 8) y = 8;
-  if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
+
+  if (_previewAvoidEl) {
+    // Position next to the card slot, never overlapping it.
+    const ar = _previewAvoidEl.getBoundingClientRect();
+    let x = ar.right + 8;
+    if (x + w > window.innerWidth) x = ar.left - w - 8;
+    let y = ar.top;
+    if (y < 8) y = 8;
+    if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  } else {
+    let x = ev.clientX + 16;
+    let y = ev.clientY - h / 2;
+    if (x + w > window.innerWidth) x = ev.clientX - w - 16;
+    if (y < 8) y = 8;
+    if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  }
 }
 
 function hidePreview() {

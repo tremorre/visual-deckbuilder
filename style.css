@@ -21,6 +21,7 @@ body {
 }
 
 header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -126,6 +127,9 @@ header {
 .search-wrap:focus-within + .search-hints {
   display: flex;
 }
+.search-wrap:focus-within ~ .toolbar {
+  display: none;
+}
 .search-hints kbd {
   background: #333;
   border: 1px solid #555;
@@ -157,26 +161,50 @@ button.active { background: #2d4666; border-color: #6ab0ff; color: #fff; }
 button.danger { color: #ff7777; }
 button.danger:hover { background: #4a1e1e; }
 
-.format-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #aaa;
+.format-dropdown {
+  position: relative;
   margin-left: 8px;
 }
-.format-toggle .format-btn {
+.format-dropdown-btn {
   padding: 3px 8px;
   font-size: 11px;
 }
-.format-toggle .range-pickers {
+.format-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+.format-dropdown-menu.hidden { display: none; }
+.format-dropdown-menu > button {
+  padding: 3px 8px;
+  font-size: 11px;
+  text-align: left;
+  border-radius: 0;
+  white-space: nowrap;
+}
+.format-dropdown-menu > button:first-child { border-radius: 3px 3px 0 0; }
+.format-dropdown-menu > button + button { border-top: none; }
+.format-dropdown-menu > button.active {
+  background: #2d4666;
+  border-color: #6ab0ff;
+  color: #fff;
+}
+.format-dropdown-menu .range-pickers {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 4px;
+  padding: 4px 8px;
+  background: #2c2c33;
+  border: 1px solid #444;
+  border-top: none;
+  border-radius: 0 0 3px 3px;
 }
-.format-toggle .range-pickers.hidden { display: none; }
-.format-toggle .range-pickers select {
+.format-dropdown-menu .range-pickers.hidden { display: none; }
+.format-dropdown-menu .range-pickers select {
   background: #111;
   color: #ddd;
   border: 1px solid #444;
@@ -186,17 +214,17 @@ button.danger:hover { background: #4a1e1e; }
   font-family: inherit;
   max-width: 180px;
 }
-.format-toggle .range-pickers select:focus {
+.format-dropdown-menu .range-pickers select:focus {
   outline: none;
   border-color: #6ab0ff;
 }
-.format-toggle .range-pickers .range-dash {
+.format-dropdown-menu .range-pickers .range-dash {
   color: #777;
 }
 
 main {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 280px 1fr;
   /* Fills whatever vertical space the header doesn't use. min-height: 0 is
      required so that .zones / .piles-pane can shrink and own their own
      scroll instead of overflowing the body. */
@@ -463,7 +491,7 @@ main {
   opacity: 0.3;
 }
 .pile .card-slot.selected {
-  outline: 3px solid #ffcc44;
+  outline: 3px solid #e8b838;
   outline-offset: -2px;
   z-index: 20;
 }
@@ -518,8 +546,10 @@ main {
   transition: opacity 0.12s, background 0.12s;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
-.pile .card-slot:hover .slot-btn {
-  opacity: 0.85;
+/* On devices with a mouse, hide buttons until the card is hovered. */
+@media (hover: hover) {
+  .slot-btn { opacity: 0; pointer-events: none; }
+  .pile .card-slot:hover .slot-btn { opacity: 0.85; pointer-events: auto; }
 }
 .slot-btn:hover {
   opacity: 1 !important;
@@ -739,16 +769,15 @@ button.primary:hover { background: #355380; }
   font-style: italic;
 }
 
-/* Always-rendered, invisible drag preview img. Must be in the viewport with
-   non-zero rendered size for setDragImage to use it (Firefox in particular
-   refuses display:none / off-screen elements). */
+/* Always-rendered drag preview img. Positioned just off the left edge of the
+   viewport so it has a rendered size (required by Firefox) but isn't visible.
+   opacity stays 1 so the drag ghost isn't washed out. */
 #drag-img {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 180px;
+  left: -200px;
+  width: 130px;
   height: auto;
-  opacity: 0.001;
   pointer-events: none;
   z-index: -1;
 }
