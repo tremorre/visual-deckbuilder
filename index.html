@@ -14,6 +14,7 @@
   <div class="search-hints">
     <span><kbd>↑</kbd><kbd>↓</kbd> nav</span>
     <span><kbd>Tab</kbd> pick</span>
+    <span><kbd>Shift</kbd>+<kbd>Tab</kbd> version</span>
     <span><kbd>Enter</kbd> main</span>
     <span><kbd>Shift</kbd>+<kbd>Enter</kbd> maybe</span>
     <span><kbd>Alt</kbd>+<kbd>Enter</kbd> side</span>
@@ -31,6 +32,12 @@
       <span>Format:</span>
       <button class="format-btn active" data-format="standard">Standard</button>
       <button class="format-btn" data-format="eternal">Eternal</button>
+      <button class="format-btn" data-format="range" title="Restrict legality to cards from a chosen range of sets">Sets</button>
+      <div id="range-pickers" class="range-pickers hidden">
+        <select id="range-start" title="Earliest set in the range"></select>
+        <span class="range-dash">&ndash;</span>
+        <select id="range-end" title="Latest set in the range"></select>
+      </div>
     </div>
     <button id="btn-refresh" title="Re-fetch card data from the upstream Revolution repo">&#x21bb; Refresh data</button>
   </div>

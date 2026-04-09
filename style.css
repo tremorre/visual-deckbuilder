@@ -12,6 +12,13 @@ html, body {
   height: 100vh;
   overflow: hidden;
 }
+body {
+  /* Flex column so <main> fills exactly the remaining vertical space below
+     the (wrap-able) header, instead of relying on a hard-coded header
+     height that breaks as soon as the toolbar wraps to two rows. */
+  display: flex;
+  flex-direction: column;
+}
 
 header {
   display: flex;
@@ -21,6 +28,7 @@ header {
   background: #232328;
   border-bottom: 1px solid #333;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .search-wrap {
@@ -57,9 +65,6 @@ header {
 }
 
 #search-results .result {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   padding: 4px 8px;
   cursor: pointer;
   border-bottom: 1px solid #2a2a2e;
@@ -67,6 +72,11 @@ header {
 #search-results .result:last-child { border-bottom: none; }
 #search-results .result.selected {
   background: #2d4666;
+}
+#search-results .result .result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 #search-results .result .name { font-weight: 500; }
 #search-results .result .meta {
@@ -78,6 +88,33 @@ header {
 #search-results .result .mana {
   color: #c5c5c5;
   font-size: 11px;
+}
+#search-results .result .printing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+#search-results .result .printing-chip {
+  background: #1a2838;
+  border: 1px solid #3a5878;
+  color: #cfe1f5;
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  cursor: pointer;
+  line-height: 1.4;
+}
+#search-results .result .printing-chip:hover {
+  background: #2d4666;
+  border-color: #6ab0ff;
+  color: #fff;
+}
+#search-results .result .printing-chip.picked {
+  background: #2d4666;
+  border-color: #6ab0ff;
+  color: #fff;
 }
 
 .search-hints {
@@ -129,11 +166,39 @@ button.danger:hover { background: #4a1e1e; }
   padding: 3px 8px;
   font-size: 11px;
 }
+.format-toggle .range-pickers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+.format-toggle .range-pickers.hidden { display: none; }
+.format-toggle .range-pickers select {
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: inherit;
+  max-width: 180px;
+}
+.format-toggle .range-pickers select:focus {
+  outline: none;
+  border-color: #6ab0ff;
+}
+.format-toggle .range-pickers .range-dash {
+  color: #777;
+}
 
 main {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100vh - 50px);
+  /* Fills whatever vertical space the header doesn't use. min-height: 0 is
+     required so that .zones / .piles-pane can shrink and own their own
+     scroll instead of overflowing the body. */
+  flex: 1;
+  min-height: 0;
 }
 
 /* Zones (left sidebar) — main is never truncated. The whole sidebar scrolls;
@@ -296,6 +361,11 @@ main {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
+  /* align-content: flex-start packs wrapped rows at the top of the pane.
+     The flex default (stretch) divides the pane's vertical space evenly
+     across however many rows wrapped, which produced enormous gaps any
+     time the deck only filled 1–2 rows. */
+  align-content: flex-start;
   /* Horizontal spacing between piles is provided by .pile-gap drop targets
      so they're hit-testable; the gap divs are 14px wide and act as the
      visible separator. Row gaps wrap normally. */
@@ -454,28 +524,61 @@ main {
   border-color: #6ab0ff;
 }
 
+/* Transparent flip button centered on a DFC card slot. Stays invisible at
+   rest; a faint icon fades in while the user hovers the slot, and brightens
+   on direct hover so it's clear the button is clickable. */
+.flip-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+.flip-btn .flip-icon {
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+.pile .card-slot:hover .flip-btn .flip-icon {
+  opacity: 0.55;
+}
+.flip-btn:hover {
+  background: rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.flip-btn:hover .flip-icon {
+  opacity: 1;
+}
+/* Subtle persistent hint that the slot is currently showing the back face. */
+.pile .card-slot.flipped {
+  outline: 2px solid rgba(255, 204, 102, 0.6);
+  outline-offset: -2px;
+}
+
 .pile .pile-height-spacer {
   width: 130px;
 }
 
-/* "New pile" drop zone at the end */
-.new-pile {
-  width: 130px;
-  height: 181px;
-  border: 2px dashed #444;
-  border-radius: 5px;
+/* Wrapper keeps a pile-gap and its pile in the same flex child so they
+   never split across wrapped rows. */
+.pile-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-  font-size: 11px;
-  cursor: default;
   flex-shrink: 0;
-}
-.new-pile.drag-over {
-  border-color: #6ab0ff;
-  color: #6ab0ff;
-  background: rgba(106, 176, 255, 0.05);
 }
 
 .zone.drag-over {

@@ -16,10 +16,19 @@ const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolutio
 
 // localStorage key for the refreshed snapshot. Once the user has refreshed,
 // subsequent loads use this and skip even the bundled cards.json fetch.
-// Bumped to v2 with the JSON migration so any v1 snapshots (which lacked
-// imgVersion / cache-busting) get reloaded fresh from cards.json.
-const STORAGE_KEY = 'rev-deckbuilder-cards-v2';
+// Bumped to v5 when DFC back-face data started being attached to the front
+// card (card.back). v4 snapshots lack that field, so we force a fresh parse
+// to make the flip button light up on existing installations.
+const STORAGE_KEY = 'rev-deckbuilder-cards-v5';
 const STORAGE_KEY_LEGACY = 'rev-deckbuilder-cards-v1';
+const STORAGE_KEY_LEGACY_V2 = 'rev-deckbuilder-cards-v2';
+const STORAGE_KEY_LEGACY_V3 = 'rev-deckbuilder-cards-v3';
+const STORAGE_KEY_LEGACY_V4 = 'rev-deckbuilder-cards-v4';
+
+// User preferences (format toggle + chosen set range). Kept separate from
+// the card-data snapshot so refreshing card data doesn't reset the format,
+// and switching format doesn't bust the card cache.
+const PREFS_KEY = 'rev-deckbuilder-prefs-v1';
 
 // ---------------------------------------------------------------------------
 // State
@@ -29,8 +38,11 @@ const STATE = {
   cards: [],            // full card list, parsed from the bundled cards.json
   byId: new Map(),      // id -> card
   byName: new Map(),    // name -> card
+  byCanonical: new Map(), // canonical name -> sorted-by-date list of cards (every printing)
   uuidMap: {},          // uuid -> { cardId, set, num }
   setCodes: new Set(),  // every set code (used for canonical-name stripping at parse time)
+  setsByCode: {},       // set code -> { code, longname, releasedate }
+  setOrder: [],         // set codes sorted oldest -> newest (then by code for ties)
 
   // Each zone holds an ordered list of piles, each pile is an array of card-instance objects.
   // A card instance is { uid, cardId } — uid is unique per copy.
@@ -41,7 +53,9 @@ const STATE = {
   },
 
   focusedZone: 'main',  // which zone the right-hand pile pane shows
-  format: 'standard',   // 'standard' (fmt_revolution=legal) or 'eternal' (fmt_eternal=legal)
+  format: 'standard',   // 'standard' | 'eternal' | 'range'
+  rangeStart: null,     // set code (only meaningful when format === 'range')
+  rangeEnd: null,       // set code (only meaningful when format === 'range')
   listSort: 'type',     // how the text deck list is sorted
   pileSort: 'type',     // how the pile pane is sorted (until manually edited)
 
@@ -74,8 +88,15 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
 // ---------------------------------------------------------------------------
 
 (async function init() {
-  // One-time cleanup of the v1 snapshot (lacked imgVersion / cache-busting).
+  // One-time cleanup of stale snapshots (v1 lacked cache-busting; v2 still
+  // contained excluded sets like PLANE; v3 over-excluded REV; v4 lacked
+  // DFC back-face attachments).
   try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (_) {}
+  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V2); } catch (_) {}
+  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V3); } catch (_) {}
+  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V4); } catch (_) {}
+
+  loadPrefs();
 
   let data = null;
   try {
@@ -118,9 +139,29 @@ function applyCardData(data) {
   const oldById = STATE.byId;
   const newById = new Map();
   const newByName = new Map();
+  const newByCanonical = new Map();
   for (const c of data.cards) {
     newById.set(c.id, c);
     newByName.set(c.name, c);
+    let arr = newByCanonical.get(c.canonical);
+    if (!arr) { arr = []; newByCanonical.set(c.canonical, arr); }
+    arr.push(c);
+  }
+  // Sort each canonical's printings oldest -> newest using the set release
+  // date (ties broken by set code, then card id). Used by the search UI to
+  // present printings in a stable order regardless of insertion order.
+  const setsForSort = data.sets || {};
+  function setDate(code) {
+    const s = setsForSort[code];
+    return s ? (s.releasedate || '') : '';
+  }
+  for (const arr of newByCanonical.values()) {
+    arr.sort((a, b) => {
+      const da = setDate(a.set), db = setDate(b.set);
+      if (da !== db) return da < db ? -1 : 1;
+      if (a.set !== b.set) return a.set < b.set ? -1 : 1;
+      return a.id - b.id;
+    });
   }
   // Re-map every existing instance.cardId via name. Drop instances whose
   // card has disappeared from the new data entirely. Try several name forms
@@ -163,20 +204,99 @@ function applyCardData(data) {
   STATE.uuidMap = data.uuidMap || {};
   STATE.byId = newById;
   STATE.byName = newByName;
-  STATE.setCodes = new Set(Object.keys(data.sets || {}));
+  STATE.byCanonical = newByCanonical;
+  STATE.setsByCode = data.sets || {};
+  // STATE.setCodes is used only for stripping _SETCODE suffixes off card
+  // names at import time, so it includes excluded sets (REV, PLANE, TK)
+  // too — older decklists referencing "Foo_REV" should still canonicalise.
+  // The list of *visible* sets lives in setOrder / setsByCode below.
+  STATE.setCodes = new Set(data.allSetCodes || Object.keys(STATE.setsByCode));
+  // Set order: oldest -> newest, ties broken by code so the original 6 stay
+  // in their fabricated daily-increment order and ERR/KDT (truly tied) sort
+  // alphabetically. This is the list used for the range picker and for any
+  // chronological set lookup; reprint-only sets (REV) are filtered out so
+  // they aren't selectable as range bounds, but they remain in setsByCode
+  // so date lookups for their cards still work.
+  STATE.setOrder = Object.keys(STATE.setsByCode)
+    .filter(code => !HIDDEN_FROM_RANGE_PICKER.has(code))
+    .sort((a, b) => {
+      const da = STATE.setsByCode[a].releasedate || '';
+      const db = STATE.setsByCode[b].releasedate || '';
+      if (da !== db) return da < db ? -1 : 1;
+      return a < b ? -1 : (a > b ? 1 : 0);
+    });
+  // Reconcile any persisted range against the current set list. If the saved
+  // codes don't exist (e.g. cards.json changed), fall back to full range.
+  if (!STATE.setsByCode[STATE.rangeStart]) STATE.rangeStart = STATE.setOrder[0] || null;
+  if (!STATE.setsByCode[STATE.rangeEnd])   STATE.rangeEnd   = STATE.setOrder[STATE.setOrder.length - 1] || null;
+  // If start is somehow after end (e.g. user persisted backwards), swap.
+  if (STATE.rangeStart && STATE.rangeEnd && setIndex(STATE.rangeStart) > setIndex(STATE.rangeEnd)) {
+    [STATE.rangeStart, STATE.rangeEnd] = [STATE.rangeEnd, STATE.rangeStart];
+  }
+  renderRangePickers();
   STATE.selection.clear();
   const searchInput = document.getElementById('search');
   if (searchInput) runSearch(searchInput.value);
   renderAll();
 }
 
+function setIndex(code) {
+  return STATE.setOrder.indexOf(code);
+}
+
+// Persist user preferences (format + range bounds) across reloads.
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object') {
+      if (obj.format === 'standard' || obj.format === 'eternal' || obj.format === 'range') {
+        STATE.format = obj.format;
+      }
+      if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
+      if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
+    }
+  } catch (e) {
+    console.warn('Could not read deckbuilder prefs:', e);
+  }
+}
+
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      format: STATE.format,
+      rangeStart: STATE.rangeStart,
+      rangeEnd: STATE.rangeEnd,
+    }));
+  } catch (e) {
+    console.warn('Could not persist deckbuilder prefs:', e);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // JSON ingestion (refresh from upstream)
 // ---------------------------------------------------------------------------
 
+// Sets that are present in the upstream JSON but should be dropped from the
+// card index entirely:
+//   TK    — token set, not draftable
+//   PLANE — Planechase: Revolution, a side product not part of normal play.
+const EXCLUDED_SETS = new Set(['TK', 'PLANE']);
+
+// Sets whose cards we DO want in the index (so users can search for and
+// add those specific printings) but which should not appear as selectable
+// bounds in the set-range format picker:
+//   REV — Revolution Renegades is a curated reprint set; every card has a
+//         printing in some other set, so it isn't a meaningful range bound.
+//         Cards from REV are still legal whenever their canonical card is
+//         legal in the chosen format (handled by the canonical-based
+//         isLegal check below).
+const HIDDEN_FROM_RANGE_PICKER = new Set(['REV']);
+
 // Translate the upstream mtgjson-style AllSetsEternal.json into the same
 // {cards, sets, uuidMap} shape that loadCardsFromDb() returns. The translation
-// mirrors carddb.py's logic: drop the TK token set, drop back faces of
+// mirrors carddb.py's logic: drop excluded sets, drop back faces of
 // double-faced cards, store legalities lowercased, store manacost without
 // braces, sort cards by name, assign monotonic ids.
 function parseAllSetsJson(json) {
@@ -184,7 +304,7 @@ function parseAllSetsJson(json) {
 
   const sets = {};
   for (const code of Object.keys(setsObj)) {
-    if (code === 'TK') continue;
+    if (EXCLUDED_SETS.has(code)) continue;
     const s = setsObj[code] || {};
     sets[code] = {
       code,
@@ -194,11 +314,15 @@ function parseAllSetsJson(json) {
   }
   const setCodes = new Set(Object.keys(sets));
 
+  // For canonicalization we strip ANY recognised set code, including
+  // excluded ones — that way an "Foo_REV" reference (e.g. in an imported
+  // decklist) still canonicalises to "Foo" and finds a reprint.
+  const allSetCodes = new Set(Object.keys(setsObj));
   function canonicalize(name) {
     while (name.includes('_')) {
       const i = name.lastIndexOf('_');
       const tail = name.slice(i + 1);
-      if (setCodes.has(tail)) name = name.slice(0, i);
+      if (allSetCodes.has(tail) || tail === 'PRO') name = name.slice(0, i);
       else break;
     }
     return name;
@@ -208,12 +332,50 @@ function parseAllSetsJson(json) {
   const uuidMap = {};
   let nextId = 1;
 
+  // First pass: build a (set, rawName) -> back-face record map. We need
+  // this because mtgjson can list back faces before fronts, and we want to
+  // attach the back data to the front card object. The back record carries
+  // enough fields to render the back image and a basic tooltip — image URL
+  // construction only needs set/num/imgVersion, but text/type/manacost let
+  // future UI surfaces (e.g. preview captions) read the back without
+  // re-fetching anything.
+  const backsBySetAndName = new Map();
   for (const code of Object.keys(setsObj)) {
-    if (code === 'TK') continue;
+    if (EXCLUDED_SETS.has(code)) continue;
+    const cardList = (setsObj[code] || {}).cards || [];
+    for (const c of cardList) {
+      const side = (c.side || '').toLowerCase();
+      if (side !== 'b' && side !== 'back') continue;
+      const rawName = c.name || '';
+      const splitIdx = rawName.indexOf(' // ');
+      const backName = splitIdx >= 0 ? rawName.slice(splitIdx + 4) : rawName;
+      const num = c.number != null ? String(c.number) : '';
+      const back = {
+        name: backName,
+        canonical: canonicalize(backName),
+        text: c.text || '',
+        type: c.type || '',
+        maintype: (c.types && c.types[0]) || '',
+        manacost: (c.manaCost || '').replace(/[{}]/g, ''),
+        colors: (c.colors || []).join(''),
+        power: c.power != null ? String(c.power) : '',
+        toughness: c.toughness != null ? String(c.toughness) : '',
+        layout: c.layout || 'normal',
+        set: code,
+        num,
+        imgVersion: (c.identifiers && c.identifiers.multiverseId) || 0,
+      };
+      backsBySetAndName.set(code + '\u0000' + rawName, back);
+    }
+  }
+
+  for (const code of Object.keys(setsObj)) {
+    if (EXCLUDED_SETS.has(code)) continue;
     const setObj = setsObj[code] || {};
     const cardList = setObj.cards || [];
     for (const c of cardList) {
-      // Skip back faces of double-faced cards (mtgjson uses side: "a"|"b").
+      // Front faces (or single-sided cards) only. Backs were captured in
+      // the first pass above and get attached as `card.back` below.
       const side = (c.side || '').toLowerCase();
       if (side === 'b' || side === 'back') continue;
 
@@ -232,6 +394,7 @@ function parseAllSetsJson(json) {
       // updated-at stamp for the card's image. Storing it here lets imgUrl()
       // append it as a query string so browsers re-fetch when art changes.
       const imgVersion = (c.identifiers && c.identifiers.multiverseId) || 0;
+      const back = backsBySetAndName.get(code + '\u0000' + rawName) || null;
       const card = {
         id,
         name,
@@ -256,13 +419,14 @@ function parseAllSetsJson(json) {
                          ? c.relatedCards.spellbook.join('; ')
                          : ''),
         imgVersion,
+        back,
       };
       cards.push(card);
       if (c.uuid) uuidMap[c.uuid] = { cardId: id, set: code, num };
     }
   }
   cards.sort((a, b) => a.name.localeCompare(b.name));
-  return { cards, sets, uuidMap };
+  return { cards, sets, uuidMap, allSetCodes: Array.from(allSetCodes) };
 }
 
 async function refreshFromUpstream() {
@@ -285,11 +449,11 @@ async function refreshFromUpstream() {
 function newUid() { return STATE.uidCounter++; }
 
 function canonicalName(name) {
-  // Strip trailing _<setcode> tokens. Mirrors the backend rule.
+  // Strip trailing _<setcode> and _PRO tokens. Mirrors the backend rule.
   while (name.includes('_')) {
     const i = name.lastIndexOf('_');
     const tail = name.slice(i + 1);
-    if (STATE.setCodes.has(tail)) name = name.slice(0, i);
+    if (STATE.setCodes.has(tail) || tail === 'PRO') name = name.slice(0, i);
     else break;
   }
   return name;
@@ -307,10 +471,67 @@ function cmcBucket(card) {
 }
 
 // Is the card legal in the currently-selected format?
+//
+// Legality is canonical-based: a printing is legal iff *any* printing of
+// the same canonical card satisfies the format's check. This means
+// reprint-only sets like REV ride along with the legality of their
+// canonical, even though REV itself isn't a selectable range bound — if
+// Forest is legal in Standard, every Forest_<SET> printing is legal too.
 function isLegal(card) {
   if (!card) return true;
-  if (STATE.format === 'eternal') return card.fmt_eternal === 'legal';
-  return card.fmt_rev === 'legal';
+  const printings = STATE.byCanonical.get(card.canonical) || [card];
+  if (STATE.format === 'eternal') {
+    return printings.some(p => p.fmt_eternal === 'legal');
+  }
+  if (STATE.format === 'range') {
+    // Set range: legal iff *some* printing of the canonical falls inside
+    // the [start, end] window (inclusive on both ends). Format-specific
+    // legality (revolution / eternal) is intentionally NOT layered on top —
+    // the range is the only filter, so users can build with whatever was
+    // printed in those sets even if it later got banned.
+    const startSet = STATE.setsByCode[STATE.rangeStart];
+    const endSet   = STATE.setsByCode[STATE.rangeEnd];
+    if (!startSet || !endSet) return false;
+    const startDate = startSet.releasedate || '';
+    const endDate   = endSet.releasedate || '';
+    for (const p of printings) {
+      const ps = STATE.setsByCode[p.set];
+      if (!ps) continue;
+      const pd = ps.releasedate || '';
+      if (pd >= startDate && pd <= endDate) return true;
+    }
+    return false;
+  }
+  return printings.some(p => p.fmt_rev === 'legal');
+}
+
+// Build (or rebuild) the two start/end <select>s for the set-range picker.
+// Called on init and after every applyCardData (refresh data could add /
+// remove sets). Visibility of the wrapper is owned by syncFormatUI() since
+// it depends on STATE.format, not on the data.
+function renderRangePickers() {
+  const startSel = document.getElementById('range-start');
+  const endSel   = document.getElementById('range-end');
+  if (!startSel || !endSel) return;
+  const opts = STATE.setOrder.map(code => {
+    const s = STATE.setsByCode[code];
+    const label = `${code} — ${s.longname || code}`;
+    return `<option value="${escapeHtml(code)}">${escapeHtml(label)}</option>`;
+  }).join('');
+  startSel.innerHTML = opts;
+  endSel.innerHTML   = opts;
+  if (STATE.rangeStart) startSel.value = STATE.rangeStart;
+  if (STATE.rangeEnd)   endSel.value   = STATE.rangeEnd;
+}
+
+// Sync the visible state of the format toggle (active button + range picker
+// visibility) with STATE. Call after STATE.format / range bounds change.
+function syncFormatUI() {
+  document.querySelectorAll('.format-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === STATE.format);
+  });
+  const wrap = document.getElementById('range-pickers');
+  if (wrap) wrap.classList.toggle('hidden', STATE.format !== 'range');
 }
 
 function compareCards(a, b, mode) {
@@ -377,22 +598,34 @@ function wireSearch() {
       if (r.length === 0) return;
       STATE.search.selectedIdx = (STATE.search.selectedIdx - 1 + r.length) % r.length;
       renderSearchResults();
+    } else if (ev.key === 'Tab' && ev.shiftKey) {
+      // Shift+Tab cycles backward through the highlighted result's
+      // printings (oldest direction; wraps at zero). The picked printing
+      // is what Enter / click adds and what the chip strip highlights.
+      if (r.length === 0) return;
+      ev.preventDefault();
+      const item = r[STATE.search.selectedIdx];
+      if (item && item.printings.length > 1) {
+        const n = item.printings.length;
+        item.pickedIdx = (item.pickedIdx - 1 + n) % n;
+        renderSearchResults();
+      }
     } else if (ev.key === 'Tab') {
       // Tab "picks" the highlighted result into the search box for refinement.
       if (r.length === 0) return;
       ev.preventDefault();
-      const c = r[STATE.search.selectedIdx];
-      input.value = c.canonical;
+      const item = r[STATE.search.selectedIdx];
+      input.value = item.canonical;
       runSearch(input.value);
     } else if (ev.key === 'Enter') {
       if (r.length === 0) return;
       ev.preventDefault();
-      const c = r[STATE.search.selectedIdx];
+      const item = r[STATE.search.selectedIdx];
+      const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
       const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
-      addCardToZone(c.id, zone);
+      addCardToZone(picked.id, zone);
       // Don't clear input — power users repeatedly add the same card by hitting Enter 4x.
       // But do refocus and reset selection.
-      STATE.search.selectedIdx = 0;
       renderSearchResults();
       renderZoneList(zone);
       renderZoneCount(zone);
@@ -422,20 +655,33 @@ function runSearch(q) {
     return;
   }
   // Match against canonical name (so typing "forest" matches Forest_OLD too)
-  // and full name. Dedupe by canonical name (newest printing wins).
-  const seen = new Map(); // canonical -> card
+  // and full name. Dedupe by canonical name. Each result also carries the
+  // full list of *legal* printings (sorted oldest -> newest by set release
+  // date) so the dropdown can offer per-printing chips without forcing the
+  // user to type a _SETCODE suffix.
+  const seenCanon = new Set();
+  const items = [];
   for (const c of STATE.cards) {
     if (!isLegal(c)) continue;
+    if (seenCanon.has(c.canonical)) continue;
     const canon = c.canonical.toLowerCase();
-    if (canon.includes(q) || c.name.toLowerCase().includes(q)) {
-      const existing = seen.get(c.canonical);
-      // Prefer higher id (newer printing).
-      if (!existing || c.id > existing.id) seen.set(c.canonical, c);
-    }
+    if (!canon.includes(q) && !c.name.toLowerCase().includes(q)) continue;
+    seenCanon.add(c.canonical);
+    // Collect every legal printing of this canonical. byCanonical is already
+    // sorted oldest -> newest; the picked default (Enter target) is the
+    // newest printing — pickedIdx === printings.length - 1 — and Shift+Tab
+    // walks pickedIdx backwards through older printings (wraps at zero).
+    const allPrintings = STATE.byCanonical.get(c.canonical) || [c];
+    const printings = allPrintings.filter(isLegal);
+    if (printings.length === 0) continue;
+    items.push({
+      canonical: c.canonical,
+      printings,
+      pickedIdx: printings.length - 1,
+    });
   }
-  const list = Array.from(seen.values());
-  list.sort((a, b) => a.canonical.localeCompare(b.canonical));
-  STATE.search.results = list.slice(0, 10);
+  items.sort((a, b) => a.canonical.localeCompare(b.canonical));
+  STATE.search.results = items.slice(0, 10);
   STATE.search.selectedIdx = 0;
   renderSearchResults();
 }
@@ -450,15 +696,27 @@ function renderSearchResults() {
   }
   results.classList.remove('hidden');
   results.innerHTML = '';
-  r.forEach((card, i) => {
+  r.forEach((item, i) => {
+    // The "picked" printing is what Enter / row-click will add, what the
+    // chip strip highlights, and what the row's mana / type meta reflects.
+    // Defaults to the newest printing; Shift+Tab and chip clicks move it.
+    if (item.pickedIdx == null || item.pickedIdx >= item.printings.length) {
+      item.pickedIdx = item.printings.length - 1;
+    }
+    const picked = item.printings[item.pickedIdx];
     const el = document.createElement('div');
     el.className = 'result' + (i === STATE.search.selectedIdx ? ' selected' : '');
-    el.innerHTML = `
-      <span class="name">${escapeHtml(card.canonical)}</span>
+
+    const head = document.createElement('div');
+    head.className = 'result-head';
+    head.innerHTML = `
+      <span class="name">${escapeHtml(item.canonical)}</span>
       <span>
-        <span class="mana">${colorizedMana(card.manacost)}</span>
-        <span class="meta">${escapeHtml(card.maintype || '')}</span>
+        <span class="mana">${colorizedMana(picked.manacost)}</span>
+        <span class="meta">${escapeHtml(picked.maintype || '')}</span>
       </span>`;
+    el.appendChild(head);
+
     el.addEventListener('mouseenter', () => {
       STATE.search.selectedIdx = i;
       renderSearchResults();
@@ -468,15 +726,64 @@ function renderSearchResults() {
     // touch devices / assistive tech where mousedown may not.
     el.addEventListener('mousedown', (ev) => ev.preventDefault());
     el.addEventListener('click', (ev) => {
+      // Chip clicks bubble up here too — but the chip handler stopPropagation()s
+      // before we get called, so reaching this code means "row body was clicked",
+      // which adds whichever printing is currently picked.
       const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
-      addCardToZone(card.id, zone);
+      addCardToZone(item.printings[item.pickedIdx].id, zone);
       renderZoneList(zone);
       renderZoneCount(zone);
       if (STATE.focusedZone === zone) renderPiles();
-      // Touch/assistive-tech paths may have blurred the input; re-focus so
-      // the user can keep typing.
       document.getElementById('search').focus();
     });
+
+    // Per-printing chips: only render on the highlighted row, and only when
+    // there's more than one printing to choose from. Clicking a chip both
+    // sets the picked printing AND adds it; Shift+Tab also walks the
+    // pickedIdx without adding (so power users can cycle and then Enter).
+    if (i === STATE.search.selectedIdx && item.printings.length > 1) {
+      const chips = document.createElement('div');
+      chips.className = 'printing-chips';
+      item.printings.forEach((p, pi) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'printing-chip';
+        if (pi === item.pickedIdx) chip.classList.add('picked');
+        chip.textContent = p.set;
+        const setMeta = STATE.setsByCode[p.set];
+        chip.title = setMeta
+          ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})\nClick to add this printing`
+          : p.set;
+        chip.addEventListener('mousedown', (ev) => {
+          // Stop the parent .result's mousedown handling and the input
+          // blur it would otherwise cause.
+          ev.preventDefault();
+          ev.stopPropagation();
+        });
+        chip.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          item.pickedIdx = pi;
+          const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
+          addCardToZone(p.id, zone);
+          renderZoneList(zone);
+          renderZoneCount(zone);
+          if (STATE.focusedZone === zone) renderPiles();
+          document.getElementById('search').focus();
+        });
+        // Hover preview shows this specific printing's image, so the user
+        // can compare art before picking.
+        chip.addEventListener('mouseenter', (ev) => {
+          ev.stopPropagation();
+          showPreview(p, ev);
+        });
+        chip.addEventListener('mousemove', positionPreview);
+        chip.addEventListener('mouseleave', hidePreview);
+        chips.appendChild(chip);
+      });
+      el.appendChild(chips);
+    }
+
     results.appendChild(el);
   });
 }
@@ -839,35 +1146,24 @@ function renderPiles() {
   // Render piles in their stored zone.piles order — no automatic bucketing
   // by type/CMC. Users arrange piles freely (or click Re-sort to group them
   // by the current pile-sort mode), and drops always land where the user
-  // dropped them. An inter-pile gap drop target sits before every pile.
+  // dropped them. Each pile is wrapped with its preceding gap drop-target in
+  // a single flex child so the pair never splits across wrapped rows.
   zone.piles.forEach((pile, pileIdx) => {
     if (pile.length === 0) return;
-    container.appendChild(makePileGap(pileIdx));
-    container.appendChild(makePileEl(pile, pileIdx));
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pile-wrapper';
+    wrapper.appendChild(makePileGap(pileIdx));
+    wrapper.appendChild(makePileEl(pile, pileIdx));
+    container.appendChild(wrapper);
   });
 
-  // Trailing "new pile" drop zone — always at the very end
-  const np = document.createElement('div');
-  np.className = 'new-pile';
-  np.textContent = '+ new pile';
-  np.addEventListener('dragover', (ev) => { ev.preventDefault(); np.classList.add('drag-over'); });
-  np.addEventListener('dragleave', () => np.classList.remove('drag-over'));
-  np.addEventListener('drop', (ev) => {
-    ev.preventDefault();
-    np.classList.remove('drag-over');
-    const uids = readUidsFromDrag(ev.dataTransfer);
-    if (uids.length === 0) return;
-    insertNewPileWithUids(uids, STATE.focusedZone, -1);
-    STATE.selection.clear();
-    renderAll();
-  });
-  container.appendChild(np);
+  // Trailing gap drop target — dropping here creates a new pile at the end.
+  container.appendChild(makePileGap(zone.piles.length));
 }
 
-// Build an inter-pile gap drop target. Dropping a card here splices a NEW pile
-// into the focused zone at the given global pile index. The gap is small in
-// width but expands visually while a drag is in flight (body.dragging) so
-// users can see the available drop slots.
+// Build a gap drop target. Dropping a card here splices a NEW pile into the
+// focused zone at the given index. Used both between piles (inside
+// pile-wrappers) and as the trailing drop target at the end of the row.
 function makePileGap(insertIdx) {
   const g = document.createElement('div');
   g.className = 'pile-gap';
@@ -888,6 +1184,45 @@ function makePileGap(insertIdx) {
     renderAll();
   });
   return g;
+}
+
+// Return the face (front or back) currently shown for this instance. Used
+// by the slot renderer, the hover preview, and anywhere else that needs to
+// reflect a flipped DFC. Single-faced cards always return the card itself.
+function currentFace(inst, card) {
+  if (inst && inst.flipped && card && card.back) return card.back;
+  return card;
+}
+
+// Build a transparent center overlay button on a pile-slot card. Click
+// toggles inst.flipped, swaps the slot's <img> source between the front
+// and back face, and updates the slot's title / "flipped" class. The
+// button captures click + mousedown so it never starts a drag and never
+// triggers the slot's selection-clear handler.
+function makeFlipButton(inst, card, slot) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'flip-btn';
+  btn.title = 'Flip card to see other side';
+  btn.draggable = false;
+  // The faint icon shows on slot hover; the button itself is transparent.
+  btn.innerHTML = '<span class="flip-icon" aria-hidden="true">&#x21bb;</span>';
+  btn.setAttribute('aria-label', 'Flip card');
+  // Stop mousedown so the parent slot's drag doesn't pre-empt the click.
+  btn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    inst.flipped = !inst.flipped;
+    const face = currentFace(inst, card);
+    const img = slot.querySelector('img');
+    if (img) {
+      img.src = imgUrl(face);
+      img.alt = face.canonical || face.name || card.canonical;
+    }
+    slot.classList.toggle('flipped', !!inst.flipped);
+  });
+  return btn;
 }
 
 function makeSlotButtons(inst, card) {
@@ -964,14 +1299,19 @@ function makePileEl(pile, pileIdx) {
     slot.draggable = true;
     slot.dataset.uid = String(inst.uid);
     if (card) {
+      // Pick the visible face: respect any prior flip on this instance.
+      // currentFace() returns the back when inst.flipped is true and the
+      // card has a back, otherwise the front.
+      const face0 = currentFace(inst, card);
       const img = document.createElement('img');
-      img.alt = card.canonical;
-      img.src = imgUrl(card);
+      img.alt = face0.canonical || face0.name || card.canonical;
+      img.src = imgUrl(face0);
       img.addEventListener('error', () => {
         slot.classList.add('no-image');
-        slot.textContent = card.canonical;
+        slot.textContent = face0.canonical || face0.name || '???';
       });
       slot.appendChild(img);
+      if (inst.flipped && card.back) slot.classList.add('flipped');
       slot.title = `${card.canonical}\n${card.type}\n${card.manacost || ''}`.trim();
     } else {
       slot.classList.add('no-image');
@@ -1016,9 +1356,11 @@ function makePileEl(pile, pileIdx) {
       removeInstance(inst.uid);
       renderAll();
     });
-    // Hover preview — same floating popup the deck-list rows use.
+    // Hover preview — same floating popup the deck-list rows use. Reads
+    // inst.flipped fresh each time so flipping a card and then re-hovering
+    // pops up the back image.
     if (card) {
-      slot.addEventListener('mouseenter', (ev) => showPreview(card, ev));
+      slot.addEventListener('mouseenter', (ev) => showPreview(currentFace(inst, card), ev));
       slot.addEventListener('mousemove', positionPreview);
       slot.addEventListener('mouseleave', hidePreview);
     }
@@ -1026,6 +1368,12 @@ function makePileEl(pile, pileIdx) {
     // Overlay action buttons (only attach when we know which card it is)
     if (card) {
       slot.appendChild(makeSlotButtons(inst, card));
+      // DFC flip button — transparent overlay in the center of the card
+      // that swaps between front and back faces. Only rendered when the
+      // card actually has a back side.
+      if (card.back) {
+        slot.appendChild(makeFlipButton(inst, card, slot));
+      }
     }
     el.appendChild(slot);
   });
@@ -1161,12 +1509,39 @@ function wireToolbar() {
   document.querySelectorAll('.format-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       STATE.format = btn.dataset.format;
-      document.querySelectorAll('.format-btn').forEach(b => b.classList.toggle('active', b === btn));
+      savePrefs();
+      syncFormatUI();
       runSearch(document.getElementById('search').value);
       // Re-render decks so illegal-card highlighting updates immediately.
       renderAll();
     });
   });
+  // Range pickers: changing either bound updates STATE, persists, and
+  // re-renders. Start can't be after end (and vice versa) — if the user
+  // breaks that, snap the other dropdown to match.
+  const startSel = document.getElementById('range-start');
+  const endSel   = document.getElementById('range-end');
+  function onRangeChange(which) {
+    STATE.rangeStart = startSel.value;
+    STATE.rangeEnd   = endSel.value;
+    if (setIndex(STATE.rangeStart) > setIndex(STATE.rangeEnd)) {
+      // Snap the OTHER dropdown so the just-edited one wins.
+      if (which === 'start') {
+        STATE.rangeEnd = STATE.rangeStart;
+        endSel.value = STATE.rangeEnd;
+      } else {
+        STATE.rangeStart = STATE.rangeEnd;
+        startSel.value = STATE.rangeStart;
+      }
+    }
+    savePrefs();
+    runSearch(document.getElementById('search').value);
+    renderAll();
+  }
+  startSel.addEventListener('change', () => onRangeChange('start'));
+  endSel.addEventListener('change', () => onRangeChange('end'));
+  // Reflect any persisted format on first paint.
+  syncFormatUI();
   const refreshBtn = document.getElementById('btn-refresh');
   refreshBtn.addEventListener('click', async () => {
     const original = refreshBtn.textContent;
@@ -1245,7 +1620,7 @@ function wireRegionSelect() {
     if (ev.button !== 0) return;
     // Ignore mousedowns that originated on anything interactive — let those
     // elements handle it (card drag, buttons, existing drop targets, etc).
-    if (ev.target.closest('.card-slot, .slot-btn, .pile-gap, .new-pile')) return;
+    if (ev.target.closest('.card-slot, .slot-btn, .pile-gap')) return;
     ev.preventDefault();
     const additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
     if (!additive) {
