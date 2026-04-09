@@ -118,10 +118,13 @@ header {
 }
 
 .search-hints {
-  display: flex;
+  display: none;
   gap: 10px;
   font-size: 11px;
   color: #888;
+}
+.search-wrap:focus-within + .search-hints {
+  display: flex;
 }
 .search-hints kbd {
   background: #333;
