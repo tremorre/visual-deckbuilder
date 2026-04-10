@@ -1,5 +1,10 @@
 /* Revolution Deckbuilder styles */
 
+:root {
+  --card-width: 130px;
+  --card-height: 181px;  /* card aspect 488/680 ≈ 0.718 */
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -441,7 +446,7 @@ main {
 
 .pile {
   position: relative;
-  width: 130px;
+  width: var(--card-width);
   flex-shrink: 0;
 }
 
@@ -461,9 +466,8 @@ main {
 
 .pile .card-slot {
   position: absolute;
-  width: 130px;
-  /* card aspect 488/680 ≈ 0.718 */
-  height: 181px;
+  width: var(--card-width);
+  height: var(--card-height);
   border-radius: 5px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.5);
@@ -604,7 +608,7 @@ main {
 }
 
 .pile .pile-height-spacer {
-  width: 130px;
+  width: var(--card-width);
 }
 
 /* Wrapper keeps a pile-gap and its pile in the same flex child so they
@@ -769,17 +773,31 @@ button.primary:hover { background: #355380; }
   font-style: italic;
 }
 
-/* Always-rendered drag preview img. Positioned just off the left edge of the
-   viewport so it has a rendered size (required by Firefox) but isn't visible.
-   opacity stays 1 so the drag ghost isn't washed out. */
+/* Always-rendered drag preview img. Must be in the viewport with non-zero
+   rendered size for setDragImage to work (Firefox refuses off-screen / hidden
+   elements). Sits behind the page background via z-index:-1 so the user never
+   sees it, but at full opacity so the drag ghost isn't washed out. */
 #drag-img {
   position: fixed;
   top: 0;
-  left: -200px;
-  width: 130px;
-  height: auto;
+  left: 0;
+  width: var(--card-width);
+  height: var(--card-height);
+  object-fit: cover;
   pointer-events: none;
   z-index: -1;
+}
+
+/* Custom drag ghost — replaces the native browser ghost which scales
+   unpredictably on HiDPI screens and forces ~50% opacity. */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10000;
+  object-fit: cover;
+  border-radius: 5px;
+  opacity: 0.85;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
 }
 
 /* Floating card preview shown on hover in the deck list */

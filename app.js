@@ -66,6 +66,7 @@ const STATE = {
 
   uidCounter: 1,        // monotonic id for card instances
   dragging: null,       // { uids: [uid, ...] }
+  dragGhost: null,      // { el, offsetX, offsetY } — custom floating ghost element
   selection: new Set(), // selected card-instance uids (multi-select via Shift/Ctrl/Cmd-click)
 };
 
@@ -82,6 +83,45 @@ const TYPE_ORDER = {
 };
 
 const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
+
+// ---------------------------------------------------------------------------
+// Custom drag ghost — bypasses the native drag-image which browsers scale
+// down unpredictably on HiDPI screens and force to ~50% opacity.
+// ---------------------------------------------------------------------------
+
+const EMPTY_DRAG_IMG = new Image();
+EMPTY_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+/** Show a card-image overlay that follows the cursor during drag. */
+function startDragGhost(ev, imgSrc, width, height, offsetX, offsetY) {
+  // Hide the native ghost by substituting a 1×1 transparent image.
+  ev.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0);
+
+  const ghost = document.createElement('img');
+  ghost.className = 'drag-ghost';
+  ghost.src = imgSrc;
+  ghost.style.width = width + 'px';
+  ghost.style.height = height + 'px';
+  ghost.style.left = (ev.clientX - offsetX) + 'px';
+  ghost.style.top = (ev.clientY - offsetY) + 'px';
+  document.body.appendChild(ghost);
+  STATE.dragGhost = { el: ghost, offsetX, offsetY };
+}
+
+function endDragGhost() {
+  if (STATE.dragGhost) {
+    STATE.dragGhost.el.remove();
+    STATE.dragGhost = null;
+  }
+}
+
+// Track cursor during drag to reposition the ghost.
+document.addEventListener('dragover', (ev) => {
+  if (STATE.dragGhost) {
+    STATE.dragGhost.el.style.left = (ev.clientX - STATE.dragGhost.offsetX) + 'px';
+    STATE.dragGhost.el.style.top = (ev.clientY - STATE.dragGhost.offsetY) + 'px';
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -1138,7 +1178,8 @@ function makeRow(zoneName, row) {
 // ---------------------------------------------------------------------------
 
 const PILE_OFFSET_Y = 30;   // px between stacked card images in a pile
-const CARD_HEIGHT   = 181;
+const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
+                        .getPropertyValue('--card-height'), 10) || 181;
 
 function renderPiles() {
   document.getElementById('pile-title').textContent =
@@ -1362,16 +1403,10 @@ function makePileEl(pile, pileIdx) {
       ev.dataTransfer.effectAllowed = 'move';
       const uids = uidsToDrag(inst.uid);
       ev.dataTransfer.setData('text/uids', uids.join(','));
-      // Use the dedicated drag-img element (sized consistently) as the
-      // drag preview so the ghost matches pile-slot dimensions.
-      const dragImg = document.getElementById('drag-img');
-      if (dragImg) {
-        const face = currentFace(inst, card);
-        dragImg.src = imgUrl(face);
-        if (dragImg.complete && dragImg.naturalWidth > 0) {
-          ev.dataTransfer.setDragImage(dragImg, dragImg.offsetWidth / 2, 30);
-        }
-      }
+      const face = currentFace(inst, card);
+      startDragGhost(ev, imgUrl(face),
+        slot.offsetWidth, slot.offsetHeight,
+        slot.offsetWidth / 2, 30);
       slot.classList.add('dragging');
       STATE.dragging = { uids };
       document.body.classList.add('dragging');
@@ -1379,6 +1414,7 @@ function makePileEl(pile, pileIdx) {
     slot.addEventListener('dragend', () => {
       slot.classList.remove('dragging');
       STATE.dragging = null;
+      endDragGhost();
       document.body.classList.remove('dragging');
     });
     // Right-click removes one copy from this pile
@@ -1487,19 +1523,16 @@ function wireZones() {
       // Deck-list rows always drag a single card; row drags don't participate
       // in pile-pane multi-select.
       ev.dataTransfer.setData('text/uids', String(foundUid));
-      // Use the global drag-img (preloaded by hover) as the drag preview.
-      const dragImg = document.getElementById('drag-img');
-      if (dragImg) {
-        dragImg.src = imgUrl(card);
-        if (dragImg.complete && dragImg.naturalWidth > 0) {
-          ev.dataTransfer.setDragImage(dragImg, dragImg.offsetWidth / 2, 60);
-        }
-      }
+      const root = document.documentElement;
+      const cw = parseFloat(getComputedStyle(root).getPropertyValue('--card-width'));
+      const ch = parseFloat(getComputedStyle(root).getPropertyValue('--card-height'));
+      startDragGhost(ev, imgUrl(card), cw, ch, cw / 2, 60);
       STATE.dragging = { uids: [foundUid] };
       document.body.classList.add('dragging');
     });
     list.addEventListener('dragend', () => {
       STATE.dragging = null;
+      endDragGhost();
       document.body.classList.remove('dragging');
     });
   }
