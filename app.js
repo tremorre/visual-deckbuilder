@@ -92,16 +92,35 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
 const EMPTY_DRAG_IMG = new Image();
 EMPTY_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-/** Show a card-image overlay that follows the cursor during drag. */
-function startDragGhost(ev, imgSrc, width, height, offsetX, offsetY) {
+/**
+ * Show a card-image overlay that follows the cursor during drag.
+ * When uids has multiple entries the ghost stacks them like a pile.
+ */
+function startDragGhost(ev, uids, width, height, offsetX, offsetY) {
   // Hide the native ghost by substituting a 1×1 transparent image.
   ev.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0);
 
-  const ghost = document.createElement('img');
+  const ghost = document.createElement('div');
   ghost.className = 'drag-ghost';
-  ghost.src = imgSrc;
+
+  const stackOffset = PILE_OFFSET_Y;
+  const count = uids.length;
   ghost.style.width = width + 'px';
-  ghost.style.height = height + 'px';
+  ghost.style.height = (height + Math.max(0, count - 1) * stackOffset) + 'px';
+
+  uids.forEach((uid, i) => {
+    const found = findInstance(uid);
+    if (!found) return;
+    const card = STATE.byId.get(found.inst.cardId);
+    const face = currentFace(found.inst, card);
+    const img = document.createElement('img');
+    img.src = imgUrl(face);
+    img.style.cssText = `position:absolute;top:${i * stackOffset}px;left:0;`
+                       + `width:${width}px;height:${height}px;`
+                       + `object-fit:cover;border-radius:5px;`;
+    ghost.appendChild(img);
+  });
+
   ghost.style.left = (ev.clientX - offsetX) + 'px';
   ghost.style.top = (ev.clientY - offsetY) + 'px';
   document.body.appendChild(ghost);
@@ -1403,8 +1422,7 @@ function makePileEl(pile, pileIdx) {
       ev.dataTransfer.effectAllowed = 'move';
       const uids = uidsToDrag(inst.uid);
       ev.dataTransfer.setData('text/uids', uids.join(','));
-      const face = currentFace(inst, card);
-      startDragGhost(ev, imgUrl(face),
+      startDragGhost(ev, uids,
         slot.offsetWidth, slot.offsetHeight,
         slot.offsetWidth / 2, 30);
       slot.classList.add('dragging');
@@ -1526,7 +1544,7 @@ function wireZones() {
       const root = document.documentElement;
       const cw = parseFloat(getComputedStyle(root).getPropertyValue('--card-width'));
       const ch = parseFloat(getComputedStyle(root).getPropertyValue('--card-height'));
-      startDragGhost(ev, imgUrl(card), cw, ch, cw / 2, 60);
+      startDragGhost(ev, [foundUid], cw, ch, cw / 2, 60);
       STATE.dragging = { uids: [foundUid] };
       document.body.classList.add('dragging');
     });
