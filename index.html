@@ -25,9 +25,29 @@
     <button id="btn-paste-import" title="Paste a deck list and edit before importing">Import text</button>
     <button id="btn-copy-txt" title="Copy the .txt deck list to clipboard">Export to clipboard</button>
     <button id="btn-export-cod" title="Save a Cockatrice .cod file (chooses where on supported browsers)">Export to cod</button>
-    <!-- Saved decks: implemented but disabled for now. Remove the `hidden` class to re-enable. -->
-    <button id="btn-saved-decks" class="hidden" title="Save / load decks in your browser">Saved decks</button>
-    <button id="btn-clear" class="danger">Clear deck</button>
+    <div class="deck-btn-group">
+      <button id="btn-save-deck" title="Save the current deck">Save deck</button>
+      <button id="btn-save-as" class="hidden" title="Save a copy with a new name">Save as</button>
+      <div id="save-name-dropdown" class="deck-dropdown hidden">
+        <input id="save-deck-name" type="text" placeholder="Deck name" spellcheck="false">
+        <div class="save-name-buttons">
+          <button id="save-name-ok" class="primary">Save</button>
+          <button id="save-name-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="deck-btn-group">
+      <button id="btn-decks" title="Browse saved decks">Decks</button>
+      <div id="decks-dropdown" class="deck-dropdown hidden">
+        <div id="decks-list"></div>
+        <div id="decks-pages" class="decks-pages hidden">
+          <button id="decks-prev" title="Previous page">&lsaquo;</button>
+          <span id="decks-page-info"></span>
+          <button id="decks-next" title="Next page">&rsaquo;</button>
+        </div>
+      </div>
+    </div>
+    <button id="btn-new-deck" class="danger" title="Clear all zones and start a new deck">New deck</button>
     <div class="format-dropdown">
       <button id="format-btn" class="format-dropdown-btn">Standard &#x25BE;</button>
       <div id="format-menu" class="format-dropdown-menu hidden">
@@ -89,20 +109,27 @@
   </section>
 </main>
 
-<div id="saved-decks-modal" class="modal hidden">
+<div id="name-conflict-modal" class="modal hidden">
   <div class="modal-backdrop"></div>
   <div class="modal-content">
-    <h3>Saved decks</h3>
-    <p class="modal-help">Decks are stored in this browser's local storage. They survive refreshes but won't follow you to other devices.</p>
-    <div class="save-row">
-      <input id="save-deck-name" type="text" placeholder="Deck name" spellcheck="false">
-      <button id="save-deck-btn" class="primary">Save current deck</button>
-    </div>
-    <div class="saved-decks-list-wrap">
-      <div id="saved-decks-list"></div>
-    </div>
+    <h3 id="conflict-title">Name conflict</h3>
+    <p id="conflict-msg" class="modal-help"></p>
     <div class="modal-buttons">
-      <button id="saved-decks-close">Close</button>
+      <button id="conflict-cancel">Cancel</button>
+      <button id="conflict-keep-both">Keep both</button>
+      <button id="conflict-overwrite" class="primary">Overwrite</button>
+    </div>
+  </div>
+</div>
+
+<div id="delete-confirm-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Delete deck</h3>
+    <p id="delete-confirm-msg" class="modal-help"></p>
+    <div class="modal-buttons">
+      <button id="delete-cancel">Cancel</button>
+      <button id="delete-confirm" class="danger">Delete</button>
     </div>
   </div>
 </div>
@@ -118,6 +145,11 @@
       <button id="paste-confirm" class="primary">Import</button>
     </div>
   </div>
+</div>
+
+<div id="drag-trash" class="drag-trash hidden" aria-label="Delete cards">
+  <span class="trash-icon">&#x1f5d1;</span>
+  <span class="trash-label">Delete</span>
 </div>
 
 <div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>

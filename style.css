@@ -711,43 +711,77 @@ button.primary {
 .modal-buttons button.primary:hover,
 button.primary:hover { background: #355380; }
 
-/* Saved-decks modal */
-.save-row {
+/* Deck button group — wraps a button and its dropdown together */
+.deck-btn-group {
+  position: relative;
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
 }
-.save-row input {
-  flex: 1;
+
+/* Dropdown panels that appear below Save / Decks buttons */
+.deck-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 500;
+  background: #232328;
+  border: 1px solid #444;
+  border-radius: 5px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+  min-width: 220px;
+}
+.deck-dropdown.hidden { display: none; }
+
+/* Save-name dropdown */
+#save-name-dropdown {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#save-name-dropdown.hidden { display: none; }
+#save-deck-name {
   background: #111;
   color: #ddd;
   border: 1px solid #444;
   border-radius: 3px;
-  padding: 6px 10px;
+  padding: 5px 8px;
   font-family: inherit;
   font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
-.save-row input:focus { outline: none; border-color: #6ab0ff; }
+#save-deck-name:focus { outline: none; border-color: #6ab0ff; }
+.save-name-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.save-name-buttons button {
+  font-size: 11px;
+  padding: 3px 10px;
+}
 
-.saved-decks-list-wrap {
-  border: 1px solid #333;
-  border-radius: 3px;
-  background: #1a1a1c;
-  max-height: 320px;
-  overflow-y: auto;
+/* Decks list dropdown */
+#decks-dropdown {
+  min-width: 260px;
+  max-width: 340px;
 }
-#saved-decks-list {
+#decks-list {
   display: flex;
   flex-direction: column;
 }
 .saved-deck-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 5px 10px;
   border-bottom: 1px solid #2a2a2e;
+  cursor: pointer;
 }
 .saved-deck-row:last-child { border-bottom: none; }
+.saved-deck-row:hover { background: #2a2a30; }
 .saved-deck-row .deck-name {
   flex: 1;
   font-weight: 500;
@@ -756,21 +790,53 @@ button.primary:hover { background: #355380; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.saved-deck-row .deck-meta {
-  font-size: 10px;
+.saved-deck-row .deck-name-input {
+  flex: 1;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #6ab0ff;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  min-width: 0;
+}
+.saved-deck-row .deck-name-input:focus { outline: none; }
+.saved-deck-row .deck-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
   color: #888;
-  white-space: nowrap;
+  line-height: 1;
 }
-.saved-deck-row button {
-  font-size: 11px;
-  padding: 3px 8px;
-}
+.saved-deck-row .deck-action:hover { color: #ddd; }
+.saved-deck-row .deck-action.deck-delete:hover { color: #ff7777; }
 .saved-decks-empty {
-  padding: 20px;
+  padding: 16px;
   text-align: center;
   color: #666;
   font-size: 11px;
   font-style: italic;
+}
+
+/* Pagination for decks list */
+.decks-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-top: 1px solid #2a2a2e;
+  font-size: 11px;
+  color: #888;
+}
+.decks-pages.hidden { display: none; }
+.decks-pages button {
+  font-size: 13px;
+  padding: 1px 8px;
+  line-height: 1;
 }
 
 /* Always-rendered drag preview img. Must be in the viewport with non-zero
@@ -821,3 +887,38 @@ button.primary:hover { background: #355380; }
 .mana-r { color: #e88787; }
 .mana-g { color: #87c887; }
 .mana-c { color: #c0c0c0; }
+
+/* Drag-to-delete trash can — shown when dragging 2+ cards */
+.drag-trash {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: rgba(180, 40, 40, 0.85);
+  border: 2px solid #c33;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: auto;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  user-select: none;
+}
+.drag-trash.hidden {
+  display: none;
+}
+.drag-trash .trash-icon {
+  font-size: 22px;
+}
+.drag-trash.drag-over {
+  background: rgba(220, 50, 50, 1);
+  transform: translateX(-50%) scale(1.08);
+  box-shadow: 0 4px 28px rgba(200,50,50,0.6);
+  border-color: #f55;
+}

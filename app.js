@@ -68,6 +68,7 @@ const STATE = {
   dragging: null,       // { uids: [uid, ...] }
   dragGhost: null,      // { el, offsetX, offsetY } — custom floating ghost element
   selection: new Set(), // selected card-instance uids (multi-select via Shift/Ctrl/Cmd-click)
+  loadedDeckName: null, // name of the currently loaded saved deck (null = unsaved)
 };
 
 const TYPE_ORDER = {
@@ -91,12 +92,20 @@ const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
 
 const EMPTY_DRAG_IMG = new Image();
 EMPTY_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+EMPTY_DRAG_IMG.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:-1;';
+document.documentElement.appendChild(EMPTY_DRAG_IMG);
 
 /**
  * Show a card-image overlay that follows the cursor during drag.
  * When uids has multiple entries the ghost stacks them like a pile.
  */
 function startDragGhost(ev, uids, width, height, offsetX, offsetY) {
+  console.log('[drag] startDragGhost called', {
+    uids, width, height, offsetX, offsetY,
+    clientX: ev.clientX, clientY: ev.clientY,
+    hadPriorGhost: !!STATE.dragGhost,
+  });
+  endDragGhost();
   // Hide the native ghost by substituting a 1×1 transparent image.
   ev.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0);
 
@@ -108,39 +117,94 @@ function startDragGhost(ev, uids, width, height, offsetX, offsetY) {
   ghost.style.width = width + 'px';
   ghost.style.height = (height + Math.max(0, count - 1) * stackOffset) + 'px';
 
+  let imgCount = 0;
   uids.forEach((uid, i) => {
     const found = findInstance(uid);
-    if (!found) return;
+    if (!found) {
+      console.warn('[drag]   uid', uid, '— findInstance returned null, skipping');
+      return;
+    }
     const card = STATE.byId.get(found.inst.cardId);
     const face = currentFace(found.inst, card);
+    const src = imgUrl(face);
+    console.log('[drag]   uid', uid, '— card:', card?.name, '— img:', src.slice(-40));
     const img = document.createElement('img');
-    img.src = imgUrl(face);
+    img.src = src;
     img.style.cssText = `position:absolute;top:${i * stackOffset}px;left:0;`
                        + `width:${width}px;height:${height}px;`
                        + `object-fit:cover;border-radius:5px;`;
     ghost.appendChild(img);
+    imgCount++;
   });
 
   ghost.style.left = (ev.clientX - offsetX) + 'px';
   ghost.style.top = (ev.clientY - offsetY) + 'px';
   document.body.appendChild(ghost);
   STATE.dragGhost = { el: ghost, offsetX, offsetY };
+  console.log('[drag] ghost appended to body — children:', imgCount,
+              '— rect:', ghost.getBoundingClientRect());
 }
 
 function endDragGhost() {
   if (STATE.dragGhost) {
+    console.log('[drag] endDragGhost — removing ghost, caller:',
+                new Error().stack.split('\n')[2]?.trim());
     STATE.dragGhost.el.remove();
     STATE.dragGhost = null;
   }
 }
 
 // Track cursor during drag to reposition the ghost.
+let _lastDragoverLog = 0;
 document.addEventListener('dragover', (ev) => {
   if (STATE.dragGhost) {
     STATE.dragGhost.el.style.left = (ev.clientX - STATE.dragGhost.offsetX) + 'px';
     STATE.dragGhost.el.style.top = (ev.clientY - STATE.dragGhost.offsetY) + 'px';
+    const now = Date.now();
+    if (now - _lastDragoverLog > 500) {
+      console.log('[drag] dragover — ghost pos:', ev.clientX, ev.clientY,
+                  '— ghost in DOM:', document.body.contains(STATE.dragGhost.el),
+                  '— ghost rect:', STATE.dragGhost.el.getBoundingClientRect());
+      _lastDragoverLog = now;
+    }
   }
 });
+
+// ---------------------------------------------------------------------------
+// Drag-to-delete trash can (shown when dragging 2+ cards)
+// ---------------------------------------------------------------------------
+
+function showDragTrash() {
+  document.getElementById('drag-trash').classList.remove('hidden');
+}
+function hideDragTrash() {
+  const el = document.getElementById('drag-trash');
+  el.classList.remove('hidden', 'drag-over');
+  el.classList.add('hidden');
+}
+
+function wireDragTrash() {
+  const trashEl = document.getElementById('drag-trash');
+  trashEl.addEventListener('dragover', (ev) => {
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+    trashEl.classList.add('drag-over');
+  });
+  trashEl.addEventListener('dragleave', () => {
+    trashEl.classList.remove('drag-over');
+  });
+  trashEl.addEventListener('drop', (ev) => {
+    ev.preventDefault();
+    trashEl.classList.remove('drag-over');
+    const uids = readUidsFromDrag(ev.dataTransfer);
+    endDragGhost();
+    if (uids.length === 0) return;
+    for (const uid of uids) removeInstance(uid);
+    STATE.selection.clear();
+    hideDragTrash();
+    renderAll();
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -695,6 +759,7 @@ function wireSearch() {
       if (STATE.focusedZone === zone) renderPiles();
     } else if (ev.key === 'Escape') {
       results.classList.add('hidden');
+      hidePreview();
     }
   });
 
@@ -705,6 +770,7 @@ function wireSearch() {
   document.addEventListener('click', (ev) => {
     if (!input.contains(ev.target) && !results.contains(ev.target)) {
       results.classList.add('hidden');
+      hidePreview();
     }
   });
 }
@@ -1078,6 +1144,7 @@ function resortPiles(zoneName) {
 // ---------------------------------------------------------------------------
 
 function renderAll() {
+  endDragGhost();
   for (const z of Object.keys(STATE.zones)) {
     renderZoneList(z);
     renderZoneCount(z);
@@ -1250,6 +1317,8 @@ function makePileGap(insertIdx) {
     ev.preventDefault();
     g.classList.remove('drag-over');
     const uids = readUidsFromDrag(ev.dataTransfer);
+    console.log('[drag] DROP on pile-gap — uids:', uids, '— insertIdx:', insertIdx);
+    endDragGhost();
     if (uids.length === 0) return;
     insertNewPileWithUids(uids, STATE.focusedZone, insertIdx);
     STATE.selection.clear();
@@ -1419,6 +1488,10 @@ function makePileEl(pile, pileIdx) {
       }
     });
     slot.addEventListener('dragstart', (ev) => {
+      console.log('[drag] pile dragstart — uid:', inst.uid,
+                  '— slot in DOM:', document.body.contains(slot),
+                  '— slot size:', slot.offsetWidth, 'x', slot.offsetHeight,
+                  '— selection:', [...STATE.selection]);
       ev.dataTransfer.effectAllowed = 'move';
       const uids = uidsToDrag(inst.uid);
       ev.dataTransfer.setData('text/uids', uids.join(','));
@@ -1428,11 +1501,16 @@ function makePileEl(pile, pileIdx) {
       slot.classList.add('dragging');
       STATE.dragging = { uids };
       document.body.classList.add('dragging');
+      if (uids.length >= 2) showDragTrash();
     });
     slot.addEventListener('dragend', () => {
+      console.log('[drag] pile dragend — uid:', inst.uid,
+                  '— slot in DOM:', document.body.contains(slot),
+                  '— STATE.dragGhost:', !!STATE.dragGhost);
       slot.classList.remove('dragging');
       STATE.dragging = null;
       endDragGhost();
+      hideDragTrash();
       document.body.classList.remove('dragging');
     });
     // Right-click removes one copy from this pile
@@ -1477,6 +1555,8 @@ function makePileEl(pile, pileIdx) {
     ev.preventDefault();
     el.classList.remove('drag-over');
     const uids = readUidsFromDrag(ev.dataTransfer);
+    console.log('[drag] DROP on pile — uids:', uids, '— pileIdx:', pileIdx);
+    endDragGhost();
     if (uids.length === 0) return;
     // Resolve the destination pile by reference (current pileIdx may shift
     // mid-drop as source piles get pruned, so we capture it now).
@@ -1512,6 +1592,8 @@ function wireZones() {
       ev.preventDefault();
       sec.classList.remove('drag-over');
       const uids = readUidsFromDrag(ev.dataTransfer);
+      console.log('[drag] DROP on zone — uids:', uids, '— zone:', zoneName);
+      endDragGhost();
       if (uids.length === 0) return;
       moveUidsToZoneAuto(uids, zoneName);
       STATE.selection.clear();
@@ -1537,6 +1619,7 @@ function wireZones() {
         }
       }
       if (!foundUid) return;
+      console.log('[drag] list dragstart — uid:', foundUid, '— card:', card?.name);
       ev.dataTransfer.effectAllowed = 'move';
       // Deck-list rows always drag a single card; row drags don't participate
       // in pile-pane multi-select.
@@ -1549,8 +1632,10 @@ function wireZones() {
       document.body.classList.add('dragging');
     });
     list.addEventListener('dragend', () => {
+      console.log('[drag] list dragend — STATE.dragGhost:', !!STATE.dragGhost);
       STATE.dragging = null;
       endDragGhost();
+      hideDragTrash();
       document.body.classList.remove('dragging');
     });
   }
@@ -1582,11 +1667,14 @@ function wireToolbar() {
   wirePasteImport();
   wireCopyTxt();
   wireSavedDecks();
-  document.getElementById('btn-clear').addEventListener('click', () => {
-    if (!confirm('Clear all zones?')) return;
+  wireDragTrash();
+  document.getElementById('btn-new-deck').addEventListener('click', () => {
+    if (!deckIsEmpty() && !confirm('Clear all zones and start a new deck?')) return;
     STATE.zones.main.piles = [];
     STATE.zones.side.piles = [];
     STATE.zones.maybe.piles = [];
+    STATE.loadedDeckName = null;
+    updateSaveButtons();
     renderAll();
   });
   // Format dropdown: toggle menu on trigger click, pick on item click.
@@ -1880,6 +1968,8 @@ function importDeck(text, filename) {
   const isXml = stripped.startsWith('<');
   if (isXml) importCod(text);
   else importTxt(text);
+  STATE.loadedDeckName = null;
+  updateSaveButtons();
 }
 
 function importCod(text) {
@@ -2168,12 +2258,177 @@ function deckIsEmpty() {
   return Object.keys(STATE.zones).every(z => totalCount(z) === 0);
 }
 
-function wireSavedDecks() {
-  const modal = document.getElementById('saved-decks-modal');
-  const nameInput = document.getElementById('save-deck-name');
-  const listEl = document.getElementById('saved-decks-list');
+function updateSaveButtons() {
+  const saveBtn = document.getElementById('btn-save-deck');
+  const saveAsBtn = document.getElementById('btn-save-as');
+  if (STATE.loadedDeckName) {
+    saveBtn.textContent = 'Save deck';
+    saveAsBtn.classList.remove('hidden');
+  } else {
+    saveBtn.textContent = 'Save deck';
+    saveAsBtn.classList.add('hidden');
+  }
+}
 
-  function renderList() {
+// Show a name-conflict modal and return a promise resolving to
+// 'overwrite', 'keep-both', or null (cancel).
+function showNameConflict(name, verb) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('name-conflict-modal');
+    const msg = document.getElementById('conflict-msg');
+    document.getElementById('conflict-title').textContent = 'Name conflict';
+    msg.textContent = 'A deck named \u201c' + name + '\u201d already exists. What would you like to do?';
+    modal.classList.remove('hidden');
+    function cleanup() {
+      modal.classList.add('hidden');
+      document.getElementById('conflict-overwrite').removeEventListener('click', onOverwrite);
+      document.getElementById('conflict-keep-both').removeEventListener('click', onKeepBoth);
+      document.getElementById('conflict-cancel').removeEventListener('click', onCancel);
+      modal.querySelector('.modal-backdrop').removeEventListener('click', onCancel);
+    }
+    function onOverwrite() { cleanup(); resolve('overwrite'); }
+    function onKeepBoth()  { cleanup(); resolve('keep-both'); }
+    function onCancel()    { cleanup(); resolve(null); }
+    document.getElementById('conflict-overwrite').addEventListener('click', onOverwrite);
+    document.getElementById('conflict-keep-both').addEventListener('click', onKeepBoth);
+    document.getElementById('conflict-cancel').addEventListener('click', onCancel);
+    modal.querySelector('.modal-backdrop').addEventListener('click', onCancel);
+  });
+}
+
+function showDeleteConfirm(name) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('delete-confirm-modal');
+    document.getElementById('delete-confirm-msg').textContent =
+      'Delete saved deck \u201c' + name + '\u201d? This cannot be undone.';
+    modal.classList.remove('hidden');
+    function cleanup() {
+      modal.classList.add('hidden');
+      document.getElementById('delete-confirm').removeEventListener('click', onYes);
+      document.getElementById('delete-cancel').removeEventListener('click', onNo);
+      modal.querySelector('.modal-backdrop').removeEventListener('click', onNo);
+    }
+    function onYes() { cleanup(); resolve(true); }
+    function onNo()  { cleanup(); resolve(false); }
+    document.getElementById('delete-confirm').addEventListener('click', onYes);
+    document.getElementById('delete-cancel').addEventListener('click', onNo);
+    modal.querySelector('.modal-backdrop').addEventListener('click', onNo);
+  });
+}
+
+// Find a unique name by appending (2), (3), etc.
+function uniqueDeckName(base) {
+  let n = 2;
+  let candidate = base + ' (' + n + ')';
+  while (localStorage.getItem(SAVED_DECK_PREFIX + candidate)) {
+    n++;
+    candidate = base + ' (' + n + ')';
+  }
+  return candidate;
+}
+
+function wireSavedDecks() {
+  const saveBtn = document.getElementById('btn-save-deck');
+  const saveAsBtn = document.getElementById('btn-save-as');
+  const saveDropdown = document.getElementById('save-name-dropdown');
+  const nameInput = document.getElementById('save-deck-name');
+  const decksBtn = document.getElementById('btn-decks');
+  const decksDropdown = document.getElementById('decks-dropdown');
+  const listEl = document.getElementById('decks-list');
+
+  const DECKS_PER_PAGE = 8;
+  let decksPage = 0;
+
+  function closeAllDropdowns() {
+    saveDropdown.classList.add('hidden');
+    decksDropdown.classList.add('hidden');
+  }
+
+  // --- Save name dropdown ---
+  function openSaveNameDropdown() {
+    closeAllDropdowns();
+    nameInput.value = '';
+    saveDropdown.classList.remove('hidden');
+    setTimeout(() => nameInput.focus(), 0);
+  }
+
+  async function commitSaveName() {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const existing = localStorage.getItem(SAVED_DECK_PREFIX + name);
+    if (existing) {
+      const choice = await showNameConflict(name, 'save');
+      if (!choice) return;
+      if (choice === 'keep-both') {
+        const newName = uniqueDeckName(name);
+        try { saveDeckToStorage(newName); } catch (e) {
+          alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
+        }
+        STATE.loadedDeckName = newName;
+      } else {
+        // overwrite
+        try { saveDeckToStorage(name); } catch (e) {
+          alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
+        }
+        STATE.loadedDeckName = name;
+      }
+    } else {
+      try { saveDeckToStorage(name); } catch (e) {
+        alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
+      }
+      STATE.loadedDeckName = name;
+    }
+    closeAllDropdowns();
+    updateSaveButtons();
+  }
+
+  // "Save deck" button: if a deck is loaded, overwrite it; otherwise show name input.
+  saveBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (STATE.loadedDeckName) {
+      try { saveDeckToStorage(STATE.loadedDeckName); } catch (e) {
+        alert('Could not save deck: ' + (e && e.message ? e.message : e));
+      }
+      // Quick feedback
+      const orig = saveBtn.textContent;
+      saveBtn.textContent = 'Saved \u2713';
+      setTimeout(() => { saveBtn.textContent = orig; }, 1200);
+    } else {
+      if (saveDropdown.classList.contains('hidden')) {
+        openSaveNameDropdown();
+      } else {
+        closeAllDropdowns();
+      }
+    }
+  });
+
+  // "Save as" button — always shows name input
+  saveAsBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (saveDropdown.classList.contains('hidden')) {
+      openSaveNameDropdown(null);
+    } else {
+      closeAllDropdowns();
+    }
+  });
+
+  document.getElementById('save-name-ok').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    commitSaveName();
+  });
+  document.getElementById('save-name-cancel').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    closeAllDropdowns();
+  });
+  nameInput.addEventListener('keydown', (ev) => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter') { ev.preventDefault(); commitSaveName(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); closeAllDropdowns(); }
+  });
+  nameInput.addEventListener('click', (ev) => ev.stopPropagation());
+
+  // --- Decks list dropdown ---
+  function renderDecksList() {
     listEl.innerHTML = '';
     const decks = listSavedDecks();
     if (decks.length === 0) {
@@ -2181,9 +2436,17 @@ function wireSavedDecks() {
       empty.className = 'saved-decks-empty';
       empty.textContent = 'No saved decks yet.';
       listEl.appendChild(empty);
+      document.getElementById('decks-pages').classList.add('hidden');
       return;
     }
-    for (const { name, savedAt } of decks) {
+
+    const totalPages = Math.ceil(decks.length / DECKS_PER_PAGE);
+    if (decksPage >= totalPages) decksPage = totalPages - 1;
+    if (decksPage < 0) decksPage = 0;
+    const start = decksPage * DECKS_PER_PAGE;
+    const pageDecks = decks.slice(start, start + DECKS_PER_PAGE);
+
+    for (const { name } of pageDecks) {
       const row = document.createElement('div');
       row.className = 'saved-deck-row';
 
@@ -2192,68 +2455,155 @@ function wireSavedDecks() {
       nameEl.textContent = name;
       row.appendChild(nameEl);
 
-      const metaEl = document.createElement('span');
-      metaEl.className = 'deck-meta';
-      metaEl.textContent = savedAt ? new Date(savedAt).toLocaleString() : '';
-      row.appendChild(metaEl);
-
-      const loadBtn = document.createElement('button');
-      loadBtn.textContent = 'Load';
-      loadBtn.addEventListener('click', () => {
-        if (!deckIsEmpty() && !confirm('Replace the current deck with "' + name + '"?')) return;
-        const ok = loadDeckFromStorage(name);
-        if (!ok) { alert('Could not load deck "' + name + '"'); return; }
-        close();
+      // Rename (pencil) button
+      const renameBtn = document.createElement('button');
+      renameBtn.className = 'deck-action';
+      renameBtn.title = 'Rename';
+      renameBtn.innerHTML = '&#x270E;';
+      renameBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        startRename(row, name);
       });
-      row.appendChild(loadBtn);
+      row.appendChild(renameBtn);
 
+      // Delete (trash) button
       const delBtn = document.createElement('button');
-      delBtn.textContent = 'Delete';
-      delBtn.className = 'danger';
-      delBtn.addEventListener('click', () => {
-        if (!confirm('Delete saved deck "' + name + '"? This cannot be undone.')) return;
+      delBtn.className = 'deck-action deck-delete';
+      delBtn.title = 'Delete';
+      delBtn.innerHTML = '&#x1f5d1;';
+      delBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const ok = await showDeleteConfirm(name);
+        if (!ok) return;
         deleteDeckFromStorage(name);
-        renderList();
+        if (STATE.loadedDeckName === name) {
+          STATE.loadedDeckName = null;
+          updateSaveButtons();
+        }
+        renderDecksList();
       });
       row.appendChild(delBtn);
 
+      // Click row to load
+      row.addEventListener('click', () => {
+        if (!deckIsEmpty() && !confirm('Replace the current deck with \u201c' + name + '\u201d?')) return;
+        const ok = loadDeckFromStorage(name);
+        if (!ok) { alert('Could not load deck \u201c' + name + '\u201d'); return; }
+        STATE.loadedDeckName = name;
+        updateSaveButtons();
+        closeAllDropdowns();
+      });
+
       listEl.appendChild(row);
     }
-  }
 
-  const open = () => {
-    nameInput.value = '';
-    renderList();
-    modal.classList.remove('hidden');
-    setTimeout(() => nameInput.focus(), 0);
-  };
-  const close = () => modal.classList.add('hidden');
-
-  function doSave() {
-    const name = nameInput.value.trim();
-    if (!name) { nameInput.focus(); return; }
-    const existing = localStorage.getItem(SAVED_DECK_PREFIX + name);
-    if (existing && !confirm('Overwrite the existing saved deck "' + name + '"?')) return;
-    try {
-      saveDeckToStorage(name);
-    } catch (e) {
-      alert('Could not save deck: ' + (e && e.message ? e.message : e));
-      return;
+    // Pagination
+    const pagesEl = document.getElementById('decks-pages');
+    if (totalPages > 1) {
+      pagesEl.classList.remove('hidden');
+      document.getElementById('decks-page-info').textContent =
+        (decksPage + 1) + ' / ' + totalPages;
+      document.getElementById('decks-prev').disabled = decksPage === 0;
+      document.getElementById('decks-next').disabled = decksPage >= totalPages - 1;
+    } else {
+      pagesEl.classList.add('hidden');
     }
-    nameInput.value = '';
-    renderList();
   }
 
-  document.getElementById('btn-saved-decks').addEventListener('click', open);
-  document.getElementById('saved-decks-close').addEventListener('click', close);
-  document.getElementById('save-deck-btn').addEventListener('click', doSave);
-  modal.querySelector('.modal-backdrop').addEventListener('click', close);
-  nameInput.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') { ev.preventDefault(); doSave(); }
+  function startRename(row, oldName) {
+    const nameEl = row.querySelector('.deck-name');
+    if (!nameEl) return;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'deck-name-input';
+    input.value = oldName;
+    input.spellcheck = false;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let renameHandled = false;
+    async function finishRename() {
+      if (renameHandled) return;
+      renameHandled = true;
+      const newName = input.value.trim();
+      if (!newName || newName === oldName) {
+        renderDecksList();
+        return;
+      }
+      const existing = localStorage.getItem(SAVED_DECK_PREFIX + newName);
+      if (existing) {
+        const choice = await showNameConflict(newName, 'rename');
+        if (!choice) { renderDecksList(); return; }
+        if (choice === 'keep-both') {
+          const safeName = uniqueDeckName(newName);
+          renameDeck(oldName, safeName);
+        } else {
+          // overwrite: delete the target, then rename
+          deleteDeckFromStorage(newName);
+          renameDeck(oldName, newName);
+        }
+      } else {
+        renameDeck(oldName, newName);
+      }
+      renderDecksList();
+    }
+
+    input.addEventListener('keydown', (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter') { ev.preventDefault(); finishRename(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); renderDecksList(); }
+    });
+    input.addEventListener('blur', () => finishRename());
+    input.addEventListener('click', (ev) => ev.stopPropagation());
+  }
+
+  function renameDeck(oldName, newName) {
+    const raw = localStorage.getItem(SAVED_DECK_PREFIX + oldName);
+    if (!raw) return;
+    try {
+      const payload = JSON.parse(raw);
+      payload.name = newName;
+      localStorage.setItem(SAVED_DECK_PREFIX + newName, JSON.stringify(payload));
+      localStorage.removeItem(SAVED_DECK_PREFIX + oldName);
+      if (STATE.loadedDeckName === oldName) {
+        STATE.loadedDeckName = newName;
+        updateSaveButtons();
+      }
+    } catch (_) {}
+  }
+
+  decksBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (decksDropdown.classList.contains('hidden')) {
+      closeAllDropdowns();
+      decksPage = 0;
+      renderDecksList();
+      decksDropdown.classList.remove('hidden');
+    } else {
+      closeAllDropdowns();
+    }
   });
+
+  document.getElementById('decks-prev').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    decksPage--;
+    renderDecksList();
+  });
+  document.getElementById('decks-next').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    decksPage++;
+    renderDecksList();
+  });
+
+  // Stop clicks inside dropdowns from closing them
+  saveDropdown.addEventListener('click', (ev) => ev.stopPropagation());
+  decksDropdown.addEventListener('click', (ev) => ev.stopPropagation());
+
+  // Close dropdowns when clicking elsewhere
+  document.addEventListener('click', () => closeAllDropdowns());
   document.addEventListener('keydown', (ev) => {
-    if (modal.classList.contains('hidden')) return;
-    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+    if (ev.key === 'Escape') closeAllDropdowns();
   });
 }
 
