@@ -2744,6 +2744,11 @@ function wireSavedDecks() {
       closeAllDropdowns();
       decksPage = 0;
       renderDecksList();
+      // Cap width to the rightward space available from the button so the
+      // dropdown never overflows the viewport.
+      const btnLeft = decksBtn.getBoundingClientRect().left;
+      const available = Math.max(120, window.innerWidth - btnLeft - 8);
+      decksDropdown.style.maxWidth = available + 'px';
       decksDropdown.classList.remove('hidden');
     } else {
       closeAllDropdowns();

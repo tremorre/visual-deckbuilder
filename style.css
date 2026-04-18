@@ -765,7 +765,7 @@ button.primary:hover { background: #355380; }
 
 /* Decks list dropdown */
 #decks-dropdown {
-  min-width: 260px;
+  min-width: 0;
   max-width: 340px;
 }
 #decks-list {
@@ -783,7 +783,7 @@ button.primary:hover { background: #355380; }
 .saved-deck-row:last-child { border-bottom: none; }
 .saved-deck-row:hover { background: #2a2a30; }
 .saved-deck-row .deck-name {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
   font-weight: 500;
   font-size: 12px;
