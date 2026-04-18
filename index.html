@@ -20,14 +20,14 @@
     <span><kbd>Alt</kbd>+<kbd>Enter</kbd> side</span>
   </div>
   <div class="toolbar">
-    <button id="btn-import" title="Import .cod or .txt file (autodetected)">Import file</button>
+    <button id="btn-import" data-title="Import .cod or .txt file (autodetected)">Import file</button>
     <input type="file" id="file-import" accept=".cod,.xml,.txt,.dec" hidden>
-    <button id="btn-paste-import" title="Paste a deck list and edit before importing">Import text</button>
-    <button id="btn-copy-txt" title="Copy the .txt deck list to clipboard">Export to clipboard</button>
-    <button id="btn-export-cod" title="Save a Cockatrice .cod file (chooses where on supported browsers)">Export to cod</button>
+    <button id="btn-paste-import" data-title="Paste a deck list and edit before importing">Import text</button>
+    <button id="btn-copy-txt" data-title="Copy the .txt deck list to clipboard">Export to clipboard</button>
+    <button id="btn-export-cod" data-title="Save a Cockatrice .cod file (chooses where on supported browsers)">Export to cod</button>
     <div class="deck-btn-group">
-      <button id="btn-save-deck" title="Save the current deck">Save deck</button>
-      <button id="btn-save-as" class="hidden" title="Save a copy with a new name">Save as</button>
+      <button id="btn-save-deck" data-title="Save the current deck">Save deck</button>
+      <button id="btn-save-as" class="hidden" data-title="Save a copy with a new name">Save as</button>
       <div id="save-name-dropdown" class="deck-dropdown hidden">
         <input id="save-deck-name" type="text" placeholder="Deck name" spellcheck="false">
         <div class="save-name-buttons">
@@ -37,31 +37,30 @@
       </div>
     </div>
     <div class="deck-btn-group">
-      <button id="btn-decks" title="Browse saved decks">Decks</button>
+      <button id="btn-decks" data-title="Browse saved decks">Decks</button>
       <div id="decks-dropdown" class="deck-dropdown hidden">
         <div id="decks-list"></div>
         <div id="decks-pages" class="decks-pages hidden">
-          <button id="decks-prev" title="Previous page">&lsaquo;</button>
+          <button id="decks-prev" data-title="Previous page">&lsaquo;</button>
           <span id="decks-page-info"></span>
-          <button id="decks-next" title="Next page">&rsaquo;</button>
+          <button id="decks-next" data-title="Next page">&rsaquo;</button>
         </div>
       </div>
     </div>
-    <button id="btn-new-deck" class="danger" title="Clear all zones and start a new deck">New deck</button>
+    <button id="btn-new-deck" class="danger" data-title="Clear all zones and start a new deck">New deck</button>
     <div class="format-dropdown">
       <button id="format-btn" class="format-dropdown-btn">Standard &#x25BE;</button>
       <div id="format-menu" class="format-dropdown-menu hidden">
         <button data-format="standard">Standard</button>
         <button data-format="eternal">Eternal</button>
-        <button data-format="range" title="Restrict legality to cards from a chosen range of sets">Sets</button>
+        <button data-format="range" data-title="Restrict legality to cards from a chosen range of sets">Sets</button>
         <div id="range-pickers" class="range-pickers hidden">
-          <select id="range-start" title="Earliest set in the range"></select>
+          <select id="range-start" data-title="Earliest set in the range"></select>
           <span class="range-dash">&ndash;</span>
-          <select id="range-end" title="Latest set in the range"></select>
+          <select id="range-end" data-title="Latest set in the range"></select>
         </div>
       </div>
     </div>
-    <button id="btn-refresh" title="Re-fetch card data from the upstream Revolution repo">&#x21bb; Refresh data</button>
   </div>
 </header>
 
@@ -148,8 +147,11 @@
 </div>
 
 <div id="drag-trash" class="drag-trash hidden" aria-label="Delete cards">
-  <span class="trash-icon">&#x1f5d1;</span>
-  <span class="trash-label">Delete</span>
+  <svg class="trash-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 4h12M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4M6.5 7v4.5M9.5 7v4.5"/>
+    <path d="M3.5 4l.7 8.5a1 1 0 0 0 1 .9h5.6a1 1 0 0 0 1-.9L12.5 4"/>
+  </svg>
+  <span class="trash-label">Remove cards</span>
 </div>
 
 <div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
@@ -158,7 +160,10 @@
      showPreview() updates its src on hover so it's loaded before dragstart. -->
 <img id="drag-img" alt="">
 
-
+<div class="floating-actions">
+  <button id="btn-refresh" data-title="Re-fetch card data from the upstream Revolution repo">Update cards</button>
+  <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
+</div>
 
 <script src="app.js"></script>
 </body>

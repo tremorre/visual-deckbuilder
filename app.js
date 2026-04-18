@@ -16,14 +16,11 @@ const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolutio
 
 // localStorage key for the refreshed snapshot. Once the user has refreshed,
 // subsequent loads use this and skip even the bundled cards.json fetch.
-// Bumped to v5 when DFC back-face data started being attached to the front
-// card (card.back). v4 snapshots lack that field, so we force a fresh parse
-// to make the flip button light up on existing installations.
-const STORAGE_KEY = 'rev-deckbuilder-cards-v5';
-const STORAGE_KEY_LEGACY = 'rev-deckbuilder-cards-v1';
-const STORAGE_KEY_LEGACY_V2 = 'rev-deckbuilder-cards-v2';
-const STORAGE_KEY_LEGACY_V3 = 'rev-deckbuilder-cards-v3';
-const STORAGE_KEY_LEGACY_V4 = 'rev-deckbuilder-cards-v4';
+// Bumped to v7 when hybrid mana (e.g. {U/G}) started being wrapped in
+// parens at parse time so the group boundaries survive brace stripping.
+// Earlier versions had ambiguous run-together hybrids like "U/GU/G".
+const STORAGE_VERSION = 7;
+const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 
 // User preferences (format toggle + chosen set range). Kept separate from
 // the card-data snapshot so refreshing card data doesn't reset the format,
@@ -69,6 +66,7 @@ const STATE = {
   dragGhost: null,      // { el, offsetX, offsetY } — custom floating ghost element
   selection: new Set(), // selected card-instance uids (multi-select via Shift/Ctrl/Cmd-click)
   loadedDeckName: null, // name of the currently loaded saved deck (null = unsaved)
+  deckSnapshot: null,   // JSON string of zones at last load/save/new — used to detect unsaved changes
 };
 
 const TYPE_ORDER = {
@@ -82,6 +80,22 @@ const TYPE_ORDER = {
   'Sorcery': 7,
   'Plane': 8,
 };
+
+// mtgjson's `types` array preserves the order types appear on the card's
+// type line, which means an enchantment creature comes in as
+// ["Enchantment", "Creature"]. For bucketing/sorting we want the
+// highest-priority type per TYPE_ORDER, so a creature-enchantment lives
+// with the creatures, artifact creatures with creatures, etc.
+function pickMainType(types) {
+  if (!types || types.length === 0) return '';
+  let best = types[0];
+  let bestRank = TYPE_ORDER[best] ?? 99;
+  for (let i = 1; i < types.length; i++) {
+    const r = TYPE_ORDER[types[i]] ?? 99;
+    if (r < bestRank) { best = types[i]; bestRank = r; }
+  }
+  return best;
+}
 
 const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
 
@@ -211,13 +225,9 @@ function wireDragTrash() {
 // ---------------------------------------------------------------------------
 
 (async function init() {
-  // One-time cleanup of stale snapshots (v1 lacked cache-busting; v2 still
-  // contained excluded sets like PLANE; v3 over-excluded REV; v4 lacked
-  // DFC back-face attachments).
-  try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (_) {}
-  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V2); } catch (_) {}
-  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V3); } catch (_) {}
-  try { localStorage.removeItem(STORAGE_KEY_LEGACY_V4); } catch (_) {}
+  for (let v = 1; v < STORAGE_VERSION; v++) {
+    try { localStorage.removeItem(`rev-deckbuilder-cards-v${v}`); } catch (_) {}
+  }
 
   loadPrefs();
 
@@ -245,6 +255,17 @@ function wireDragTrash() {
   wireSelectionClear();
   wireRegionSelect();
   setFocusedZone('main');
+  markDeckClean();
+
+  // Register the image-caching service worker. Needs a secure context
+  // (https or localhost) — silently a no-op on file:// or unsupported
+  // browsers, which is fine: the app just falls back to the browser's
+  // HTTP cache as before.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(e => {
+      console.warn('Service worker registration failed:', e);
+    });
+  }
 })().catch(err => {
   const pre = document.createElement('pre');
   pre.style.cssText = 'color:#f88;padding:20px';
@@ -477,8 +498,8 @@ function parseAllSetsJson(json) {
         canonical: canonicalize(backName),
         text: c.text || '',
         type: c.type || '',
-        maintype: (c.types && c.types[0]) || '',
-        manacost: (c.manaCost || '').replace(/[{}]/g, ''),
+        maintype: pickMainType(c.types),
+        manacost: formatManaCost(c.manaCost),
         colors: (c.colors || []).join(''),
         power: c.power != null ? String(c.power) : '',
         toughness: c.toughness != null ? String(c.toughness) : '',
@@ -523,9 +544,9 @@ function parseAllSetsJson(json) {
         canonical: canonicalize(name),
         text: c.text || '',
         type: c.type || '',
-        maintype: (c.types && c.types[0]) || '',
+        maintype: pickMainType(c.types),
         cmc: cmcVal,
-        manacost: (c.manaCost || '').replace(/[{}]/g, ''),
+        manacost: formatManaCost(c.manaCost),
         colors: (c.colors || []).join(''),
         ci: (c.colorIdentity || []).join(''),
         power: c.power != null ? String(c.power) : '',
@@ -684,6 +705,15 @@ function imgUrl(card) {
   // is updated upstream, the YYYYMMDD changes, so the URL changes, so the
   // browser re-fetches instead of serving its cached copy.
   return card.imgVersion ? `${base}?v=${card.imgVersion}` : base;
+}
+
+// Turn mtgjson's raw `{2}{U/G}{U/G}` into a compact display string. Any
+// braced pip containing a slash (hybrid, Phyrexian, monocolor hybrid) gets
+// wrapped in parens so the group boundaries survive once the outer braces
+// are stripped; the rest of the braces simply drop out.
+function formatManaCost(raw) {
+  if (!raw) return '';
+  return raw.replace(/\{([^}]*\/[^}]*)\}/g, '($1)').replace(/[{}]/g, '');
 }
 
 function colorizedMana(cost) {
@@ -880,7 +910,7 @@ function renderSearchResults() {
         if (pi === item.pickedIdx) chip.classList.add('picked');
         chip.textContent = p.set;
         const setMeta = STATE.setsByCode[p.set];
-        chip.title = setMeta
+        chip.dataset.title = setMeta
           ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})\nClick to add this printing`
           : p.set;
         chip.addEventListener('mousedown', (ev) => {
@@ -926,37 +956,93 @@ function escapeHtml(s) {
 // Deck operations
 // ---------------------------------------------------------------------------
 
+// Is this pile exactly a 4-of playset of `card`? Playset piles are treated
+// as a deliberate user choice: new copies go into a fresh pile next to them,
+// not into them.
+function isPlaysetPile(pile, card) {
+  if (!card || pile.length !== 4) return false;
+  const canon = card.canonical;
+  return pile.every(i => {
+    const c = STATE.byId.get(i.cardId);
+    return c && c.canonical === canon;
+  });
+}
+
+// Place `inst` inside `pile` next to any existing copies with the same
+// canonical name, so like cards stay grouped within a pile. Falls back to
+// appending if no siblings are present.
+function insertInstanceGroupedByCard(pile, inst) {
+  const card = STATE.byId.get(inst.cardId);
+  const canon = card && card.canonical;
+  if (canon) {
+    let lastIdx = -1;
+    for (let i = 0; i < pile.length; i++) {
+      const c = STATE.byId.get(pile[i].cardId);
+      if (c && c.canonical === canon) lastIdx = i;
+    }
+    if (lastIdx >= 0) {
+      pile.splice(lastIdx + 1, 0, inst);
+      return;
+    }
+  }
+  pile.push(inst);
+}
+
+// Index of the first non-playset pile in `zone` that already contains `card`,
+// or -1 if none. Used to funnel same-name copies into a shared pile.
+function findMergeablePileIdx(zone, card) {
+  if (!card || !card.canonical) return -1;
+  for (let i = 0; i < zone.piles.length; i++) {
+    const pile = zone.piles[i];
+    if (pile.length === 0) continue;
+    if (isPlaysetPile(pile, card)) continue;
+    if (pile.some(inst => {
+      const c = STATE.byId.get(inst.cardId);
+      return c && c.canonical === card.canonical;
+    })) return i;
+  }
+  return -1;
+}
+
+function findPlaysetPileIdx(zone, card) {
+  for (let i = 0; i < zone.piles.length; i++) {
+    if (isPlaysetPile(zone.piles[i], card)) return i;
+  }
+  return -1;
+}
+
+// Drop `inst` into the right spot in `zone`:
+//   1. an existing non-playset pile containing this card, or
+//   2. a brand-new pile immediately after a playset of this card, or
+//   3. a brand-new pile in sorted order.
+function placeInstanceIntoZone(zone, inst, card) {
+  const mergeIdx = findMergeablePileIdx(zone, card);
+  if (mergeIdx >= 0) {
+    insertInstanceGroupedByCard(zone.piles[mergeIdx], inst);
+    return;
+  }
+  const playsetIdx = findPlaysetPileIdx(zone, card);
+  if (playsetIdx >= 0) {
+    zone.piles.splice(playsetIdx + 1, 0, [inst]);
+    return;
+  }
+  let insertIdx = zone.piles.length;
+  for (let i = 0; i < zone.piles.length; i++) {
+    if (zone.piles[i].length === 0) continue;
+    if (compareCards(inst, zone.piles[i][0], STATE.pileSort) < 0) {
+      insertIdx = i;
+      break;
+    }
+  }
+  zone.piles.splice(insertIdx, 0, [inst]);
+}
+
 function addCardToZone(cardId, zoneName, count = 1) {
+  const card = STATE.byId.get(cardId);
+  if (!card) return;
   const zone = STATE.zones[zoneName];
   for (let i = 0; i < count; i++) {
-    const inst = { uid: newUid(), cardId };
-    // Find the first non-full pile of the same canonical name and append.
-    const card = STATE.byId.get(cardId);
-    if (!card) continue;
-    let placed = false;
-    for (const pile of zone.piles) {
-      if (pile.length === 0) continue;
-      const head = STATE.byId.get(pile[0].cardId);
-      if (head && head.canonical === card.canonical && pile.length < 4) {
-        pile.push(inst);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      // Create a new pile, but try to insert it in the right sorted spot
-      // so freshly-added cards land near similar ones.
-      const newPile = [inst];
-      let insertIdx = zone.piles.length;
-      for (let i = 0; i < zone.piles.length; i++) {
-        if (zone.piles[i].length === 0) continue;
-        if (compareCards(inst, zone.piles[i][0], STATE.pileSort) < 0) {
-          insertIdx = i;
-          break;
-        }
-      }
-      zone.piles.splice(insertIdx, 0, newPile);
-    }
+    placeInstanceIntoZone(zone, { uid: newUid(), cardId }, card);
   }
 }
 
@@ -987,29 +1073,15 @@ function findInstance(uid) {
 }
 
 function moveInstanceToZone(uid, toZone) {
-  // For drops onto a zone list (not a specific pile): use the same auto-place logic.
   const found = findInstance(uid);
   if (!found) return;
   const inst = found.inst;
   const card = STATE.byId.get(inst.cardId);
-  // Remove
   STATE.zones[found.zoneName].piles[found.pileIdx].splice(found.slotIdx, 1);
   if (STATE.zones[found.zoneName].piles[found.pileIdx].length === 0) {
     STATE.zones[found.zoneName].piles.splice(found.pileIdx, 1);
   }
-  // Re-add via the auto-place rule
-  const zone = STATE.zones[toZone];
-  let placed = false;
-  for (const pile of zone.piles) {
-    if (pile.length === 0) continue;
-    const head = STATE.byId.get(pile[0].cardId);
-    if (head && head.canonical === card.canonical && pile.length < 4) {
-      pile.push(inst);
-      placed = true;
-      break;
-    }
-  }
-  if (!placed) zone.piles.push([inst]);
+  placeInstanceIntoZone(STATE.zones[toZone], inst, card);
 }
 
 // ---------------------------------------------------------------------------
@@ -1049,11 +1121,36 @@ function pruneEmptyPiles() {
 }
 
 function moveUidsToPile(uids, destPile) {
-  // destPile must already be in some zone.piles array. We push by reference,
-  // so it's OK if intermediate detach()es shift indices.
+  // destPile must already be in some zone.piles array.
+  //
+  // "Raise to top" case: if every dragged uid is already in destPile and the
+  // pile holds other cards as well, lift the dragged group and all same-name
+  // copies currently in the pile to the top. Preserves the relative order of
+  // both the moved group and the remaining cards.
+  const allInDest = uids.length > 0 && uids.every(u => destPile.some(i => i.uid === u));
+  if (allInDest) {
+    const canons = new Set();
+    for (const u of uids) {
+      const inst = destPile.find(i => i.uid === u);
+      const c = STATE.byId.get(inst.cardId);
+      if (c) canons.add(c.canonical);
+    }
+    const top = [];
+    const rest = [];
+    for (const inst of destPile) {
+      const c = STATE.byId.get(inst.cardId);
+      if (c && canons.has(c.canonical)) top.push(inst);
+      else rest.push(inst);
+    }
+    destPile.length = 0;
+    destPile.push(...top, ...rest);
+    return;
+  }
+  // Otherwise detach from sources and insert grouped next to any existing
+  // same-name siblings in the destination pile.
   for (const uid of uids) {
     const inst = detachInstance(uid);
-    if (inst) destPile.push(inst);
+    if (inst) insertInstanceGroupedByCard(destPile, inst);
   }
   pruneEmptyPiles();
 }
@@ -1073,24 +1170,12 @@ function insertNewPileWithUids(uids, zoneName, atIdx) {
 }
 
 function moveUidsToZoneAuto(uids, zoneName) {
-  // Auto-place rule: stack onto an existing pile of the same canonical name
-  // (up to 4) or start a new trailing pile.
+  const zone = STATE.zones[zoneName];
   for (const uid of uids) {
     const inst = detachInstance(uid);
     if (!inst) continue;
     const card = STATE.byId.get(inst.cardId);
-    const zone = STATE.zones[zoneName];
-    let placed = false;
-    for (const pile of zone.piles) {
-      if (pile.length === 0) continue;
-      const head = STATE.byId.get(pile[0].cardId);
-      if (head && card && head.canonical === card.canonical && pile.length < 4) {
-        pile.push(inst);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) zone.piles.push([inst]);
+    placeInstanceIntoZone(zone, inst, card);
   }
   pruneEmptyPiles();
 }
@@ -1344,7 +1429,7 @@ function makeFlipButton(inst, card, slot) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'flip-btn';
-  btn.title = 'Flip card to see other side';
+  btn.dataset.title = 'Flip card to see other side';
   btn.draggable = false;
   // The faint icon shows on slot hover; the button itself is transparent.
   btn.innerHTML = '<span class="flip-icon" aria-hidden="true">&#x21bb;</span>';
@@ -1382,7 +1467,7 @@ function makeSlotButtons(inst, card) {
     b.type = 'button';
     b.className = 'slot-btn';
     b.textContent = label;
-    b.title = title;
+    b.dataset.title = title;
     b.draggable = false;
     // Stop mousedown so the parent slot's drag doesn't pre-empt the click.
     b.addEventListener('mousedown', (ev) => ev.stopPropagation());
@@ -1397,7 +1482,17 @@ function makeSlotButtons(inst, card) {
   wrap.appendChild(makeBtn('+', 'Add another copy', () => {
     const found = findInstance(inst.uid);
     if (!found) return;
-    addCardToZone(card.id, found.zoneName);
+    const { zoneName, pileIdx } = found;
+    const pile = STATE.zones[zoneName].piles[pileIdx];
+    const newInst = { uid: newUid(), cardId: card.id };
+    // Default: drop the new copy straight into this card's pile, next to
+    // its siblings. Exception: if this pile is a deliberate 4-of playset,
+    // spawn a fresh pile right after it rather than ballooning it to 5.
+    if (isPlaysetPile(pile, card)) {
+      STATE.zones[zoneName].piles.splice(pileIdx + 1, 0, [newInst]);
+    } else {
+      insertInstanceGroupedByCard(pile, newInst);
+    }
     STATE.selection.clear();
     renderAll();
   }));
@@ -1468,7 +1563,7 @@ function makePileEl(pile, pileIdx) {
       const titleParts = [card.canonical, card.type, card.manacost || ''];
       if (card.text) titleParts.push('', card.text);
       if (card.power || card.toughness) titleParts.push(`${card.power}/${card.toughness}`);
-      slot.title = titleParts.join('\n').trim();
+      slot.dataset.title = titleParts.join('\n').trim();
     } else {
       slot.classList.add('no-image');
       slot.textContent = '???';
@@ -1669,13 +1764,14 @@ function wireToolbar() {
   wireSavedDecks();
   wireDragTrash();
   document.getElementById('btn-new-deck').addEventListener('click', () => {
-    if (!deckIsEmpty() && !confirm('Clear all zones and start a new deck?')) return;
+    if (deckIsDirty() && !confirm('Clear all zones and start a new deck?')) return;
     STATE.zones.main.piles = [];
     STATE.zones.side.piles = [];
     STATE.zones.maybe.piles = [];
     STATE.loadedDeckName = null;
     updateSaveButtons();
     renderAll();
+    markDeckClean();
   });
   // Format dropdown: toggle menu on trigger click, pick on item click.
   const formatBtn = document.getElementById('format-btn');
@@ -1734,19 +1830,48 @@ function wireToolbar() {
   refreshBtn.addEventListener('click', async () => {
     const original = refreshBtn.textContent;
     refreshBtn.disabled = true;
-    refreshBtn.textContent = 'Refreshing\u2026';
+    refreshBtn.textContent = 'Updating\u2026';
     try {
       await refreshFromUpstream();
+      // New card data almost certainly means some multiverseIds bumped, so
+      // the image URLs those entries point at have changed. Drop the image
+      // cache so stale ?v=<old> entries don't linger forever.
+      await clearImageCache();
       refreshBtn.textContent = 'Updated \u2713';
       setTimeout(() => { refreshBtn.textContent = original; }, 1500);
     } catch (e) {
       console.error(e);
-      alert('Refresh failed: ' + (e.message || e));
+      alert('Update failed: ' + (e.message || e));
       refreshBtn.textContent = original;
     } finally {
       refreshBtn.disabled = false;
     }
   });
+
+  const clearImgsBtn = document.getElementById('btn-clear-imgs');
+  clearImgsBtn.addEventListener('click', async () => {
+    const original = clearImgsBtn.textContent;
+    clearImgsBtn.disabled = true;
+    try {
+      await clearImageCache();
+      clearImgsBtn.textContent = 'Cleared \u2713';
+      setTimeout(() => { clearImgsBtn.textContent = original; }, 1500);
+    } catch (e) {
+      console.error(e);
+      clearImgsBtn.textContent = original;
+    } finally {
+      clearImgsBtn.disabled = false;
+    }
+  });
+}
+
+async function clearImageCache() {
+  // Delete the named cache directly; also ping the SW in case it has a
+  // put() in flight (it'll no-op against the recreated-on-next-fetch cache).
+  if ('caches' in self) await caches.delete('rev-img-v1');
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'clear-img-cache' });
+  }
 }
 
 function wirePileSort() {
@@ -1970,6 +2095,7 @@ function importDeck(text, filename) {
   else importTxt(text);
   STATE.loadedDeckName = null;
   updateSaveButtons();
+  markDeckClean();
 }
 
 function importCod(text) {
@@ -2212,6 +2338,7 @@ function saveDeckToStorage(name) {
     zones,
   };
   localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
+  markDeckClean();
 }
 
 function loadDeckFromStorage(name) {
@@ -2246,6 +2373,7 @@ function loadDeckFromStorage(name) {
   }
   STATE.selection.clear();
   renderAll();
+  markDeckClean();
   if (unknown.length > 0) reportUnknown(unknown);
   return true;
 }
@@ -2256,6 +2384,28 @@ function deleteDeckFromStorage(name) {
 
 function deckIsEmpty() {
   return Object.keys(STATE.zones).every(z => totalCount(z) === 0);
+}
+
+// Serialize zone state to a stable string for dirty-checking. Uses card names
+// in pile order (same representation as saveDeckToStorage) so uid differences
+// don't create false positives.
+function snapshotDeck() {
+  const zones = {};
+  for (const z of ['main', 'side', 'maybe']) {
+    zones[z] = STATE.zones[z].piles.map(pile => pile.map(inst => {
+      const c = STATE.byId.get(inst.cardId);
+      return c ? c.name : null;
+    }));
+  }
+  return JSON.stringify(zones);
+}
+
+function markDeckClean() {
+  STATE.deckSnapshot = snapshotDeck();
+}
+
+function deckIsDirty() {
+  return STATE.deckSnapshot !== snapshotDeck();
 }
 
 function updateSaveButtons() {
@@ -2458,7 +2608,7 @@ function wireSavedDecks() {
       // Rename (pencil) button
       const renameBtn = document.createElement('button');
       renameBtn.className = 'deck-action';
-      renameBtn.title = 'Rename';
+      renameBtn.dataset.title = 'Rename';
       renameBtn.innerHTML = '&#x270E;';
       renameBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -2469,7 +2619,7 @@ function wireSavedDecks() {
       // Delete (trash) button
       const delBtn = document.createElement('button');
       delBtn.className = 'deck-action deck-delete';
-      delBtn.title = 'Delete';
+      delBtn.dataset.title = 'Delete';
       delBtn.innerHTML = '&#x1f5d1;';
       delBtn.addEventListener('click', async (ev) => {
         ev.stopPropagation();
@@ -2486,7 +2636,7 @@ function wireSavedDecks() {
 
       // Click row to load
       row.addEventListener('click', () => {
-        if (!deckIsEmpty() && !confirm('Replace the current deck with \u201c' + name + '\u201d?')) return;
+        if (deckIsDirty() && !confirm('Replace the current deck with \u201c' + name + '\u201d?')) return;
         const ok = loadDeckFromStorage(name);
         if (!ok) { alert('Could not load deck \u201c' + name + '\u201d'); return; }
         STATE.loadedDeckName = name;

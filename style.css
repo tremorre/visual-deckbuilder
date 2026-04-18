@@ -897,28 +897,52 @@ button.primary:hover { background: #355380; }
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: rgba(180, 40, 40, 0.85);
-  border: 2px solid #c33;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #2c2c33;
+  border: 1px solid #553333;
+  border-radius: 3px;
+  color: #ff7777;
+  font-size: 12px;
+  font-family: inherit;
   pointer-events: auto;
-  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   user-select: none;
 }
 .drag-trash.hidden {
   display: none;
 }
 .drag-trash .trash-icon {
-  font-size: 22px;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .drag-trash.drag-over {
-  background: rgba(220, 50, 50, 1);
-  transform: translateX(-50%) scale(1.08);
-  box-shadow: 0 4px 28px rgba(200,50,50,0.6);
-  border-color: #f55;
+  background: #4a1e1e;
+  border-color: #ff7777;
+  color: #ffaaaa;
+}
+
+.floating-actions {
+  position: fixed;
+  bottom: 8px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+}
+.floating-actions:hover { opacity: 1; }
+.floating-actions button {
+  background: transparent;
+  border-color: #333;
+  color: #888;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.floating-actions button:hover {
+  background: #2c2c33;
+  color: #ddd;
 }
