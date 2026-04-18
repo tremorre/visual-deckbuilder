@@ -680,6 +680,10 @@ function syncFormatUI() {
   });
   const wrap = document.getElementById('range-pickers');
   if (wrap) wrap.classList.toggle('hidden', STATE.format !== 'range');
+  const startSel = document.getElementById('range-start');
+  const endSel   = document.getElementById('range-end');
+  if (startSel && STATE.rangeStart) startSel.value = STATE.rangeStart;
+  if (endSel && STATE.rangeEnd)     endSel.value   = STATE.rangeEnd;
 }
 
 function compareCards(a, b, mode) {
@@ -2336,6 +2340,9 @@ function saveDeckToStorage(name) {
     name,
     savedAt: new Date().toISOString(),
     zones,
+    format: STATE.format,
+    rangeStart: STATE.rangeStart,
+    rangeEnd: STATE.rangeEnd,
   };
   localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
   markDeckClean();
@@ -2372,6 +2379,14 @@ function loadDeckFromStorage(name) {
     STATE.zones[z].piles = piles;
   }
   STATE.selection.clear();
+  if (payload.format === 'standard' || payload.format === 'eternal' || payload.format === 'range') {
+    STATE.format = payload.format;
+    STATE.rangeStart = payload.rangeStart || null;
+    STATE.rangeEnd = payload.rangeEnd || null;
+    savePrefs();
+    syncFormatUI();
+    runSearch(document.getElementById('search').value);
+  }
   renderAll();
   markDeckClean();
   if (unknown.length > 0) reportUnknown(unknown);

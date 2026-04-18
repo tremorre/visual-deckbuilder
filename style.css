@@ -783,13 +783,15 @@ button.primary:hover { background: #355380; }
 .saved-deck-row:last-child { border-bottom: none; }
 .saved-deck-row:hover { background: #2a2a30; }
 .saved-deck-row .deck-name {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   font-weight: 500;
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.saved-deck-row .deck-action { flex-shrink: 0; }
 .saved-deck-row .deck-name-input {
   flex: 1;
   background: #111;
