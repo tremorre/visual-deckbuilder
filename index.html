@@ -3,13 +3,32 @@
 <head>
 <meta charset="utf-8">
 <title>Revolution Deckbuilder</title>
+<script>
+  // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
+  try {
+    var raw = localStorage.getItem('rev-deckbuilder-prefs-v1');
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && p.theme === 'light') document.documentElement.dataset.theme = 'light';
+    }
+  } catch (_) {}
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
   <div class="search-wrap">
-    <input id="search" type="text" placeholder="Search by card name..." autocomplete="off" spellcheck="false">
+    <input id="search" type="text" placeholder="Search (e.g. t:creature cmc:3 c:u)" autocomplete="off" spellcheck="false">
+    <button id="btn-search-toggle" class="search-toggle" type="button" data-title="Show search results in the main panel (instead of a dropdown)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="2" width="5" height="5" rx="0.5"/>
+        <rect x="9" y="2" width="5" height="5" rx="0.5"/>
+        <rect x="2" y="9" width="5" height="5" rx="0.5"/>
+        <rect x="9" y="9" width="5" height="5" rx="0.5"/>
+      </svg>
+    </button>
     <div id="search-results" class="hidden"></div>
+    <div id="search-error" class="hidden"></div>
   </div>
   <div class="search-hints">
     <span><kbd>↑</kbd><kbd>↓</kbd> nav</span>
@@ -71,6 +90,12 @@
       <button class="sort-btn active" data-list-sort="type">Type</button>
       <button class="sort-btn" data-list-sort="cmc">Mana</button>
     </div>
+    <section class="zone zone-search hidden" data-zone="search">
+      <header>
+        <span class="zone-title">Search</span>
+        <span class="zone-count" id="count-search">0</span>
+      </header>
+    </section>
     <section class="zone" data-zone="main">
       <header>
         <span class="zone-title">Main</span>
@@ -137,11 +162,24 @@
   <div class="modal-backdrop"></div>
   <div class="modal-content">
     <h3>Paste deck list</h3>
-    <p class="modal-help">Plain text (<code>4 Card Name</code> per line, blank line between zones) or a Cockatrice <code>.cod</code> XML — auto-detected. <kbd>Ctrl</kbd>+<kbd>Enter</kbd> imports.</p>
+    <p class="modal-help">Plain text — <code>4 Card Name</code> per line, blank line between zones.</p>
     <textarea id="paste-textarea" rows="20" spellcheck="false" placeholder="4 Forest&#10;4 Llanowar Elves&#10;..."></textarea>
     <div class="modal-buttons">
       <button id="paste-cancel">Cancel</button>
       <button id="paste-confirm" class="primary">Import</button>
+    </div>
+  </div>
+</div>
+
+<div id="maybe-export-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Include maybeboard?</h3>
+    <p id="maybe-export-msg" class="modal-help"></p>
+    <div class="modal-buttons">
+      <button id="maybe-export-cancel">Cancel</button>
+      <button id="maybe-export-keep">Keep separate</button>
+      <button id="maybe-export-merge" class="primary">Merge into sideboard</button>
     </div>
   </div>
 </div>
@@ -161,6 +199,7 @@
 <img id="drag-img" alt="">
 
 <div class="floating-actions">
+  <button id="btn-theme" data-title="Toggle light / dark mode">Light mode</button>
   <button id="btn-refresh" data-title="Re-fetch card data from the upstream Revolution repo">Update cards</button>
   <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
 </div>

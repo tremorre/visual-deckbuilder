@@ -16,10 +16,12 @@ const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolutio
 
 // localStorage key for the refreshed snapshot. Once the user has refreshed,
 // subsequent loads use this and skip even the bundled cards.json fetch.
-// Bumped to v7 when hybrid mana (e.g. {U/G}) started being wrapped in
-// parens at parse time so the group boundaries survive brace stripping.
-// Earlier versions had ambiguous run-together hybrids like "U/GU/G".
-const STORAGE_VERSION = 7;
+// Bumped to v10: page cards now carry a synthesized `pageFace` object with
+// its own type / text / mana / colors / cmc / keywords so searches match
+// face-by-face (no cross-side partial hits between the creature and its
+// Adventure/Discharge spell). Main face keywords are no longer combined
+// with page keywords.
+const STORAGE_VERSION = 10;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 
 // User preferences (format toggle + chosen set range). Kept separate from
@@ -49,22 +51,28 @@ const STATE = {
     maybe: { piles: [] },
   },
 
-  focusedZone: 'main',  // which zone the right-hand pile pane shows
+  focusedZone: 'main',  // 'main' | 'side' | 'maybe' | 'search' (only when searchPanel is on)
+  searchPanel: false,   // when true, hide the dropdown and render results in the pile pane
   format: 'standard',   // 'standard' | 'eternal' | 'range'
   rangeStart: null,     // set code (only meaningful when format === 'range')
   rangeEnd: null,       // set code (only meaningful when format === 'range')
   listSort: 'type',     // how the text deck list is sorted
   pileSort: 'type',     // how the pile pane is sorted (until manually edited)
+  theme: 'dark',        // 'dark' | 'light' — applied via <html data-theme="...">. An inline
+                        // script in index.html reads the same pref to avoid a flash on load.
 
   search: {
     results: [],
     selectedIdx: 0,
+    error: null,       // parser error, shown under the dropdown
   },
 
   uidCounter: 1,        // monotonic id for card instances
   dragging: null,       // { uids: [uid, ...] }
   dragGhost: null,      // { el, offsetX, offsetY } — custom floating ghost element
   selection: new Set(), // selected card-instance uids (multi-select via Shift/Ctrl/Cmd-click)
+  searchSelection: new Set(), // selected card ids in the search panel (parallel to `selection`
+                              // but keyed by card id since search tiles aren't uid-tracked instances)
   loadedDeckName: null, // name of the currently loaded saved deck (null = unsaved)
   deckSnapshot: null,   // JSON string of zones at last load/save/new — used to detect unsaved changes
 };
@@ -254,7 +262,11 @@ function wireDragTrash() {
   wirePreviewHover();
   wireSelectionClear();
   wireRegionSelect();
+  wireSearchToggle();
   setFocusedZone('main');
+  // applySearchPanelMode comes after setFocusedZone so it can override focus
+  // to 'search' when panel mode is on from a prior session.
+  applySearchPanelMode();
   markDeckClean();
 
   // Register the image-caching service worker. Needs a secure context
@@ -303,7 +315,11 @@ function applyCardData(data) {
       const da = setDate(a.set), db = setDate(b.set);
       if (da !== db) return da < db ? -1 : 1;
       if (a.set !== b.set) return a.set < b.set ? -1 : 1;
-      return a.id - b.id;
+      // Within a set, the normal print appears earlier in the upstream card
+      // list than its alt-art variants, so lower-id = normal print. Sort
+      // descending on id so the normal print ends up last and becomes the
+      // default pick.
+      return b.id - a.id;
     });
   }
   // Re-map every existing instance.cardId via name. Drop instances whose
@@ -399,6 +415,8 @@ function loadPrefs() {
       }
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
       if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
+      if (obj.theme === 'light' || obj.theme === 'dark') STATE.theme = obj.theme;
+      if (typeof obj.searchPanel === 'boolean') STATE.searchPanel = obj.searchPanel;
     }
   } catch (e) {
     console.warn('Could not read deckbuilder prefs:', e);
@@ -411,10 +429,24 @@ function savePrefs() {
       format: STATE.format,
       rangeStart: STATE.rangeStart,
       rangeEnd: STATE.rangeEnd,
+      theme: STATE.theme,
+      searchPanel: STATE.searchPanel,
     }));
   } catch (e) {
     console.warn('Could not persist deckbuilder prefs:', e);
   }
+}
+
+// Push STATE.theme into the DOM and update the toggle button's label.
+// The label shows the *target* of the toggle, not the current theme.
+function applyTheme() {
+  if (STATE.theme === 'light') {
+    document.documentElement.dataset.theme = 'light';
+  } else {
+    delete document.documentElement.dataset.theme;
+  }
+  const btn = document.getElementById('btn-theme');
+  if (btn) btn.textContent = STATE.theme === 'light' ? 'Dark mode' : 'Light mode';
 }
 
 // ---------------------------------------------------------------------------
@@ -499,10 +531,18 @@ function parseAllSetsJson(json) {
         text: c.text || '',
         type: c.type || '',
         maintype: pickMainType(c.types),
+        subtypes: (c.subtypes || []).slice(),
+        supertypes: (c.supertypes || []).slice(),
+        types: (c.types || []).slice(),
         manacost: formatManaCost(c.manaCost),
+        rawManaCost: c.manaCost || '',
         colors: (c.colors || []).join(''),
         power: c.power != null ? String(c.power) : '',
         toughness: c.toughness != null ? String(c.toughness) : '',
+        loyalty: c.loyalty != null ? String(c.loyalty) : '',
+        artist: c.artist || '',
+        flavor: c.flavor || '',
+        keywords: extractKeywords(c.text || ''),
         layout: c.layout || 'normal',
         set: code,
         num,
@@ -538,6 +578,21 @@ function parseAllSetsJson(json) {
       // append it as a query string so browsers re-fetch when art changes.
       const imgVersion = (c.identifiers && c.identifiers.multiverseId) || 0;
       const back = backsBySetAndName.get(code + '\u0000' + rawName) || null;
+      const legalities = {};
+      for (const [fmt, status] of Object.entries(c.legalities || {})) {
+        legalities[fmt.toLowerCase()] = String(status || '').toLowerCase();
+      }
+      // pageData is a secondary spell attached to the front of a creature —
+      // the "page" mechanic family. Revolution uses Adventure (shared with
+      // canon) and Discharge (Revolution-only). Any new page-style mechanic
+      // from a future set parses here the same way as long as mtgjson
+      // delivers it in `pageData`.
+      const pageData = c.pageData ? {
+        name: c.pageData.name || '',
+        type: c.pageData.type || '',
+        manaCost: c.pageData.manaCost || '',
+        text: c.pageData.text || '',
+      } : null;
       const card = {
         id,
         name,
@@ -545,18 +600,28 @@ function parseAllSetsJson(json) {
         text: c.text || '',
         type: c.type || '',
         maintype: pickMainType(c.types),
+        subtypes: (c.subtypes || []).slice(),
+        supertypes: (c.supertypes || []).slice(),
+        types: (c.types || []).slice(),
         cmc: cmcVal,
         manacost: formatManaCost(c.manaCost),
+        rawManaCost: c.manaCost || '',
         colors: (c.colors || []).join(''),
         ci: (c.colorIdentity || []).join(''),
         power: c.power != null ? String(c.power) : '',
         toughness: c.toughness != null ? String(c.toughness) : '',
+        loyalty: c.loyalty != null ? String(c.loyalty) : '',
+        artist: c.artist || '',
+        flavor: c.flavor || '',
+        keywords: extractKeywords(c.text || ''),
+        pageData,
         layout: c.layout || 'normal',
         set: code,
         num,
         rarity: c.rarity || '',
-        fmt_rev: ((c.legalities && c.legalities.revolution) || '').toLowerCase(),
-        fmt_eternal: ((c.legalities && c.legalities.eternal) || '').toLowerCase(),
+        legalities,
+        fmt_rev: legalities.revolution || '',
+        fmt_eternal: legalities.eternal || '',
         related: splitRelated
                    || ((c.relatedCards && Array.isArray(c.relatedCards.spellbook))
                          ? c.relatedCards.spellbook.join('; ')
@@ -564,6 +629,48 @@ function parseAllSetsJson(json) {
         imgVersion,
         back,
       };
+      // Synthesize a "page face" for cards with a page mechanic (Adventure /
+      // Discharge). Each face gets its own type/text/mana/colors/keywords,
+      // so a query like `t:creature c:w` only matches if one *complete*
+      // face — creature side OR page side — satisfies it. The page face
+      // keeps a reference to the parent's `pageData` so card-level predicates
+      // like `is:page` / `is:adventure` / `is:discharge` still match when
+      // evaluated against the page face.
+      if (pageData) {
+        const parts = parseTypeLineParts(pageData.type);
+        card.pageFace = {
+          id,
+          name: pageData.name,
+          canonical: card.canonical,
+          text: pageData.text,
+          type: pageData.type,
+          maintype: pickMainType(parts.types),
+          subtypes: parts.subtypes,
+          supertypes: parts.supertypes,
+          types: parts.types,
+          cmc: cmcFromManaCost(pageData.manaCost),
+          manacost: formatManaCost(pageData.manaCost),
+          rawManaCost: pageData.manaCost,
+          colors: colorsFromManaCost(pageData.manaCost),
+          ci: card.ci,
+          power: '',
+          toughness: '',
+          loyalty: '',
+          artist: card.artist,
+          flavor: '',
+          keywords: extractKeywords(pageData.text),
+          pageData,  // card-level predicates still see the page info
+          layout: card.layout,
+          set: code,
+          num,
+          rarity: card.rarity,
+          legalities: card.legalities,
+          fmt_rev: card.fmt_rev,
+          fmt_eternal: card.fmt_eternal,
+          imgVersion,
+          back: null,
+        };
+      }
       cards.push(card);
       if (c.uuid) uuidMap[c.uuid] = { cardId: id, set: code, num };
     }
@@ -711,6 +818,164 @@ function imgUrl(card) {
   return card.imgVersion ? `${base}?v=${card.imgVersion}` : base;
 }
 
+// Known MTG keywords the deckbuilder recognises for `kw:`. Includes
+// evergreen + commonly-seen expert keywords, the "Enchant ..." ability
+// keywords, the protection variants we see in Revolution, and the
+// set-specific custom keywords found in the current card corpus. The list
+// is intentionally the authoritative set — if a card's text starts a line
+// with one of these, the card gets tagged. Add new entries here when new
+// keywords ship.
+//
+// Stored lowercased. Multi-word keywords ("first strike", "double strike",
+// the landcycling variants, the "enchant X" variants) must appear here
+// verbatim so the extractor recognises the space.
+const KNOWN_KEYWORDS = [
+  // evergreen
+  'flying', 'trample', 'vigilance', 'haste', 'first strike', 'double strike',
+  'flash', 'deathtouch', 'hexproof', 'indestructible', 'lifelink', 'menace',
+  'reach', 'defender', 'shroud', 'ward', 'prowess', 'protection',
+  // deciduous / evergreen-ish
+  'scry', 'fight',
+  // very common expert
+  'cycling', 'flashback', 'equip', 'crew', 'dash', 'ninjutsu', 'surveil',
+  'exalted', 'wither', 'infect', 'kicker', 'buyback', 'suspend', 'madness',
+  'morph', 'echo', 'evoke', 'cascade', 'convoke', 'delve', 'storm',
+  'threshold', 'undying', 'unearth', 'persist', 'fading', 'vanishing',
+  'graft', 'bestow', 'extort', 'heroic', 'bloodthirst', 'dredge',
+  'rebound', 'retrace', 'replicate', 'changeling', 'champion', 'bushido',
+  'entwine', 'hideaway', 'transmute', 'soulbond', 'miracle', 'devour',
+  'exploit', 'renown', 'afflict', 'embalm', 'eternalize', 'adapt',
+  'amass', 'afterlife', 'mutate', 'companion', 'boast', 'foretell',
+  'escape', 'encore', 'myriad', 'transform', 'mentor',
+  // enchant abilities (count as keywords for kw:)
+  'enchant creature', 'enchant land', 'enchant player', 'enchant permanent',
+  'enchant artifact', 'enchant enchantment', 'enchant planeswalker',
+  // landcycling variants seen in the corpus
+  'plainscycling', 'islandcycling', 'swampcycling', 'mountaincycling',
+  'forestcycling',
+  // Revolution-specific (custom-set keywords found in text)
+  'spellcharge', 'surface', 'wander', 'traverse', 'invoke', 'reflect',
+  'coalesce', 'multitude', 'cybersoul', 'propagate', 'chant',
+  // "Discharge", "Adventure", "Omen", "Prepare" are page-frame mechanic
+  // subtypes (see pageData below), not ability keywords — they appear on
+  // the page's type line, not as line-start abilities on the main card.
+  // Search them via t:/is:page / is:adventure etc.
+];
+
+// Reverse-lookup by first word for fast scanning. Single-word keywords map
+// to themselves; multi-word keywords map to an array of candidates sharing
+// the first word, so "First strike" and "First ..." are both considered
+// when a line starts with "First".
+const KEYWORD_BY_FIRST_WORD = (() => {
+  const m = new Map();
+  for (const kw of KNOWN_KEYWORDS) {
+    const first = kw.split(' ')[0];
+    const arr = m.get(first) || [];
+    arr.push(kw);
+    // longer keywords first so "first strike" wins over "first" if we ever
+    // add both.
+    arr.sort((a, b) => b.length - a.length);
+    m.set(first, arr);
+  }
+  return m;
+})();
+
+// Parse a type line like "Legendary Creature — Human Wizard" into
+// { supertypes, types, subtypes } arrays. Used to synthesize page faces
+// whose raw input is just the type-line string (mtgjson doesn't split
+// pageData.type into parts). The split character is the em-dash '—' that
+// Wizards has used since Magic 2010; no ASCII "-" fallback because the
+// deckbuilder's data is all em-dash.
+function parseTypeLineParts(line) {
+  const SUPERTYPES = new Set([
+    'Basic', 'Legendary', 'Ongoing', 'Snow', 'World', 'Host', 'Elite', 'Token',
+  ]);
+  const raw = String(line || '').trim();
+  if (!raw) return { supertypes: [], types: [], subtypes: [] };
+  const dashIdx = raw.indexOf('—');
+  const leftRaw  = dashIdx < 0 ? raw : raw.slice(0, dashIdx).trim();
+  const rightRaw = dashIdx < 0 ? ''  : raw.slice(dashIdx + 1).trim();
+  const leftWords = leftRaw.split(/\s+/).filter(Boolean);
+  const supertypes = [];
+  const types = [];
+  for (const w of leftWords) {
+    if (SUPERTYPES.has(w)) supertypes.push(w);
+    else types.push(w);
+  }
+  const subtypes = rightRaw ? rightRaw.split(/\s+/).filter(Boolean) : [];
+  return { supertypes, types, subtypes };
+}
+
+// Walk a mana cost string like "{2}{W}{U/B}{X}" and pull out the distinct
+// colors present. Hybrid pips contribute both halves. Returns a subset of
+// "WUBRG" as a string (letters sorted in WUBRG order so output is stable).
+function colorsFromManaCost(cost) {
+  const seen = new Set();
+  const re = /\{([^}]+)\}/g;
+  let m;
+  while ((m = re.exec(cost || '')) !== null) {
+    for (const ch of m[1].toUpperCase()) {
+      if ('WUBRG'.includes(ch)) seen.add(ch);
+    }
+  }
+  return 'WUBRG'.split('').filter(ch => seen.has(ch)).join('');
+}
+
+// Converted mana cost from a raw cost string. Generic integers add their
+// literal value; X and most colored / hybrid / Phyrexian pips count as 1.
+function cmcFromManaCost(cost) {
+  let total = 0;
+  const re = /\{([^}]+)\}/g;
+  let m;
+  while ((m = re.exec(cost || '')) !== null) {
+    const p = m[1];
+    if (/^\d+$/.test(p)) total += parseInt(p, 10);
+    else if (p === 'X' || p === 'Y' || p === 'Z') total += 0;
+    else total += 1;
+  }
+  return total;
+}
+
+// Given a card's oracle text, return the deduplicated set of known keywords
+// that appear as the first word of a line (optionally followed by a cost,
+// a number, an em-dash, a comma, or end-of-line). Reminder text — both the
+// italicised `*...*` form used in the deckbuilder data and the
+// parenthesised `(...)` form — is stripped first so "Whenever ~ attacks,
+// target creature gains flying" doesn't get mis-tagged with `flying` via
+// reminder text. Comma-separated keyword lists are also supported
+// ("Flying, vigilance").
+function extractKeywords(text) {
+  if (!text) return [];
+  const cleaned = text.replace(/\*[^*]*\*/g, '').replace(/\([^)]*\)/g, '');
+  const found = new Set();
+  for (const rawLine of cleaned.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    // Comma-separated keyword list: split and check each item independently.
+    const parts = line.split(/\s*,\s*/);
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      const lower = trimmed.toLowerCase();
+      // First word (strip any trailing cost / punctuation).
+      const firstWord = (lower.match(/^([a-z][a-z-]*)/) || [null, null])[1];
+      if (!firstWord) continue;
+      const candidates = KEYWORD_BY_FIRST_WORD.get(firstWord);
+      if (!candidates) continue;
+      for (const kw of candidates) {
+        if (lower === kw) { found.add(kw); break; }
+        // kw followed by space/em-dash/brace/digit = keyword usage
+        const after = lower.slice(kw.length, kw.length + 1);
+        if (lower.startsWith(kw) && (after === ' ' || after === '—' || after === '{' || after === '' || /\d/.test(after))) {
+          found.add(kw);
+          break;
+        }
+      }
+    }
+  }
+  return Array.from(found);
+}
+
 // Turn mtgjson's raw `{2}{U/G}{U/G}` into a compact display string. Any
 // braced pip containing a slash (hybrid, Phyrexian, monocolor hybrid) gets
 // wrapped in parens so the group boundaries survive once the outer braces
@@ -736,6 +1001,911 @@ function colorizedMana(cost) {
 }
 
 // ---------------------------------------------------------------------------
+// Query parser — scryfall-style search
+//
+// parseQuery(q) returns
+//   { predicate: (card) => bool,
+//     sort:      [{ field, desc }, ...],   // from sort:X / -sort:X
+//     overridesFormat: bool,               // true if query has f:/legal:/banned:
+//     error:     null | "message" }
+//
+// Grammar (precedence lowest -> highest):
+//   expr    := or
+//   or      := and ('OR' and)*
+//   and     := not ([AND] not)*     // implicit AND between atoms
+//   not     := ['NOT' | '-'] atom
+//   atom    := '(' expr ')' | '!' NAME | FIELD_OP | BARE | REGEX
+//
+// An ATOM is one of:
+//   !Name                     → exact name match
+//   /pattern/                 → regex against card name
+//   field<op>value            → operator-specific match
+//   bareword                  → case-insensitive substring of card name
+// where <op> is one of :  =  !=  ==  <  <=  >  >=
+// ---------------------------------------------------------------------------
+
+const RARITY_RANK = { common: 0, uncommon: 1, rare: 2, mythic: 3, special: 4 };
+const RARITY_CANON = {
+  c: 'common', u: 'uncommon', r: 'rare', m: 'mythic', s: 'special',
+  common: 'common', uncommon: 'uncommon', rare: 'rare',
+  mythic: 'mythic', special: 'special',
+};
+
+// Field aliases → canonical field name. Keys are lowercase.
+const FIELD_ALIASES = {
+  name: 'name',
+  t: 'type', type: 'type',
+  o: 'oracle', oracle: 'oracle', text: 'oracle',
+  c: 'color', color: 'color',
+  ci: 'id', id: 'id', identity: 'id',
+  mv: 'mv', cmc: 'mv',
+  mana: 'mana',
+  pow: 'power', power: 'power',
+  tou: 'toughness', toughness: 'toughness',
+  loy: 'loyalty', loyalty: 'loyalty',
+  def: 'defense', defense: 'defense',
+  r: 'rarity', rarity: 'rarity',
+  e: 'set', set: 'set', edition: 'set',
+  cn: 'cn', number: 'cn', num: 'cn',
+  a: 'artist', art: 'artist', artist: 'artist',
+  kw: 'kw', keyword: 'kw',
+  f: 'format', format: 'format',
+  legal: 'legal', banned: 'banned', restricted: 'restricted',
+  is: 'is',
+  has: 'has',
+  ft: 'flavor', flavor: 'flavor',
+  in: 'in',
+  layout: 'layout',
+  sort: 'sort',
+};
+
+// Numeric-RHS fields that can also be compared to another field on the card.
+const NUMERIC_FIELDS = {
+  mv: (c) => Number(c.cmc) || 0,
+  cmc: (c) => Number(c.cmc) || 0,
+  power: (c) => parseIntOrNaN(c.power),
+  pow: (c) => parseIntOrNaN(c.power),
+  toughness: (c) => parseIntOrNaN(c.toughness),
+  tou: (c) => parseIntOrNaN(c.toughness),
+  loyalty: (c) => parseIntOrNaN(c.loyalty),
+  loy: (c) => parseIntOrNaN(c.loyalty),
+};
+
+function parseIntOrNaN(s) {
+  if (s == null || s === '') return NaN;
+  const n = parseInt(String(s), 10);
+  return isNaN(n) ? NaN : n;
+}
+
+// Format-name aliases → canonical legality key (matches the data).
+const FORMAT_ALIASES = {
+  rev: 'revolution', revolution: 'revolution', standard: 'revolution',
+  eternal: 'eternal',
+  brawl: 'brawl',
+  'eternal-pauper': 'eternal-pauper', pauper: 'eternal-pauper',
+  planechase: 'planechase', plane: 'planechase',
+  archaeologist: 'archaeologist', arch: 'archaeologist',
+};
+
+function canonFormat(name) {
+  const k = String(name || '').toLowerCase();
+  return FORMAT_ALIASES[k] || k;
+}
+
+// ---- Tokenizer ----
+//
+// Produces a flat list of tokens: { type: 'lparen'|'rparen'|'or'|'and'|'not'|'atom', value? }.
+// Atoms include field:value pairs, quoted strings, /regex/, !name, and bare
+// terms. Whitespace separates atoms; parens are single-char tokens; a bare
+// word 'OR'/'AND'/'NOT' (any case) becomes a keyword token; a leading '-'
+// (at start-of-input or after whitespace/paren) becomes a NOT token.
+
+function tokenizeQuery(q) {
+  const tokens = [];
+  let i = 0;
+  const n = q.length;
+  while (i < n) {
+    const ch = q[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (ch === '(') { tokens.push({ type: 'lparen' }); i++; continue; }
+    if (ch === ')') { tokens.push({ type: 'rparen' }); i++; continue; }
+    if (ch === '-') {
+      const prev = i === 0 ? null : q[i - 1];
+      const next = i + 1 < n ? q[i + 1] : null;
+      if ((prev === null || /\s|\(/.test(prev)) && next !== null && !/\s|\)/.test(next)) {
+        tokens.push({ type: 'not' });
+        i++;
+        continue;
+      }
+    }
+    // Read atom: everything until unescaped whitespace / paren, with quote
+    // tracking so "foo bar" and 'foo bar' stay together, and regex /…/
+    // where the first char is '/'.
+    let atom = '';
+    let inQuote = null;   // '"' | "'" | null
+    let inRegex = false;
+    if (ch === '/') inRegex = true;  // only if atom starts with /
+    while (i < n) {
+      const c = q[i];
+      if (inQuote) {
+        atom += c;
+        if (c === '\\' && i + 1 < n) { atom += q[i + 1]; i += 2; continue; }
+        if (c === inQuote) inQuote = null;
+        i++;
+        continue;
+      }
+      if (inRegex) {
+        atom += c;
+        if (c === '\\' && i + 1 < n) { atom += q[i + 1]; i += 2; continue; }
+        if (c === '/' && atom.length > 1) inRegex = false;
+        i++;
+        continue;
+      }
+      if (/\s/.test(c) || c === '(' || c === ')') break;
+      if (c === '"' || c === "'") { inQuote = c; atom += c; i++; continue; }
+      atom += c;
+      i++;
+    }
+    const up = atom.toUpperCase();
+    if (up === 'OR') tokens.push({ type: 'or' });
+    else if (up === 'AND') tokens.push({ type: 'and' });
+    else if (up === 'NOT') tokens.push({ type: 'not' });
+    else tokens.push({ type: 'atom', value: atom });
+  }
+  return tokens;
+}
+
+// ---- Parser (recursive descent) ----
+
+function parseQuery(q) {
+  const ctx = { sort: [], overridesFormat: false, error: null };
+  const trimmed = (q || '').trim();
+  if (!trimmed) {
+    return { predicate: (_c) => true, sort: [], overridesFormat: false, error: null };
+  }
+  const tokens = tokenizeQuery(trimmed);
+  // sort:X / -sort:X are modifiers, not filters — pull them out of the token
+  // stream *before* the parser sees them, so a leading '-' can mean
+  // "descending" without also negating a (no-op true) predicate and making
+  // the query return nothing.
+  extractSortTokens(tokens, ctx);
+  // If the query was nothing but sort modifiers, no filter is imposed.
+  if (tokens.length === 0) {
+    return { predicate: (_c) => true, sort: ctx.sort, overridesFormat: false, error: null };
+  }
+  const state = { tokens, pos: 0 };
+  let predicate;
+  try {
+    predicate = parseOr(state, ctx);
+    if (state.pos < tokens.length) {
+      const leftover = tokens[state.pos];
+      throw new Error(`unexpected ${leftover.type === 'rparen' ? "')'" : JSON.stringify(leftover.value || leftover.type)}`);
+    }
+  } catch (e) {
+    return { predicate: (_c) => false, sort: [], overridesFormat: false, error: e.message };
+  }
+  return {
+    predicate,
+    sort: ctx.sort,
+    overridesFormat: ctx.overridesFormat,
+    error: null,
+  };
+}
+
+function peek(state) { return state.tokens[state.pos]; }
+function consume(state) { return state.tokens[state.pos++]; }
+
+// Scan the token list for sort:X / -sort:X pairs, record them in ctx.sort,
+// and splice them out. Mutates `tokens` in place. If only sort tokens are
+// present, an empty token list remains and parse returns a predicate that
+// matches everything (the caller's default behaviour).
+function extractSortTokens(tokens, ctx) {
+  for (let i = 0; i < tokens.length; ) {
+    const t = tokens[i];
+    // `-sort:X`
+    if (t.type === 'not' && i + 1 < tokens.length) {
+      const next = tokens[i + 1];
+      const m = next.type === 'atom' && /^sort[:=]/i.test(next.value)
+                  ? next.value.match(/^sort[:=](.*)$/i) : null;
+      if (m) {
+        ctx.sort.push({ field: stripQuotes(m[1]).toLowerCase(), desc: true });
+        tokens.splice(i, 2);
+        continue;
+      }
+    }
+    // `sort:X`
+    if (t.type === 'atom') {
+      const m = t.value.match(/^sort[:=](.*)$/i);
+      if (m) {
+        ctx.sort.push({ field: stripQuotes(m[1]).toLowerCase(), desc: false });
+        tokens.splice(i, 1);
+        continue;
+      }
+    }
+    i++;
+  }
+}
+
+function parseOr(state, ctx) {
+  let left = parseAnd(state, ctx);
+  while (peek(state) && peek(state).type === 'or') {
+    consume(state);
+    const right = parseAnd(state, ctx);
+    const l = left, r = right;
+    left = (c) => l(c) || r(c);
+  }
+  return left;
+}
+
+function parseAnd(state, ctx) {
+  let left = parseNot(state, ctx);
+  while (peek(state)
+         && peek(state).type !== 'or'
+         && peek(state).type !== 'rparen') {
+    if (peek(state).type === 'and') consume(state);
+    const right = parseNot(state, ctx);
+    const l = left, r = right;
+    left = (c) => l(c) && r(c);
+  }
+  return left;
+}
+
+function parseNot(state, ctx) {
+  if (peek(state) && peek(state).type === 'not') {
+    consume(state);
+    const inner = parseNot(state, ctx);
+    return (c) => !inner(c);
+  }
+  return parseAtomOrGroup(state, ctx);
+}
+
+function parseAtomOrGroup(state, ctx) {
+  const t = peek(state);
+  if (!t) throw new Error('expected atom');
+  if (t.type === 'lparen') {
+    consume(state);
+    const inner = parseOr(state, ctx);
+    const close = consume(state);
+    if (!close || close.type !== 'rparen') throw new Error("expected ')'");
+    return inner;
+  }
+  if (t.type === 'atom') {
+    consume(state);
+    return compileAtom(t.value, ctx);
+  }
+  throw new Error(`unexpected ${t.type}`);
+}
+
+// ---- Atom compiler ----
+
+function compileAtom(atom, ctx) {
+  // !Name → exact (case-insensitive) name match
+  if (atom.startsWith('!')) {
+    const name = stripQuotes(atom.slice(1)).toLowerCase();
+    return (c) => c.name.toLowerCase() === name || c.canonical.toLowerCase() === name;
+  }
+  // /regex/ → regex on name (oracle uses field syntax, so this is the bare form)
+  if (atom.length >= 2 && atom[0] === '/' && atom[atom.length - 1] === '/') {
+    const body = atom.slice(1, -1);
+    let re;
+    try { re = new RegExp(body, 'i'); }
+    catch (e) { throw new Error(`bad regex /${body}/`); }
+    return (c) => re.test(c.name) || re.test(c.canonical);
+  }
+  // field<op>value?
+  const m = atom.match(/^([a-zA-Z][a-zA-Z0-9_-]*?)(:|!=|==|<=|>=|=|<|>)(.*)$/);
+  if (m) {
+    const fieldRaw = m[1].toLowerCase();
+    const op = m[2];
+    const value = m[3];
+    const field = FIELD_ALIASES[fieldRaw];
+    if (!field) {
+      // Not a recognized field → treat as bare term (e.g. a word that
+      // happens to contain a colon: `ex:ample` → substring of name).
+      return bareNamePredicate(atom);
+    }
+    // Empty operator value (`t:`, `o:`, `c:` with nothing after the colon)
+    // would otherwise fall through to a substring-matches-everything or a
+    // no-color-letters-means-match-all. Reject at the atom level so that
+    // typing `t:` mid-query doesn't flood the dropdown with every card.
+    // mana={} is the one exception (value is `{}`, not empty).
+    if (value === '' && field !== 'sort') {
+      return (_c) => false;
+    }
+    return buildFieldPredicate(field, op, value, ctx);
+  }
+  // Bare term
+  return bareNamePredicate(atom);
+}
+
+function bareNamePredicate(atom) {
+  const needle = stripQuotes(atom).toLowerCase();
+  if (!needle) return (_c) => true;
+  return (c) => c.name.toLowerCase().includes(needle)
+             || c.canonical.toLowerCase().includes(needle);
+}
+
+function stripQuotes(s) {
+  if (s.length >= 2
+      && ((s[0] === '"' && s[s.length - 1] === '"')
+       || (s[0] === "'" && s[s.length - 1] === "'"))) {
+    return s.slice(1, -1).replace(/\\(.)/g, '$1');
+  }
+  return s;
+}
+
+// Parse a list value like "MON" / "MON,CCR,TRX" / "(MON, CCR)" / quoted.
+function parseListValue(raw) {
+  const stripped = stripQuotes(raw);
+  // Parenthesised (a, b, c)
+  const inner = stripped.match(/^\(\s*(.*?)\s*\)$/);
+  if (inner) return inner[1].split(/\s*,\s*/).filter(Boolean);
+  if (stripped.includes(',')) return stripped.split(/\s*,\s*/).filter(Boolean);
+  return [stripped];
+}
+
+// Turn a regex literal /foo/ or a bare needle into a test fn over a string.
+function stringMatcher(rawValue) {
+  const v = String(rawValue);
+  if (v.length >= 2 && v[0] === '/' && v[v.length - 1] === '/') {
+    const re = new RegExp(v.slice(1, -1), 'i');
+    return (s) => re.test(String(s || ''));
+  }
+  const needle = stripQuotes(v).toLowerCase();
+  return (s) => String(s || '').toLowerCase().includes(needle);
+}
+
+// Compile a numeric-ish RHS. Handles: 4, >=4, ==4, odd/even/prime keywords,
+// or another card field (pow vs tou, tou=mv, etc). Returns
+// { compare: (lhs, card) => bool, isFieldRef: bool }.
+function compileNumericRhs(op, rawValue) {
+  const v = stripQuotes(rawValue).toLowerCase();
+  const fieldRef = NUMERIC_FIELDS[v];
+  if (fieldRef) {
+    return {
+      compare: (lhs, card) => numericCompare(op, lhs, fieldRef(card)),
+      isFieldRef: true,
+    };
+  }
+  if (v === 'odd' || v === 'even' || v === 'prime') {
+    return {
+      compare: (lhs, _card) => {
+        if (!Number.isFinite(lhs)) return false;
+        if (v === 'odd') return lhs % 2 === 1;
+        if (v === 'even') return lhs % 2 === 0;
+        if (v === 'prime') return isPrime(lhs);
+        return false;
+      },
+      isFieldRef: false,
+    };
+  }
+  const n = Number(v);
+  if (!isFinite(n)) return { compare: (_l, _c) => false, isFieldRef: false };
+  return { compare: (lhs, _c) => numericCompare(op, lhs, n), isFieldRef: false };
+}
+
+function numericCompare(op, a, b) {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  switch (op) {
+    case ':':
+    case '=':
+    case '==': return a === b;
+    case '!=': return a !== b;
+    case '<':  return a < b;
+    case '<=': return a <= b;
+    case '>':  return a > b;
+    case '>=': return a >= b;
+    default: return false;
+  }
+}
+
+function isPrime(n) {
+  if (n < 2 || !Number.isInteger(n)) return false;
+  if (n < 4) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i * i <= n; i += 2) if (n % i === 0) return false;
+  return true;
+}
+
+// Split a cost string "{2}{W}{U/G}{X}" into an array of pips (upper-cased,
+// braces stripped, hybrid/Phyrexian preserved with the slash):
+//   "{2}{W}{U/G}" → ["2", "W", "U/G"]
+function splitCostPips(raw) {
+  if (!raw) return [];
+  const pips = [];
+  const re = /\{([^}]+)\}/g;
+  let m;
+  while ((m = re.exec(raw)) !== null) pips.push(m[1].toUpperCase());
+  return pips;
+}
+
+// Canonicalise color letters / multi / colorless / count specifiers.
+// Returns { kind: 'count'|'multi'|'colorless'|'letters', value: number|null, letters: 'WUBRG' subset }.
+function parseColorSpec(raw) {
+  const v = stripQuotes(raw).toLowerCase();
+  if (/^\d+$/.test(v)) return { kind: 'count', value: parseInt(v, 10), letters: '' };
+  if (v === 'm' || v === 'multi' || v === 'multicolor') return { kind: 'multi', letters: '' };
+  if (v === 'c' || v === 'colorless') return { kind: 'colorless', letters: '' };
+  const letters = [];
+  for (const ch of v) {
+    if ('wubrg'.includes(ch)) letters.push(ch.toUpperCase());
+  }
+  return { kind: 'letters', letters: letters.join('') };
+}
+
+// ---- Field predicate builders ----
+
+function buildFieldPredicate(field, op, rawValue, ctx) {
+  switch (field) {
+    case 'name':       return buildNamePredicate(op, rawValue);
+    case 'type':       return buildTypePredicate(op, rawValue);
+    case 'oracle':     return buildOraclePredicate(op, rawValue);
+    case 'color':      return buildColorPredicate('colors', op, rawValue);
+    case 'id':         return buildColorPredicate('ci', op, rawValue);
+    case 'mv':         return buildNumericPredicate((c) => Number(c.cmc) || 0, op, rawValue);
+    case 'mana':       return buildManaPredicate(op, rawValue);
+    case 'power':      return buildNumericPredicate((c) => parseIntOrNaN(c.power), op, rawValue);
+    case 'toughness':  return buildNumericPredicate((c) => parseIntOrNaN(c.toughness), op, rawValue);
+    case 'loyalty':    return buildNumericPredicate((c) => parseIntOrNaN(c.loyalty), op, rawValue);
+    case 'defense':    return (_c) => false;  // no defense data — see SEARCH_SKIPPED.md
+    case 'rarity':     return buildRarityPredicate(op, rawValue);
+    case 'set':        return buildSetPredicate(op, rawValue);
+    case 'cn':         return buildNumericPredicate((c) => parseIntOrNaN(c.num), op, rawValue);
+    case 'artist':     return buildArtistPredicate(op, rawValue);
+    case 'kw':         return buildKeywordPredicate(op, rawValue);
+    case 'format':     ctx.overridesFormat = true;
+                       return buildFormatPredicate('legal', rawValue);
+    case 'legal':      ctx.overridesFormat = true;
+                       return buildFormatPredicate('legal', rawValue);
+    case 'banned':     ctx.overridesFormat = true;
+                       return buildFormatPredicate('banned', rawValue);
+    case 'restricted': ctx.overridesFormat = true;
+                       return buildFormatPredicate('restricted', rawValue);
+    case 'is':         return buildIsPredicate(rawValue);
+    case 'has':        return buildHasPredicate(rawValue);
+    case 'flavor':     return buildFlavorPredicate(op, rawValue);
+    case 'in':         return buildInPredicate(op, rawValue);
+    case 'layout':     return buildLayoutPredicate(op, rawValue);
+    case 'sort':       {
+      // Unreachable — extractSortTokens strips sort atoms before parse.
+      // Keep the case for safety if the preprocessor ever misses one.
+      ctx.sort.push({ field: stripQuotes(rawValue).toLowerCase(), desc: false });
+      return (_c) => true;
+    }
+    default:           return (_c) => false;
+  }
+}
+
+function buildNamePredicate(op, rawValue) {
+  const matcher = stringMatcher(rawValue);
+  if (op === '=' || op === '==') {
+    const needle = stripQuotes(rawValue).toLowerCase();
+    return (c) => c.name.toLowerCase() === needle || c.canonical.toLowerCase() === needle;
+  }
+  return (c) => matcher(c.name) || matcher(c.canonical);
+}
+
+function buildTypePredicate(op, rawValue) {
+  const matcher = stringMatcher(rawValue);
+  // Face-level matching: each face (main card + page face) is tested
+  // independently, so `t:` only scans the *current* face's own type line.
+  // Page subtypes (Adventure / Discharge) are reachable via `t:adventure`
+  // because the page face's own type is "Instant — Adventure" etc.
+  if (op === ':') {
+    return (c) => matcher(c.type || '');
+  }
+  const words = stripQuotes(rawValue)
+    .split(/\s+/).map(s => s.toLowerCase()).filter(Boolean);
+  const normaliseTypes = (c) => {
+    const all = [].concat(c.supertypes || [], c.types || [], c.subtypes || []);
+    return all.map(s => s.toLowerCase());
+  };
+  if (op === '=' || op === '>=') {
+    // all listed words are present on the card
+    return (c) => {
+      const ts = normaliseTypes(c);
+      return words.every(w => ts.includes(w));
+    };
+  }
+  if (op === '<=') {
+    // card's types are a subset of the listed words
+    return (c) => {
+      const ts = normaliseTypes(c);
+      return ts.every(t => words.includes(t));
+    };
+  }
+  if (op === '==') {
+    // exactly the same set (order-insensitive, case-insensitive)
+    return (c) => {
+      const ts = normaliseTypes(c);
+      if (ts.length !== words.length) return false;
+      const tsSet = new Set(ts);
+      return words.every(w => tsSet.has(w));
+    };
+  }
+  return (c) => matcher(c.type || '');
+}
+
+function buildKeywordPredicate(_op, rawValue) {
+  const needle = stripQuotes(rawValue).toLowerCase();
+  if (!needle) return (_c) => false;
+  // `card.keywords` is precomputed in parseAllSetsJson — see extractKeywords().
+  return (c) => Array.isArray(c.keywords) && c.keywords.includes(needle);
+}
+
+function buildOraclePredicate(op, rawValue) {
+  // ~ is replaced by the card's name (or front-canonical for split/DFC).
+  const raw = rawValue;
+  // If /regex/, use it directly; otherwise substring.
+  const isRegex = raw.length >= 2 && raw[0] === '/' && raw[raw.length - 1] === '/';
+  if (isRegex) {
+    const body = raw.slice(1, -1);
+    // Expand shortcut sequences: \spt \spp \smm \spm \smp \sbd \sm \smr \smh \sc
+    const expanded = expandOracleShortcuts(body);
+    let re;
+    try { re = new RegExp(expanded, 'i'); }
+    catch (e) { throw new Error(`bad regex /${body}/`); }
+    return (c) => {
+      const text = oracleTextFor(c);
+      return re.test(text);
+    };
+  }
+  const needle = stripQuotes(raw);
+  return (c) => {
+    const text = oracleTextFor(c);
+    const hay = text.toLowerCase();
+    const nee = needle.toLowerCase().replace(/~/g, c.canonical.toLowerCase());
+    if (!nee) return true;
+    return hay.includes(nee);
+  };
+}
+
+function oracleTextFor(c) {
+  // Combine front + back for double-faced so o: hits either side.
+  const front = c.text || '';
+  const back = (c.back && c.back.text) || '';
+  return back ? (front + '\n' + back) : front;
+}
+
+// Expand the oracle-regex shortcut sequences from the search spec.
+function expandOracleShortcuts(body) {
+  const subs = [
+    [/\\spt/g,  '[+-]?\\d+/[+-]?\\d+'],
+    [/\\spp/g,  '\\+\\d+/\\+\\d+'],
+    [/\\smm/g,  '-\\d+/-\\d+'],
+    [/\\spm/g,  '\\+\\d+/-\\d+'],
+    [/\\smp/g,  '-\\d+/\\+\\d+'],
+    [/\\sbd/g,  '[+-]?\\d+/[+-]?\\d+'],
+    [/\\smr/g,  '\\{[WUBRG]\\}\\{[WUBRG]\\}'],
+    [/\\smh/g,  '\\{[WUBRG]/[WUBRG]\\}'],
+    [/\\sc/g,   '\\{[WUBRG]\\}'],
+    [/\\sm/g,   '\\{[^}]+\\}'],
+  ];
+  let out = body;
+  for (const [pat, rep] of subs) out = out.replace(pat, rep);
+  return out;
+}
+
+function buildColorPredicate(fieldKey, op, rawValue) {
+  const spec = parseColorSpec(rawValue);
+  const colorsOf = (c) => (c[fieldKey] || '').toUpperCase();
+  return (c) => {
+    const cs = colorsOf(c);
+    if (spec.kind === 'count') {
+      return cs.length === spec.value;
+    }
+    if (spec.kind === 'multi') {
+      if (op === '=' || op === '==') return cs.length >= 2;
+      return cs.length >= 2;
+    }
+    if (spec.kind === 'colorless') {
+      if (op === '=' || op === '==' || op === ':') return cs.length === 0;
+      return cs.length === 0;
+    }
+    const want = spec.letters;
+    const wantSet = new Set(want);
+    const haveSet = new Set(cs);
+    if (op === ':' || op === '>=') {
+      // card includes all query letters
+      for (const l of want) if (!haveSet.has(l)) return false;
+      return true;
+    }
+    if (op === '=' || op === '==') {
+      if (haveSet.size !== wantSet.size) return false;
+      for (const l of want) if (!haveSet.has(l)) return false;
+      return true;
+    }
+    if (op === '<=') {
+      // card's colors are subset of query
+      for (const l of cs) if (!wantSet.has(l)) return false;
+      return true;
+    }
+    if (op === '<') {
+      if (haveSet.size >= wantSet.size) return false;
+      for (const l of cs) if (!wantSet.has(l)) return false;
+      return true;
+    }
+    if (op === '>') {
+      if (haveSet.size <= wantSet.size) return false;
+      for (const l of want) if (!haveSet.has(l)) return false;
+      return true;
+    }
+    if (op === '!=') {
+      if (haveSet.size !== wantSet.size) return true;
+      for (const l of want) if (!haveSet.has(l)) return true;
+      return false;
+    }
+    return false;
+  };
+}
+
+function buildNumericPredicate(extract, op, rawValue) {
+  const { compare } = compileNumericRhs(op, rawValue);
+  return (c) => compare(extract(c), c);
+}
+
+function buildManaPredicate(op, rawValue) {
+  const raw = stripQuotes(rawValue);
+  // mana={} → no mana cost
+  if (raw === '{}' || raw === '') {
+    return (c) => !(c.rawManaCost && c.rawManaCost.length);
+  }
+  // Bare integer → CMC equality shortcut (spec: mana=1 → cost is literally {1})
+  if (/^\d+$/.test(raw) && (op === '=' || op === '==')) {
+    const want = `{${raw}}`;
+    return (c) => (c.rawManaCost || '').toUpperCase() === want;
+  }
+  // Pip-pattern matching
+  const queryPips = splitPipPattern(raw);
+  const cardPipsFn = (c) => splitCostPips(c.rawManaCost);
+  // mana>=UU means "the card's cost contains at least the query pips"
+  // mana<=UU means "the card's cost is a subset of the query pips"
+  // mana:UU / mana=UU means "the card has exactly these pips (any order)"
+  if (op === '>=' || op === ':') {
+    return (c) => containsPips(cardPipsFn(c), queryPips);
+  }
+  if (op === '<=') {
+    return (c) => containsPips(queryPips, cardPipsFn(c));
+  }
+  if (op === '=' || op === '==') {
+    return (c) => samePips(cardPipsFn(c), queryPips);
+  }
+  if (op === '!=') {
+    return (c) => !samePips(cardPipsFn(c), queryPips);
+  }
+  return (_c) => false;
+}
+
+// Turn a user-typed pip pattern like "UU", "B/G", "h", "mmm", "mno" into an
+// ordered list of pip-matchers. Each matcher is one of:
+//   {kind:'exact', pip:'U'}          — a specific mana symbol
+//   {kind:'hybrid'}                  — any single hybrid pip (h)
+//   {kind:'any-color'}               — any single colored pip (c)
+//   {kind:'var', label:'m'|'n'|'o'}  — 'same color as the 'm' group', etc.
+function splitPipPattern(raw) {
+  // Split by '/' only if it's a multi-pip (UU) vs single hybrid (U/G).
+  // If the string contains '/', treat the whole thing as a single hybrid pip.
+  const v = raw.toUpperCase();
+  if (v.includes('/')) {
+    return [{ kind: 'exact', pip: v.replace(/[{}]/g, '') }];
+  }
+  const pips = [];
+  for (const ch of v) {
+    if (ch === 'H') pips.push({ kind: 'hybrid' });
+    else if ('MNO'.includes(ch)) pips.push({ kind: 'var', label: ch });
+    else if (ch === 'C') pips.push({ kind: 'any-color' });
+    else if ('WUBRGXP'.includes(ch)) pips.push({ kind: 'exact', pip: ch });
+    else if (/\d/.test(ch)) pips.push({ kind: 'exact', pip: ch });
+  }
+  return pips;
+}
+
+function pipMatches(matcher, cardPip, varBindings) {
+  if (matcher.kind === 'exact') {
+    return cardPip === matcher.pip;
+  }
+  if (matcher.kind === 'hybrid') {
+    return /^[WUBRG]\/[WUBRG]$|^2\/[WUBRG]$|^[WUBRG]\/P$/.test(cardPip);
+  }
+  if (matcher.kind === 'any-color') {
+    return /^[WUBRG]$/.test(cardPip);
+  }
+  if (matcher.kind === 'var') {
+    if (!/^[WUBRG]$/.test(cardPip)) return false;
+    const prior = varBindings[matcher.label];
+    if (matcher.label === 'm') {
+      if (prior == null) { varBindings[matcher.label] = cardPip; return true; }
+      return prior === cardPip;
+    }
+    // 'n' = different from 'm'; 'o' = different from m and n
+    const m = varBindings.m;
+    if (matcher.label === 'n') {
+      if (m != null && cardPip === m) return false;
+      if (prior == null) { varBindings[matcher.label] = cardPip; return true; }
+      return prior === cardPip;
+    }
+    if (matcher.label === 'o') {
+      if (m != null && cardPip === m) return false;
+      const n = varBindings.n;
+      if (n != null && cardPip === n) return false;
+      if (prior == null) { varBindings[matcher.label] = cardPip; return true; }
+      return prior === cardPip;
+    }
+    return false;
+  }
+  return false;
+}
+
+// Does the card's pip list contain a match for every matcher in the query?
+// Greedy consumption with backtracking on variable bindings — but since
+// queries are short (<=6 pips typical), brute force is fine.
+function containsPips(cardPips, queryPips) {
+  const used = new Array(cardPips.length).fill(false);
+  const bindings = {};
+  return tryMatchAll(queryPips, 0, cardPips, used, bindings);
+}
+
+function tryMatchAll(queryPips, qi, cardPips, used, bindings) {
+  if (qi >= queryPips.length) return true;
+  const matcher = queryPips[qi];
+  for (let ci = 0; ci < cardPips.length; ci++) {
+    if (used[ci]) continue;
+    const savedM = bindings.m, savedN = bindings.n, savedO = bindings.o;
+    if (pipMatches(matcher, cardPips[ci], bindings)) {
+      used[ci] = true;
+      if (tryMatchAll(queryPips, qi + 1, cardPips, used, bindings)) return true;
+      used[ci] = false;
+    }
+    bindings.m = savedM; bindings.n = savedN; bindings.o = savedO;
+  }
+  return false;
+}
+
+// "Same pips" for mana=XYZ: same total pip count AND every query matcher
+// consumes a card pip (same greedy match as containsPips). That's the
+// intuitive reading — mana=WU hits {W}{U} but not {W}{U}{2}.
+function samePips(cardPips, queryPips) {
+  if (cardPips.length !== queryPips.length) return false;
+  return containsPips(cardPips, queryPips);
+}
+
+function buildRarityPredicate(op, rawValue) {
+  const raw = stripQuotes(rawValue).toLowerCase();
+  const canon = RARITY_CANON[raw];
+  if (!canon) return (_c) => false;
+  const want = RARITY_RANK[canon];
+  // Rarity varies across reprints (e.g. rare → mythic on a reprint). Match
+  // any printing that satisfies the op, mirroring Cockatrice's behaviour.
+  return (c) => {
+    const printings = STATE.byCanonical.get(c.canonical) || [c];
+    return printings.some(p => {
+      const have = RARITY_RANK[p.rarity];
+      if (have == null) return false;
+      return numericCompare(op, have, want);
+    });
+  };
+}
+
+function buildSetPredicate(op, rawValue) {
+  const values = parseListValue(rawValue).map(v => v.toLowerCase());
+  if (!values.length) return (_c) => false;
+  return (c) => {
+    // A canonical card matches if any of its printings matches.
+    const printings = STATE.byCanonical.get(c.canonical) || [c];
+    for (const p of printings) {
+      const code = (p.set || '').toLowerCase();
+      const setObj = STATE.setsByCode[p.set];
+      const name = setObj ? (setObj.longname || '').toLowerCase() : '';
+      for (const v of values) {
+        if (op === '=' || op === '==') {
+          if (code === v || name === v) return true;
+        } else {
+          if (code.includes(v) || (name && name.includes(v))) return true;
+        }
+      }
+    }
+    return false;
+  };
+}
+
+function buildArtistPredicate(op, rawValue) {
+  const matcher = stringMatcher(rawValue);
+  // Match across any printing of the canonical — so a reprint with different
+  // art still hits.
+  return (c) => {
+    const printings = STATE.byCanonical.get(c.canonical) || [c];
+    return printings.some(p => matcher(p.artist || ''));
+  };
+}
+
+function buildFormatPredicate(status, rawValue) {
+  const fmt = canonFormat(stripQuotes(rawValue));
+  // status is a fixed value ('legal' / 'banned' / 'restricted')
+  return (c) => (c.legalities && c.legalities[fmt]) === status;
+}
+
+function buildIsPredicate(rawValue) {
+  const v = stripQuotes(rawValue).toLowerCase();
+  switch (v) {
+    case 'permanent': {
+      const bad = new Set(['instant', 'sorcery']);
+      return (c) => !(c.types || []).some(t => bad.has(String(t).toLowerCase()));
+    }
+    case 'split':     return (c) => c.layout === 'split';
+    case 'mdfc':      return (c) => c.layout === 'modal_dfc';
+    case 'transform': return (c) => c.layout === 'transform';
+    case 'saga':      return (c) => c.layout === 'saga';
+    case 'class':     return (c) => c.layout === 'class';
+    case 'planar':    return (c) => c.layout === 'planar';
+    case 'reprint':   return (c) => {
+      const arr = STATE.byCanonical.get(c.canonical) || [c];
+      return arr.length > 1;
+    };
+    // Page mechanics — `is:page` matches any second-spell card. The
+    // specific Revolution subtypes are adventure and discharge; the
+    // upstream corpus has no omen / prepare yet, so we don't wire them.
+    case 'page':      return (c) => !!c.pageData;
+    case 'adventure':
+    case 'discharge': return (c) => !!(c.pageData
+                                      && c.pageData.type
+                                      && c.pageData.type.toLowerCase().includes(v));
+    // Rarity shortcuts the spec mentions under "Search by Rarity"
+    case 'common':
+    case 'uncommon':
+    case 'rare':
+    case 'mythic':
+    case 'special':   return (c) => c.rarity === v;
+    default:          return (_c) => false;  // see SEARCH_SKIPPED.md
+  }
+}
+
+function buildHasPredicate(rawValue) {
+  const v = stripQuotes(rawValue).toLowerCase();
+  if (v === 'flavor' || v === 'flavour') {
+    return (c) => {
+      const printings = STATE.byCanonical.get(c.canonical) || [c];
+      return printings.some(p => p.flavor && p.flavor.trim());
+    };
+  }
+  if (v === 'oracle' || v === 'text')    return (c) => !!(c.text && c.text.trim());
+  if (v === 'power')                     return (c) => Number.isFinite(parseIntOrNaN(c.power));
+  if (v === 'toughness')                 return (c) => Number.isFinite(parseIntOrNaN(c.toughness));
+  if (v === 'loyalty')                   return (c) => Number.isFinite(parseIntOrNaN(c.loyalty));
+  return (_c) => false;
+}
+
+function buildFlavorPredicate(_op, rawValue) {
+  const matcher = stringMatcher(rawValue);
+  // Flavor text is per-printing; match if any printing has text hitting.
+  return (c) => {
+    const printings = STATE.byCanonical.get(c.canonical) || [c];
+    return printings.some(p => matcher(p.flavor || ''));
+  };
+}
+
+function buildInPredicate(_op, rawValue) {
+  // in:common → ever printed at common (any printing of the canonical)
+  const raw = stripQuotes(rawValue).toLowerCase();
+  const canon = RARITY_CANON[raw];
+  if (canon) {
+    return (c) => {
+      const ps = STATE.byCanonical.get(c.canonical) || [c];
+      return ps.some(p => p.rarity === canon);
+    };
+  }
+  // Fall back to set code if not a rarity
+  return (c) => {
+    const ps = STATE.byCanonical.get(c.canonical) || [c];
+    return ps.some(p => (p.set || '').toLowerCase() === raw);
+  };
+}
+
+function buildLayoutPredicate(_op, rawValue) {
+  const v = stripQuotes(rawValue).toLowerCase();
+  return (c) => String(c.layout || '').toLowerCase() === v;
+}
+
+// ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
 
@@ -745,6 +1915,12 @@ function wireSearch() {
 
   input.addEventListener('input', () => {
     runSearch(input.value);
+    // Typing changes the result set; the old preview is for a card that
+    // may no longer be focused. Hide it until the user interacts again.
+    hidePreview();
+    // In panel mode, typing implies the user wants to see results — swing
+    // the pile pane to the Search tab automatically.
+    if (STATE.searchPanel && STATE.focusedZone !== 'search') setFocusedZone('search');
   });
 
   input.addEventListener('keydown', (ev) => {
@@ -754,11 +1930,13 @@ function wireSearch() {
       if (r.length === 0) return;
       STATE.search.selectedIdx = (STATE.search.selectedIdx + 1) % r.length;
       renderSearchResults();
+      showFocusedResultPreview();
     } else if (ev.key === 'ArrowUp') {
       ev.preventDefault();
       if (r.length === 0) return;
       STATE.search.selectedIdx = (STATE.search.selectedIdx - 1 + r.length) % r.length;
       renderSearchResults();
+      showFocusedResultPreview();
     } else if (ev.key === 'Tab' && ev.shiftKey) {
       // Shift+Tab cycles backward through the highlighted result's
       // printings (oldest direction; wraps at zero). The picked printing
@@ -770,6 +1948,7 @@ function wireSearch() {
         const n = item.printings.length;
         item.pickedIdx = (item.pickedIdx - 1 + n) % n;
         renderSearchResults();
+        showFocusedResultPreview();
       }
     } else if (ev.key === 'Tab') {
       // Tab "picks" the highlighted result into the search box for refinement.
@@ -794,10 +1973,12 @@ function wireSearch() {
     } else if (ev.key === 'Escape') {
       results.classList.add('hidden');
       hidePreview();
+      input.blur();
     }
   });
 
   input.addEventListener('focus', () => {
+    if (STATE.searchPanel) return;
     if (STATE.search.results.length > 0) results.classList.remove('hidden');
   });
 
@@ -809,33 +1990,66 @@ function wireSearch() {
   });
 }
 
+// Cap on how many result rows the dropdown renders. Not a "top N by
+// relevance" cut — the list is scrollable, this just keeps the DOM small for
+// broad queries like `t:creature`.
+const SEARCH_RESULT_CAP = 300;
+
 function runSearch(q) {
-  q = q.trim().toLowerCase();
+  const raw = (q || '').trim();
   const results = document.getElementById('search-results');
-  if (q.length < 2) {
+  // Hide the dropdown on empty input. A bare one-char query like "f" is
+  // almost never what the user meant; keep the old min-2-char guard, but
+  // only when there are no operator-looking characters.
+  const looksStructured = /[:<>=!/"'()]/.test(raw) || /\s(?:AND|OR|NOT)\s/i.test(raw);
+  if (!raw || (!looksStructured && raw.length < 2)) {
     STATE.search.results = [];
     results.classList.add('hidden');
+    STATE.search.error = null;
+    renderSearchError();
+    hidePreview();
+    if (STATE.searchPanel) {
+      updateSearchZoneCount();
+      if (STATE.focusedZone === 'search') renderPiles();
+    }
     return;
   }
-  // Match against canonical name (so typing "forest" matches Forest_OLD too)
-  // and full name. Dedupe by canonical name. Each result also carries the
-  // full list of *legal* printings (sorted oldest -> newest by set release
-  // date) so the dropdown can offer per-printing chips without forcing the
-  // user to type a _SETCODE suffix.
+
+  const parsed = parseQuery(raw);
+  STATE.search.error = parsed.error;
+  renderSearchError();
+
+  // Parse error → surface the error ribbon and render an empty list. Doing a
+  // fallback substring match here just mixes garbage results in with the
+  // error, which is confusing. (`fallbackNamePredicate` is kept in case we
+  // later decide to use it for specific recoverable errors.)
+  if (parsed.error) {
+    STATE.search.results = [];
+    STATE.search.selectedIdx = 0;
+    renderSearchResults();
+    hidePreview();
+    return;
+  }
+  const predicate = parsed.predicate;
+
   const seenCanon = new Set();
   const items = [];
   for (const c of STATE.cards) {
-    if (!isLegal(c)) continue;
+    // Format-operator queries override the global isLegal toggle; otherwise
+    // results stay restricted to the toggle's format just like before.
+    if (!parsed.overridesFormat && !isLegal(c)) continue;
     if (seenCanon.has(c.canonical)) continue;
-    const canon = c.canonical.toLowerCase();
-    if (!canon.includes(q) && !c.name.toLowerCase().includes(q)) continue;
+    // Face-level matching: a page card has two faces — the creature main
+    // and the page spell. A query must match *one complete face* to hit;
+    // it can't mix "t:creature" from the main with "c:w" from the page.
+    // `card.pageFace` is synthesized at parse time; non-page cards have
+    // only one face.
+    if (!facesMatch(c, predicate)) continue;
     seenCanon.add(c.canonical);
-    // Collect every legal printing of this canonical. byCanonical is already
-    // sorted oldest -> newest; the picked default (Enter target) is the
-    // newest printing — pickedIdx === printings.length - 1 — and Shift+Tab
-    // walks pickedIdx backwards through older printings (wraps at zero).
     const allPrintings = STATE.byCanonical.get(c.canonical) || [c];
-    const printings = allPrintings.filter(isLegal);
+    const printings = parsed.overridesFormat
+      ? allPrintings
+      : allPrintings.filter(isLegal);
     if (printings.length === 0) continue;
     items.push({
       canonical: c.canonical,
@@ -843,14 +2057,107 @@ function runSearch(q) {
       pickedIdx: printings.length - 1,
     });
   }
-  items.sort((a, b) => a.canonical.localeCompare(b.canonical));
-  STATE.search.results = items.slice(0, 10);
+  sortSearchItems(items, parsed.sort);
+  STATE.search.results = items.slice(0, SEARCH_RESULT_CAP);
   STATE.search.selectedIdx = 0;
   renderSearchResults();
 }
 
+// Evaluate the parsed predicate against each of the card's faces and
+// return true if any one face satisfies the whole predicate. A face is
+// either the card itself (the main side) or, for page cards, the
+// synthesized pageFace. This preserves the user-visible rule that a query
+// like `t:creature c:w` can't mix "creature" from the main with "white"
+// from the page — one face must carry both.
+function facesMatch(card, predicate) {
+  if (predicate(card)) return true;
+  if (card.pageFace && predicate(card.pageFace)) return true;
+  return false;
+}
+
+// Used when the parser reports an error: fall back to substring-on-name so
+// partial / mid-typing queries still produce something useful.
+function fallbackNamePredicate(raw) {
+  const needle = raw.toLowerCase();
+  return (c) => c.name.toLowerCase().includes(needle)
+             || c.canonical.toLowerCase().includes(needle);
+}
+
+// Sort the result list. Default is alphabetical by canonical name. sort:X
+// entries from the parsed query can override — pull a value for the chosen
+// field, ties broken by canonical name. A leading -sort desc direction is
+// stored as desc=true on the entry (currently always false — the grammar
+// accepts -sort:mv but we treat the minus as NOT and drop the sort; see
+// the FIXME below if we want proper descending support).
+function sortSearchItems(items, sortSpec) {
+  const specs = (sortSpec && sortSpec.length) ? sortSpec : null;
+  if (!specs) {
+    items.sort((a, b) => a.canonical.localeCompare(b.canonical));
+    return;
+  }
+  const keyFns = specs.map(s => sortKeyFn(s.field)).filter(Boolean);
+  items.sort((a, b) => {
+    // Use the "picked" printing (newest legal) as the representative for
+    // field lookups — that's what the user sees in the row meta.
+    const ac = a.printings[a.printings.length - 1];
+    const bc = b.printings[b.printings.length - 1];
+    for (let i = 0; i < keyFns.length; i++) {
+      const va = keyFns[i](ac), vb = keyFns[i](bc);
+      const desc = specs[i].desc;
+      // NaN means "no meaningful value" (variable power/toughness like *,
+      // missing loyalty, etc.). Always sort NaNs to the end, regardless of
+      // direction — reversing sort shouldn't promote "no value" to the top.
+      const aNaN = typeof va === 'number' && !Number.isFinite(va);
+      const bNaN = typeof vb === 'number' && !Number.isFinite(vb);
+      if (aNaN && !bNaN) return 1;
+      if (!aNaN && bNaN) return -1;
+      if (aNaN && bNaN) continue;
+      const cmp = compareAny(va, vb);
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return a.canonical.localeCompare(b.canonical);
+  });
+}
+
+function sortKeyFn(field) {
+  switch (field) {
+    case 'name':      return (c) => c.canonical.toLowerCase();
+    case 'cmc':
+    case 'mv':        return (c) => Number(c.cmc) || 0;
+    case 'power':
+    case 'pow':       return (c) => parseIntOrNaN(c.power);
+    case 'toughness':
+    case 'tou':       return (c) => parseIntOrNaN(c.toughness);
+    case 'rarity':    return (c) => RARITY_RANK[c.rarity] ?? -1;
+    case 'set':       return (c) => c.set || '';
+    case 'color':     return (c) => (c.colors || '').length;
+    default:          return (c) => c.canonical.toLowerCase();
+  }
+}
+
+function compareAny(a, b) {
+  const aNaN = typeof a === 'number' && !Number.isFinite(a);
+  const bNaN = typeof b === 'number' && !Number.isFinite(b);
+  if (aNaN && bNaN) return 0;
+  if (aNaN) return 1;    // NaNs sort last
+  if (bNaN) return -1;
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 function renderSearchResults() {
   const results = document.getElementById('search-results');
+  // In panel mode the dropdown is suppressed; results are shown in the pile
+  // pane. Re-render that pane whenever results change, and keep the Search
+  // zone's header count live.
+  if (STATE.searchPanel) {
+    results.classList.add('hidden');
+    results.innerHTML = '';
+    updateSearchZoneCount();
+    if (STATE.focusedZone === 'search') renderPiles();
+    return;
+  }
   const r = STATE.search.results;
   if (r.length === 0) {
     results.classList.add('hidden');
@@ -880,10 +2187,19 @@ function renderSearchResults() {
       </span>`;
     el.appendChild(head);
 
-    el.addEventListener('mouseenter', () => {
-      STATE.search.selectedIdx = i;
-      renderSearchResults();
+    el.addEventListener('mouseenter', (ev) => {
+      if (STATE.search.selectedIdx !== i) {
+        STATE.search.selectedIdx = i;
+        renderSearchResults();
+      }
+      // Show the big card preview for the hovered row. Uses avoidEl so
+      // it docks next to the row instead of following the cursor (nicer
+      // when the cursor is over the row itself).
+      const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+      showPreview(picked, ev, el);
     });
+    el.addEventListener('mousemove', (ev) => positionPreview(ev));
+    el.addEventListener('mouseleave', hidePreview);
     // preventDefault on mousedown stops the search input from blurring on
     // mouse users; the actual add happens in click, which fires reliably on
     // touch devices / assistive tech where mousedown may not.
@@ -949,6 +2265,43 @@ function renderSearchResults() {
 
     results.appendChild(el);
   });
+  // Keep the focused row visible when keyboard nav moves past the viewport.
+  // (Not done for mouseenter-triggered renders because the mouse is already
+  // on the row — the nearest-ish block scroll would fight the cursor.)
+  const focused = results.querySelector('.result.selected');
+  if (focused && focused.scrollIntoView) {
+    focused.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+// Render the parser-error ribbon under the search input. null clears it.
+function renderSearchError() {
+  const el = document.getElementById('search-error');
+  if (!el) return;
+  const err = STATE.search.error;
+  if (!err) { el.classList.add('hidden'); el.textContent = ''; return; }
+  el.textContent = 'query: ' + err;
+  el.classList.remove('hidden');
+}
+
+// Show the big card preview for the currently focused (selectedIdx) result,
+// docked next to its row. Triggered by arrow-key nav and Shift+Tab printing
+// cycling, where there's no mouse event to seed the preview from.
+function showFocusedResultPreview() {
+  const r = STATE.search.results;
+  if (!r || r.length === 0) return;
+  const item = r[STATE.search.selectedIdx];
+  if (!item) return;
+  const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+  const resultsEl = document.getElementById('search-results');
+  const rowEl = resultsEl.querySelector('.result.selected') || resultsEl.firstElementChild;
+  if (!rowEl) return;
+  // showPreview needs an ev for the cursor fallback path; passing the row's
+  // top-left as a synthetic position means positionPreview has something to
+  // anchor to even when avoidEl isn't honoured by the layout.
+  const rect = rowEl.getBoundingClientRect();
+  const fakeEv = { clientX: rect.right, clientY: rect.top + rect.height / 2 };
+  showPreview(picked, fakeEv, rowEl);
 }
 
 function escapeHtml(s) {
@@ -1357,9 +2710,11 @@ const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
                         .getPropertyValue('--card-height'), 10) || 181;
 
 function renderPiles() {
+  if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
   document.getElementById('pile-title').textContent =
     `${ZONE_LABELS[STATE.focusedZone]} (${totalCount(STATE.focusedZone)})`;
   const container = document.getElementById('piles');
+  container.classList.remove('search-mode');
   container.innerHTML = '';
   const zone = STATE.zones[STATE.focusedZone];
 
@@ -1670,6 +3025,214 @@ function makePileEl(pile, pileIdx) {
 }
 
 // ---------------------------------------------------------------------------
+// Search panel mode: render search results as card tiles in the pile pane,
+// draggable into Main/Side/Maybe. Switched on via the overlay toggle in the
+// search wrap; state lives in STATE.searchPanel (persisted in prefs). While
+// on, a synthetic "Search" tab appears in the sidebar and doubles as the
+// one-click path back to results after the user checks a deck zone.
+// ---------------------------------------------------------------------------
+
+function renderSearchPanel() {
+  const count = STATE.search.results.length;
+  document.getElementById('pile-title').textContent = `Search (${count})`;
+  const container = document.getElementById('piles');
+  container.innerHTML = '';
+  // `search-mode` swaps the container's column-gap in CSS so the tiles get
+  // the same horizontal breathing room the deck panes provide via pile-gap
+  // drop targets. We don't use pile-gaps here — they only make sense as
+  // in-zone drop targets, which search results don't need.
+  container.classList.add('search-mode');
+  // Each result is its own single-card pile so tile spacing matches the
+  // deck panes. Results come back in the search's own relevance/name order;
+  // no pile-sort re-bucketing is applied.
+  STATE.search.results.forEach((item) => {
+    const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+    if (!picked) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pile-wrapper';
+    const pile = document.createElement('div');
+    pile.className = 'pile';
+    pile.style.height = CARD_HEIGHT + 'px';
+    pile.appendChild(makeSearchSlot(picked));
+    wrapper.appendChild(pile);
+    container.appendChild(wrapper);
+  });
+}
+
+function makeSearchSlot(card) {
+  const slot = document.createElement('div');
+  slot.className = 'card-slot'
+                 + (isLegal(card) ? '' : ' illegal')
+                 + (STATE.searchSelection.has(card.id) ? ' selected' : '');
+  slot.style.top = '0px';
+  slot.style.zIndex = '1';
+  slot.draggable = true;
+  slot.dataset.cardId = String(card.id);
+
+  const img = document.createElement('img');
+  img.alt = card.canonical || card.name || '';
+  img.src = imgUrl(card);
+  img.addEventListener('error', () => {
+    slot.classList.add('no-image');
+    slot.textContent = card.canonical || card.name || '???';
+  });
+  slot.appendChild(img);
+
+  const titleParts = [card.canonical, card.type, card.manacost || ''];
+  if (card.text) titleParts.push('', card.text);
+  if (card.power || card.toughness) titleParts.push(`${card.power}/${card.toughness}`);
+  slot.dataset.title = titleParts.join('\n').trim();
+
+  // Shift/Ctrl/Cmd-click toggles membership; a plain click clears any
+  // selection — mirrors the deck-pane pile slots.
+  slot.addEventListener('click', (ev) => {
+    if (ev.shiftKey || ev.ctrlKey || ev.metaKey) {
+      ev.stopPropagation();
+      if (STATE.searchSelection.has(card.id)) STATE.searchSelection.delete(card.id);
+      else STATE.searchSelection.add(card.id);
+      renderPiles();
+    } else if (STATE.searchSelection.size > 0) {
+      STATE.searchSelection.clear();
+      renderPiles();
+    }
+  });
+
+  slot.addEventListener('dragstart', (ev) => {
+    // If this card is part of an active selection, drag the whole set.
+    // Otherwise drag just this one.
+    const cardIds = (STATE.searchSelection.size > 0 && STATE.searchSelection.has(card.id))
+      ? [...STATE.searchSelection]
+      : [card.id];
+    // `copyMove` (not `copy`) so the zone drop targets — whose dragover
+    // handlers set dropEffect='move' to match regular pile drags — still
+    // accept the drop. A `copy` effectAllowed + `move` dropEffect mismatch
+    // silently cancels the drop in Chrome/Firefox.
+    ev.dataTransfer.effectAllowed = 'copyMove';
+    // Marker so the drop is valid across Firefox/Safari. STATE.dragging.cardIds
+    // is the source of truth; the dataTransfer value isn't read.
+    ev.dataTransfer.setData('text/search-card-ids', cardIds.join(','));
+    startSearchDragGhost(ev, cardIds, slot.offsetWidth, slot.offsetHeight,
+                         slot.offsetWidth / 2, 30);
+    slot.classList.add('dragging');
+    STATE.dragging = { fromSearch: true, cardIds };
+    document.body.classList.add('dragging');
+  });
+  slot.addEventListener('dragend', () => {
+    slot.classList.remove('dragging');
+    STATE.dragging = null;
+    endDragGhost();
+    hideDragTrash();
+    document.body.classList.remove('dragging');
+  });
+  slot.addEventListener('mouseenter', (ev) => showPreview(card, ev, slot));
+  slot.addEventListener('mousemove', positionPreview);
+  slot.addEventListener('mouseleave', hidePreview);
+
+  slot.appendChild(makeSearchSlotButtons(card));
+  return slot;
+}
+
+function makeSearchSlotButtons(card) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slot-buttons';
+  wrap.draggable = false;
+
+  function makeBtn(label, title, onClick) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'slot-btn';
+    b.textContent = label;
+    b.dataset.title = title;
+    b.draggable = false;
+    b.addEventListener('mousedown', (ev) => ev.stopPropagation());
+    b.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      onClick();
+    });
+    return b;
+  }
+
+  const addTo = (zone) => {
+    // Mirror pile-slot semantics: if the clicked card is part of an active
+    // selection, the button applies to the whole set. Otherwise only this
+    // card is added.
+    const ids = (STATE.searchSelection.size > 0 && STATE.searchSelection.has(card.id))
+      ? [...STATE.searchSelection]
+      : [card.id];
+    for (const id of ids) addCardToZone(id, zone);
+    renderZoneList(zone);
+    renderZoneCount(zone);
+  };
+  wrap.appendChild(makeBtn('+', 'Add to main deck', () => addTo('main')));
+  wrap.appendChild(makeBtn('\u2194', 'Add to sideboard', () => addTo('side')));
+  wrap.appendChild(makeBtn('?', 'Add to maybeboard', () => addTo('maybe')));
+
+  return wrap;
+}
+
+// Lightweight ghost for a search-result drag: no uids to look up, just the
+// card images resolved from ids. Stacks vertically like the pile-pane ghost
+// when the user is dragging a multi-selection.
+function startSearchDragGhost(ev, cardIds, width, height, offsetX, offsetY) {
+  endDragGhost();
+  ev.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0);
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  const stackOffset = PILE_OFFSET_Y;
+  const count = cardIds.length;
+  ghost.style.width = width + 'px';
+  ghost.style.height = (height + Math.max(0, count - 1) * stackOffset) + 'px';
+  cardIds.forEach((cid, i) => {
+    const c = STATE.byId.get(cid);
+    if (!c) return;
+    const img = document.createElement('img');
+    img.src = imgUrl(c);
+    img.style.cssText = `position:absolute;top:${i * stackOffset}px;left:0;`
+                      + `width:${width}px;height:${height}px;`
+                      + `object-fit:cover;border-radius:5px;`;
+    ghost.appendChild(img);
+  });
+  ghost.style.left = (ev.clientX - offsetX) + 'px';
+  ghost.style.top = (ev.clientY - offsetY) + 'px';
+  document.body.appendChild(ghost);
+  STATE.dragGhost = { el: ghost, offsetX, offsetY };
+}
+
+function wireSearchToggle() {
+  const btn = document.getElementById('btn-search-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    STATE.searchPanel = !STATE.searchPanel;
+    applySearchPanelMode();
+    savePrefs();
+  });
+}
+
+function applySearchPanelMode() {
+  const on = STATE.searchPanel;
+  const btn = document.getElementById('btn-search-toggle');
+  const searchZone = document.querySelector('.zone[data-zone="search"]');
+  const dropdown = document.getElementById('search-results');
+  if (btn) btn.classList.toggle('active', on);
+  if (searchZone) searchZone.classList.toggle('hidden', !on);
+  if (on) {
+    if (dropdown) dropdown.classList.add('hidden');
+    setFocusedZone('search');
+    updateSearchZoneCount();
+  } else if (STATE.focusedZone === 'search') {
+    // Leaving panel mode while viewing the synthetic Search pane — fall back
+    // to a real zone so the pane shows something sensible.
+    setFocusedZone('main');
+  }
+}
+
+function updateSearchZoneCount() {
+  const el = document.getElementById('count-search');
+  if (el) el.textContent = String(STATE.search.results.length);
+}
+
+// ---------------------------------------------------------------------------
 // Zones: focus + drop targets
 // ---------------------------------------------------------------------------
 
@@ -1690,6 +3253,17 @@ function wireZones() {
     sec.addEventListener('drop', (ev) => {
       ev.preventDefault();
       sec.classList.remove('drag-over');
+      // Drag sourced from a search-panel tile: create new instances in this
+      // zone rather than moving existing uids. A single-card drag arrives as
+      // a one-element cardIds array; a multi-selection drag carries every
+      // selected card id.
+      if (STATE.dragging && STATE.dragging.fromSearch) {
+        const cardIds = STATE.dragging.cardIds || [];
+        endDragGhost();
+        for (const cid of cardIds) addCardToZone(cid, zoneName);
+        renderAll();
+        return;
+      }
       const uids = readUidsFromDrag(ev.dataTransfer);
       console.log('[drag] DROP on zone — uids:', uids, '— zone:', zoneName);
       endDragGhost();
@@ -1738,11 +3312,41 @@ function wireZones() {
       document.body.classList.remove('dragging');
     });
   }
+
+  // Synthetic Search zone (no cards, no drop target — just a click-to-focus
+  // header). Shown only while searchPanel mode is on; applySearchPanelMode
+  // toggles its visibility.
+  const searchSec = document.querySelector('.zone[data-zone="search"]');
+  if (searchSec) {
+    searchSec.addEventListener('click', () => setFocusedZone('search'));
+  }
+
+  // Arrow keys cycle focus between main / side / maybe when no text input
+  // is focused (so the search box's own arrow-key handling still works).
+  const ZONE_ORDER = ['main', 'side', 'maybe'];
+  document.addEventListener('keydown', (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;
+    const a = document.activeElement;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
+    let delta = 0;
+    if (ev.key === 'ArrowDown') delta = 1;
+    else if (ev.key === 'ArrowUp') delta = -1;
+    else return;
+    ev.preventDefault();
+    const idx = ZONE_ORDER.indexOf(STATE.focusedZone);
+    const next = ZONE_ORDER[((idx < 0 ? 0 : idx) + delta + ZONE_ORDER.length) % ZONE_ORDER.length];
+    setFocusedZone(next);
+  });
 }
 
 function setFocusedZone(zoneName) {
   STATE.focusedZone = zoneName;
   document.querySelectorAll('.zone').forEach(z => z.classList.toggle('focused', z.dataset.zone === zoneName));
+  // Keep the search hints band visible and the toolbar suppressed while the
+  // user is "within" the search pane, even if focus has left the input
+  // (e.g., they're clicking result tiles). Tied to the focused zone so the
+  // deck panes still get the normal toolbar.
+  document.body.classList.toggle('search-active', zoneName === 'search');
   renderPiles();
 }
 
@@ -1852,6 +3456,14 @@ function wireToolbar() {
     }
   });
 
+  const themeBtn = document.getElementById('btn-theme');
+  themeBtn.addEventListener('click', () => {
+    STATE.theme = STATE.theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+    savePrefs();
+  });
+  applyTheme();
+
   const clearImgsBtn = document.getElementById('btn-clear-imgs');
   clearImgsBtn.addEventListener('click', async () => {
     const original = clearImgsBtn.textContent;
@@ -1919,10 +3531,12 @@ let _suppressNextClickClear = false;
 function wireSelectionClear() {
   document.addEventListener('click', (ev) => {
     if (_suppressNextClickClear) { _suppressNextClickClear = false; return; }
-    if (STATE.selection.size === 0) return;
-    if (ev.target.closest('.card-slot') || ev.target.closest('.slot-btn')) return;
-    STATE.selection.clear();
-    renderPiles();
+    const onSlot = ev.target.closest('.card-slot') || ev.target.closest('.slot-btn');
+    if (onSlot) return;
+    let dirty = false;
+    if (STATE.selection.size > 0) { STATE.selection.clear(); dirty = true; }
+    if (STATE.searchSelection.size > 0) { STATE.searchSelection.clear(); dirty = true; }
+    if (dirty) renderPiles();
   });
 }
 
@@ -1941,16 +3555,22 @@ function wireRegionSelect() {
     if (ev.target.closest('.card-slot, .slot-btn')) return;
     ev.preventDefault();
     document.getElementById('search').blur();
+    // Region-select operates on two different selection stores depending on
+    // the pane contents: card-instance uids for deck zones, card ids for
+    // the search pane. `mode` captures which we're in for the duration of
+    // this drag so mousemove doesn't have to re-check on every tick.
+    const mode = STATE.focusedZone === 'search' ? 'search' : 'deck';
+    const selSet = (mode === 'search') ? STATE.searchSelection : STATE.selection;
     const additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
-    if (!additive && STATE.selection.size > 0) {
-      STATE.selection.clear();
+    if (!additive && selSet.size > 0) {
+      selSet.clear();
       renderPiles();
     }
-    const baseSelection = new Set(STATE.selection);
+    const baseSelection = new Set(selSet);
     const rectEl = document.createElement('div');
     rectEl.className = 'region-select';
     document.body.appendChild(rectEl);
-    active = { startX: ev.clientX, startY: ev.clientY, additive, rectEl, baseSelection };
+    active = { startX: ev.clientX, startY: ev.clientY, additive, rectEl, baseSelection, mode };
   });
 
   document.addEventListener('mousemove', (ev) => {
@@ -1964,6 +3584,7 @@ function wireRegionSelect() {
     active.rectEl.style.width = (x2 - x1) + 'px';
     active.rectEl.style.height = (y2 - y1) + 'px';
 
+    const keyAttr = active.mode === 'search' ? 'cardId' : 'uid';
     // Recompute selection live: base ∪ (slots inside rect).
     const nextSel = new Set(active.baseSelection);
     const slots = document.querySelectorAll('#piles .pile .card-slot');
@@ -1971,19 +3592,20 @@ function wireRegionSelect() {
       const r = slot.getBoundingClientRect();
       const intersects = r.right >= x1 && r.left <= x2 && r.bottom >= y1 && r.top <= y2;
       if (intersects) {
-        const uid = parseInt(slot.dataset.uid, 10);
-        if (!isNaN(uid)) nextSel.add(uid);
+        const k = parseInt(slot.dataset[keyAttr], 10);
+        if (!isNaN(k)) nextSel.add(k);
       }
     }
     // Only touch DOM for slots whose selected state changed.
     for (const slot of slots) {
-      const uid = parseInt(slot.dataset.uid, 10);
-      const wantSel = nextSel.has(uid);
+      const k = parseInt(slot.dataset[keyAttr], 10);
+      const wantSel = nextSel.has(k);
       const hasSel = slot.classList.contains('selected');
       if (wantSel && !hasSel) slot.classList.add('selected');
       else if (!wantSel && hasSel) slot.classList.remove('selected');
     }
-    STATE.selection = nextSel;
+    if (active.mode === 'search') STATE.searchSelection = nextSel;
+    else STATE.selection = nextSel;
   });
 
   document.addEventListener('mouseup', (ev) => {
@@ -2203,10 +3825,79 @@ function downloadFile(filename, contents, mime) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 }
 
-function buildCodXml() {
+// Ask the user whether to merge the maybeboard into the sideboard at export
+// time. Called from the cod/txt export handlers, gated on the maybeboard
+// actually having cards. Returns a Promise that resolves to 'merge',
+// 'keep', or 'cancel'. The modal HTML lives in index.html (#maybe-export-
+// modal); we mutate its message to fit the chosen export format.
+function promptMaybeboardInclusion(exportLabel) {
+  return new Promise((resolve) => {
+    const modal  = document.getElementById('maybe-export-modal');
+    const msg    = document.getElementById('maybe-export-msg');
+    const cancel = document.getElementById('maybe-export-cancel');
+    const keep   = document.getElementById('maybe-export-keep');
+    const merge  = document.getElementById('maybe-export-merge');
+    const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
+    msg.textContent = `Your maybeboard has ${maybeCount} card${maybeCount === 1 ? '' : 's'}. `
+                    + `For the ${exportLabel} export, merge them into the sideboard, `
+                    + `or keep them as a separate maybeboard section?`;
+    modal.classList.remove('hidden');
+    function cleanup(result) {
+      modal.classList.add('hidden');
+      cancel.removeEventListener('click', onCancel);
+      keep.removeEventListener('click', onKeep);
+      merge.removeEventListener('click', onMerge);
+      backdrop.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+    function onCancel() { cleanup('cancel'); }
+    function onKeep()   { cleanup('keep'); }
+    function onMerge()  { cleanup('merge'); }
+    function onKey(ev) {
+      if (ev.key === 'Escape') { ev.preventDefault(); onCancel(); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); onMerge(); }
+    }
+    const backdrop = modal.querySelector('.modal-backdrop');
+    cancel.addEventListener('click', onCancel);
+    keep.addEventListener('click', onKeep);
+    merge.addEventListener('click', onMerge);
+    backdrop.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+    // Default focus lands on the primary action so Enter merges.
+    setTimeout(() => merge.focus(), 0);
+  });
+}
+
+// Decide the maybeboard mode for the current export. Resolves synchronously
+// to 'keep' when the maybeboard is empty (no prompt needed) — otherwise
+// awaits the user's choice from the modal.
+async function resolveMaybeMode(exportLabel) {
+  const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
+  if (maybeCount === 0) return 'keep';
+  return promptMaybeboardInclusion(exportLabel);
+}
+
+function buildCodXml(maybeMode) {
+  // maybeMode is 'merge' | 'keep' (default). 'merge' folds maybeboard into
+  // sideboard in the exported XML so tools that don't understand a
+  // <zone name="maybe"> still see those cards.
+  const mode  = maybeMode || 'keep';
   const main  = aggregateZone('main');
-  const side  = aggregateZone('side');
   const maybe = aggregateZone('maybe');
+  let side    = aggregateZone('side');
+  if (mode === 'merge') {
+    const merged = new Map();
+    for (const { count, card } of side) merged.set(card.name, { count, card });
+    for (const { count, card } of maybe) {
+      const ent = merged.get(card.name);
+      if (ent) ent.count += count;
+      else merged.set(card.name, { count, card });
+    }
+    side = Array.from(merged.values()).sort((a, b) => a.card.name.localeCompare(b.card.name));
+  }
+  // Suppress the separate <zone name="maybe"> when merging.
+  const maybeForXml = mode === 'merge' ? [] : maybe;
 
   const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
                           .replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -2231,7 +3922,7 @@ function buildCodXml() {
     <deckname></deckname>
     <comments></comments>
     <tags/>
-${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', maybe)}</cockatrice_deck>
+${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', maybeForXml)}</cockatrice_deck>
 `;
 }
 
@@ -2240,7 +3931,9 @@ ${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', mayb
 // picks where the file goes. On other browsers (Firefox, Safari) we fall
 // back to the standard download-to-Downloads-folder behaviour.
 async function exportCod() {
-  const xml = buildCodXml();
+  const maybeMode = await resolveMaybeMode('.cod');
+  if (maybeMode === 'cancel') return;
+  const xml = buildCodXml(maybeMode);
   const filename = 'deck.cod';
   if (typeof window.showSaveFilePicker === 'function') {
     try {
@@ -2284,7 +3977,10 @@ function wirePasteImport() {
   const submit = () => {
     const text = textarea.value;
     if (!text.trim()) { close(); return; }
-    importDeck(text, 'pasted.txt');
+    importTxt(text);
+    STATE.loadedDeckName = null;
+    updateSaveButtons();
+    markDeckClean();
     close();
   };
 
@@ -2292,14 +3988,9 @@ function wirePasteImport() {
   document.getElementById('paste-cancel').addEventListener('click', close);
   document.getElementById('paste-confirm').addEventListener('click', submit);
   modal.querySelector('.modal-backdrop').addEventListener('click', close);
-  // Esc closes the modal; Ctrl/Cmd+Enter inside the textarea submits.
   document.addEventListener('keydown', (ev) => {
     if (modal.classList.contains('hidden')) return;
     if (ev.key === 'Escape') { ev.preventDefault(); close(); }
-    else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
-      ev.preventDefault();
-      submit();
-    }
   });
 }
 
@@ -2429,9 +4120,11 @@ function updateSaveButtons() {
   if (STATE.loadedDeckName) {
     saveBtn.textContent = 'Save deck';
     saveAsBtn.classList.remove('hidden');
+    document.title = STATE.loadedDeckName + ' — Revolution Deckbuilder';
   } else {
     saveBtn.textContent = 'Save deck';
     saveAsBtn.classList.add('hidden');
+    document.title = 'Revolution Deckbuilder';
   }
 }
 
@@ -2780,7 +4473,9 @@ function wireSavedDecks() {
 function wireCopyTxt() {
   const btn = document.getElementById('btn-copy-txt');
   btn.addEventListener('click', async () => {
-    const text = buildTxtExport();
+    const maybeMode = await resolveMaybeMode('clipboard');
+    if (maybeMode === 'cancel') return;
+    const text = buildTxtExport(maybeMode);
     const original = btn.textContent;
     try {
       await navigator.clipboard.writeText(text);
@@ -2798,12 +4493,28 @@ function wireCopyTxt() {
 //   "<count> <name>" lines, with a blank line separating zones.
 // We write main, then side, then maybe (if present). No header line —
 // the imported title line, if any, isn't tracked in state.
-function buildTxtExport() {
+// `maybeMode` is 'merge' | 'keep'. 'merge' folds the maybeboard into the
+// sideboard section (no third section in the output).
+function buildTxtExport(maybeMode) {
+  const mode = maybeMode || 'keep';
+  const main  = aggregateZone('main');
+  const maybe = aggregateZone('maybe');
+  let side    = aggregateZone('side');
+  if (mode === 'merge' && maybe.length) {
+    const merged = new Map();
+    for (const { count, card } of side) merged.set(card.name, { count, card });
+    for (const { count, card } of maybe) {
+      const ent = merged.get(card.name);
+      if (ent) ent.count += count;
+      else merged.set(card.name, { count, card });
+    }
+    side = Array.from(merged.values()).sort((a, b) => a.card.name.localeCompare(b.card.name));
+  }
   const sections = [];
-  for (const zone of ['main', 'side', 'maybe']) {
-    const items = aggregateZone(zone);
-    if (items.length === 0) continue;
-    sections.push(items.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+  if (main.length) sections.push(main.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+  if (side.length) sections.push(side.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+  if (mode !== 'merge' && maybe.length) {
+    sections.push(maybe.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
   }
   return sections.join('\n\n') + '\n';
 }
