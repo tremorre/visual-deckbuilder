@@ -21,7 +21,7 @@ const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolutio
 // face-by-face (no cross-side partial hits between the creature and its
 // Adventure/Discharge spell). Main face keywords are no longer combined
 // with page keywords.
-const STORAGE_VERSION = 10;
+const STORAGE_VERSION = 11;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 
 // User preferences (format toggle + chosen set range). Kept separate from
@@ -57,7 +57,11 @@ const STATE = {
   rangeStart: null,     // set code (only meaningful when format === 'range')
   rangeEnd: null,       // set code (only meaningful when format === 'range')
   listSort: 'type',     // how the text deck list is sorted
-  pileSort: 'type',     // how the pile pane is sorted (until manually edited)
+  pileSort: 'type',     // primary pile-sort method — kept in sync with pileSortChain[0].
+  pileSortChain: ['type'], // Most-recent-primary-first list of pile-sort methods. Ties from
+                           // the primary fall through to the next method in the chain,
+                           // letting the user express multi-key sorts ("color, break
+                           // ties by mana") just by picking color after mana.
   theme: 'dark',        // 'dark' | 'light' — applied via <html data-theme="...">. An inline
                         // script in index.html reads the same pref to avoid a flash on load.
 
@@ -74,8 +78,18 @@ const STATE = {
   searchSelection: new Set(), // selected card ids in the search panel (parallel to `selection`
                               // but keyed by card id since search tiles aren't uid-tracked instances)
   loadedDeckName: null, // name of the currently loaded saved deck (null = unsaved)
+  loadedDeckFolder: null, // folder string of the loaded deck (null = unfiled)
+  loadedDeckTags: [],   // tags of the loaded deck (empty = untagged)
   deckSnapshot: null,   // JSON string of zones at last load/save/new — used to detect unsaved changes
+
+  // Undo/redo history. `lastSnapshot` mirrors the zones JSON as of the last
+  // commit; renderAll() compares a fresh serialization against it and pushes
+  // the previous value onto `past` whenever they differ. `future` holds the
+  // stack of states the user can redo into (populated by undo()).
+  history: { past: [], future: [], lastSnapshot: null },
 };
+
+const UNDO_MAX = 50;
 
 const TYPE_ORDER = {
   'Land': 0,
@@ -263,6 +277,8 @@ function wireDragTrash() {
   wireSelectionClear();
   wireRegionSelect();
   wireSearchToggle();
+  wireUndoRedo();
+  wireVersionPicker();
   setFocusedZone('main');
   // applySearchPanelMode comes after setFocusedZone so it can override focus
   // to 'search' when panel mode is on from a prior session.
@@ -286,6 +302,72 @@ function wireDragTrash() {
   document.body.appendChild(pre);
 });
 
+// Fields that identify a card's *gameplay identity* — if two differently-named
+// cards share all of these, they're the same card's alt-art variants, not
+// two separate cards. Used by consolidateCanonicals to decide whether a
+// name-strip is safe (Mirage Island and Island share a structurally-distinct
+// type line so they never merge, for instance).
+function structKey(c) {
+  return JSON.stringify([
+    c.text || '',
+    c.type || '',
+    c.cmc != null ? c.cmc : 0,
+    c.manacost || '',
+    c.colors || '',
+    c.ci || '',
+    c.power || '',
+    c.toughness || '',
+  ]);
+}
+
+// Try one step of suffix-stripping. Returns { stem, variant } describing
+// what was cut; null if nothing matches. The variant label is the piece
+// that was removed — used to label the alt-art chip in the version picker
+// (so an `Island (Pixel)` variant shows as `Pixel`, not as its shared set
+// code). Rules try parentheticals first, then `_<word>` tokens, then a
+// trailing whitespace-separated word.
+function stripNameOnce(name) {
+  const paren = name.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  if (paren && paren[1]) return { stem: paren[1], variant: paren[2] };
+  const under = name.match(/^(.*)_([A-Za-z0-9]+)$/);
+  if (under && under[1]) return { stem: under[1], variant: under[2] };
+  const word  = name.match(/^(.*\S)\s+(\S+)$/);
+  if (word && word[1]) return { stem: word[1], variant: word[2] };
+  return null;
+}
+
+// Post-parse pass that collapses alt-art variants into a shared canonical.
+// parseAllSetsJson already stripped trailing `_SETCODE` / `_PRO` tokens; this
+// handles the non-setcode patterns (`(Pixel)`, `_Cidraeth`, trailing
+// " Romantic") that the user has in the corpus. A strip only commits when
+// a card with the stem name already exists AND shares the structural key,
+// so Mirage Island doesn't accidentally collapse into Island.
+function consolidateCanonicals(cards, byName) {
+  for (const c of cards) {
+    const key = structKey(c);
+    let cur = c.canonical;
+    let variant = null;
+    while (true) {
+      const step = stripNameOnce(cur);
+      if (!step) break;
+      const host = byName.get(step.stem);
+      if (host && host !== c && structKey(host) === key) {
+        cur = step.stem;
+        variant = step.variant;   // last-stripped label wins — it's what the user sees
+        continue;
+      }
+      break;
+    }
+    c.canonical = cur;
+    if (variant) c.variant = variant;
+    // Keep the synthesized page-face's canonical in sync — it was assigned
+    // `card.canonical` at construction time, so without this sync any face-
+    // level predicate that reads canonical would see the pre-consolidation
+    // name.
+    if (c.pageFace) c.pageFace.canonical = cur;
+  }
+}
+
 // Swap STATE over to a fresh card index. Re-maps any existing zone-instance
 // card ids by card name so the user's deck-in-progress survives a refresh
 // (the underlying integer ids are reassigned by parseAllSetsJson, so we
@@ -298,6 +380,13 @@ function applyCardData(data) {
   for (const c of data.cards) {
     newById.set(c.id, c);
     newByName.set(c.name, c);
+  }
+  // Collapse alt-art variants (names like `Island_Cidraeth`, `Island (Pixel)`,
+  // `Island Romantic_DOV`) onto the base card's canonical, gated by
+  // structural equivalence so genuinely different cards stay separate. Must
+  // run BEFORE byCanonical is built so the grouping reflects the merge.
+  consolidateCanonicals(data.cards, newByName);
+  for (const c of data.cards) {
     let arr = newByCanonical.get(c.canonical);
     if (!arr) { arr = []; newByCanonical.set(c.canonical, arr); }
     arr.push(c);
@@ -793,21 +882,88 @@ function syncFormatUI() {
   if (endSel && STATE.rangeEnd)     endSel.value   = STATE.rangeEnd;
 }
 
+// Compare two card instances by a single sort method. Returns 0 on tie so
+// callers can cascade to the next tiebreaker (see compareCardsChained).
 function compareCards(a, b, mode) {
   const ca = STATE.byId.get(a.cardId);
   const cb = STATE.byId.get(b.cardId);
   if (!ca || !cb) return 0;
-  if (mode === 'cmc') {
-    const ba = cmcBucket(ca).sortVal;
-    const bb = cmcBucket(cb).sortVal;
-    if (ba !== bb) return ba - bb;
-    if (typeRank(ca) !== typeRank(cb)) return typeRank(ca) - typeRank(cb);
-    return ca.canonical.localeCompare(cb.canonical);
+  switch (mode) {
+    case 'cmc': {
+      const ba = cmcBucket(ca).sortVal;
+      const bb = cmcBucket(cb).sortVal;
+      return ba - bb;
+    }
+    case 'set': {
+      const codeA = pickSetForSort(ca);
+      const codeB = pickSetForSort(cb);
+      const metaA = STATE.setsByCode[codeA];
+      const metaB = STATE.setsByCode[codeB];
+      const dateA = (metaA && metaA.releasedate) || '';
+      const dateB = (metaB && metaB.releasedate) || '';
+      if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+      return (codeA || '').localeCompare(codeB || '');
+    }
+    case 'color': {
+      const ka = colorSortKey(ca);
+      const kb = colorSortKey(cb);
+      return ka < kb ? -1 : (ka > kb ? 1 : 0);
+    }
+    case 'name':
+      return ca.canonical.localeCompare(cb.canonical);
+    case 'type':
+    default:
+      return typeRank(ca) - typeRank(cb);
   }
-  // 'type'
-  if (typeRank(ca) !== typeRank(cb)) return typeRank(ca) - typeRank(cb);
-  if (ca.cmc !== cb.cmc) return ca.cmc - cb.cmc;
+}
+
+// Walk the sort chain: primary first, fall through each subsequent method on
+// ties. Always ends with canonical-name as an implicit stable tiebreaker so
+// ties don't produce undefined ordering.
+function compareCardsChained(a, b, chain) {
+  for (const m of chain) {
+    const c = compareCards(a, b, m);
+    if (c !== 0) return c;
+  }
+  const ca = STATE.byId.get(a.cardId);
+  const cb = STATE.byId.get(b.cardId);
+  if (!ca || !cb) return 0;
   return ca.canonical.localeCompare(cb.canonical);
+}
+
+// Pick the set code to sort a card under. Cards printed only in PLANE or REV
+// (special/testing sets) would otherwise clump at the dates those sets were
+// released — not where the card "belongs" flavor-wise. For those, fall back
+// to any other printing's set; if none, keep the original.
+const SORT_SET_EXCLUDE = new Set(['PLANE', 'REV']);
+function pickSetForSort(card) {
+  if (!SORT_SET_EXCLUDE.has(card.set)) return card.set;
+  const printings = STATE.byCanonical.get(card.canonical) || [];
+  const alt = printings.find(p => !SORT_SET_EXCLUDE.has(p.set));
+  return alt ? alt.set : card.set;
+}
+
+// Build a lexicographically-comparable key from a card's color identity.
+// Ordering: WUBRG monocolored → multicolored (by count, then WUBRG sequence)
+// → colorless. Matches the conventional MTG chart ordering.
+function colorSortKey(card) {
+  // card.colors is a joined string ("W", "WU", "WUBRG", ...) — see the
+  // card-normalization pass at parse time. Treat it as a string of single-
+  // letter color codes.
+  const cols = card.colors || '';
+  const order = 'WUBRG';
+  if (cols.length === 0) return '9';
+  if (cols.length === 1) {
+    const idx = order.indexOf(cols);
+    return '1' + (idx < 0 ? '9' : String(idx));
+  }
+  const sorted = [...cols]
+    .sort((x, y) => order.indexOf(x) - order.indexOf(y))
+    .join('');
+  // Pad count so '10' doesn't sort before '2'. (Unlikely with real MTG cards
+  // but cheap to guard.)
+  const pad = String(cols.length).padStart(2, '0');
+  return '2' + pad + sorted;
 }
 
 function imgUrl(card) {
@@ -1075,6 +1231,15 @@ function parseIntOrNaN(s) {
   if (s == null || s === '') return NaN;
   const n = parseInt(String(s), 10);
   return isNaN(n) ? NaN : n;
+}
+
+// Test `pred` against every printing of a card's canonical; returns true on
+// the first hit. Lone prints fall back to `[c]` so a one-printing card still
+// gets tested. Used by search predicates whose semantics are "any printing
+// satisfies" (rarity, artist, flavor, etc.).
+function anyPrinting(c, pred) {
+  const ps = STATE.byCanonical.get(c.canonical) || [c];
+  return ps.some(pred);
 }
 
 // Format-name aliases → canonical legality key (matches the data).
@@ -1776,14 +1941,11 @@ function buildRarityPredicate(op, rawValue) {
   const want = RARITY_RANK[canon];
   // Rarity varies across reprints (e.g. rare → mythic on a reprint). Match
   // any printing that satisfies the op, mirroring Cockatrice's behaviour.
-  return (c) => {
-    const printings = STATE.byCanonical.get(c.canonical) || [c];
-    return printings.some(p => {
-      const have = RARITY_RANK[p.rarity];
-      if (have == null) return false;
-      return numericCompare(op, have, want);
-    });
-  };
+  return (c) => anyPrinting(c, p => {
+    const have = RARITY_RANK[p.rarity];
+    if (have == null) return false;
+    return numericCompare(op, have, want);
+  });
 }
 
 function buildSetPredicate(op, rawValue) {
@@ -1812,10 +1974,7 @@ function buildArtistPredicate(op, rawValue) {
   const matcher = stringMatcher(rawValue);
   // Match across any printing of the canonical — so a reprint with different
   // art still hits.
-  return (c) => {
-    const printings = STATE.byCanonical.get(c.canonical) || [c];
-    return printings.some(p => matcher(p.artist || ''));
-  };
+  return (c) => anyPrinting(c, p => matcher(p.artist || ''));
 }
 
 function buildFormatPredicate(status, rawValue) {
@@ -1862,10 +2021,7 @@ function buildIsPredicate(rawValue) {
 function buildHasPredicate(rawValue) {
   const v = stripQuotes(rawValue).toLowerCase();
   if (v === 'flavor' || v === 'flavour') {
-    return (c) => {
-      const printings = STATE.byCanonical.get(c.canonical) || [c];
-      return printings.some(p => p.flavor && p.flavor.trim());
-    };
+    return (c) => anyPrinting(c, p => p.flavor && p.flavor.trim());
   }
   if (v === 'oracle' || v === 'text')    return (c) => !!(c.text && c.text.trim());
   if (v === 'power')                     return (c) => Number.isFinite(parseIntOrNaN(c.power));
@@ -1877,10 +2033,7 @@ function buildHasPredicate(rawValue) {
 function buildFlavorPredicate(_op, rawValue) {
   const matcher = stringMatcher(rawValue);
   // Flavor text is per-printing; match if any printing has text hitting.
-  return (c) => {
-    const printings = STATE.byCanonical.get(c.canonical) || [c];
-    return printings.some(p => matcher(p.flavor || ''));
-  };
+  return (c) => anyPrinting(c, p => matcher(p.flavor || ''));
 }
 
 function buildInPredicate(_op, rawValue) {
@@ -1888,16 +2041,10 @@ function buildInPredicate(_op, rawValue) {
   const raw = stripQuotes(rawValue).toLowerCase();
   const canon = RARITY_CANON[raw];
   if (canon) {
-    return (c) => {
-      const ps = STATE.byCanonical.get(c.canonical) || [c];
-      return ps.some(p => p.rarity === canon);
-    };
+    return (c) => anyPrinting(c, p => p.rarity === canon);
   }
   // Fall back to set code if not a rarity
-  return (c) => {
-    const ps = STATE.byCanonical.get(c.canonical) || [c];
-    return ps.some(p => (p.set || '').toLowerCase() === raw);
-  };
+  return (c) => anyPrinting(c, p => (p.set || '').toLowerCase() === raw);
 }
 
 function buildLayoutPredicate(_op, rawValue) {
@@ -1967,9 +2114,7 @@ function wireSearch() {
       // Don't clear input — power users repeatedly add the same card by hitting Enter 4x.
       // But do refocus and reset selection.
       renderSearchResults();
-      renderZoneList(zone);
-      renderZoneCount(zone);
-      if (STATE.focusedZone === zone) renderPiles();
+      renderAll();
     } else if (ev.key === 'Escape') {
       results.classList.add('hidden');
       hidePreview();
@@ -2210,9 +2355,7 @@ function renderSearchResults() {
       // which adds whichever printing is currently picked.
       const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
       addCardToZone(item.printings[item.pickedIdx].id, zone);
-      renderZoneList(zone);
-      renderZoneCount(zone);
-      if (STATE.focusedZone === zone) renderPiles();
+      renderAll();
       document.getElementById('search').focus();
     });
 
@@ -2228,11 +2371,12 @@ function renderSearchResults() {
         chip.type = 'button';
         chip.className = 'printing-chip';
         if (pi === item.pickedIdx) chip.classList.add('picked');
-        chip.textContent = p.set;
+        chip.textContent = p.variant || p.set;
         const setMeta = STATE.setsByCode[p.set];
-        chip.dataset.title = setMeta
+        const baseTitle = setMeta
           ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})\nClick to add this printing`
           : p.set;
+        chip.dataset.title = p.variant ? `${p.variant} — ${baseTitle}` : baseTitle;
         chip.addEventListener('mousedown', (ev) => {
           // Stop the parent .result's mousedown handling and the input
           // blur it would otherwise cause.
@@ -2245,9 +2389,7 @@ function renderSearchResults() {
           item.pickedIdx = pi;
           const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
           addCardToZone(p.id, zone);
-          renderZoneList(zone);
-          renderZoneCount(zone);
-          if (STATE.focusedZone === zone) renderPiles();
+          renderAll();
           document.getElementById('search').focus();
         });
         // Hover preview shows this specific printing's image, so the user
@@ -2292,7 +2434,8 @@ function showFocusedResultPreview() {
   if (!r || r.length === 0) return;
   const item = r[STATE.search.selectedIdx];
   if (!item) return;
-  const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+  const pick = (it) => it.printings[it.pickedIdx] || it.printings[it.printings.length - 1];
+  const picked = pick(item);
   const resultsEl = document.getElementById('search-results');
   const rowEl = resultsEl.querySelector('.result.selected') || resultsEl.firstElementChild;
   if (!rowEl) return;
@@ -2301,7 +2444,19 @@ function showFocusedResultPreview() {
   // anchor to even when avoidEl isn't honoured by the layout.
   const rect = rowEl.getBoundingClientRect();
   const fakeEv = { clientX: rect.right, clientY: rect.top + rect.height / 2 };
-  showPreview(picked, fakeEv, rowEl);
+  // Keyboard-driven focus is deliberate intent — skip the mouse-sweep
+  // debounce so the preview appears the instant the image is ready.
+  showPreview(picked, fakeEv, rowEl, /*immediate*/ true);
+
+  // Warm the service-worker cache for nearby rows so the next arrow
+  // press renders off cache instead of waiting on the network.
+  const idx = STATE.search.selectedIdx;
+  const neighbors = [];
+  for (const d of [-2, -1, 1, 2]) {
+    const n = idx + d;
+    if (n >= 0 && n < r.length) neighbors.push(pick(r[n]));
+  }
+  prefetchCardImages(neighbors);
 }
 
 function escapeHtml(s) {
@@ -2386,7 +2541,7 @@ function placeInstanceIntoZone(zone, inst, card) {
   let insertIdx = zone.piles.length;
   for (let i = 0; i < zone.piles.length; i++) {
     if (zone.piles[i].length === 0) continue;
-    if (compareCards(inst, zone.piles[i][0], STATE.pileSort) < 0) {
+    if (compareCardsChained(inst, zone.piles[i][0], STATE.pileSortChain) < 0) {
       insertIdx = i;
       break;
     }
@@ -2480,10 +2635,15 @@ function pruneEmptyPiles() {
 function moveUidsToPile(uids, destPile) {
   // destPile must already be in some zone.piles array.
   //
-  // "Raise to top" case: if every dragged uid is already in destPile and the
-  // pile holds other cards as well, lift the dragged group and all same-name
-  // copies currently in the pile to the top. Preserves the relative order of
-  // both the moved group and the remaining cards.
+  // Pile rendering stacks instances in array order: later indices get a
+  // higher `top` offset AND a higher z-index, so the LAST instance in a
+  // pile is the visually dominant one. Everything below picks ordering so
+  // the just-dragged card ends up there — matching the "pick up, drop on
+  // top" mental model.
+  //
+  // "Raise to top" case: every dragged uid is already in destPile. Move
+  // the dragged group and all same-name copies to the END of the array
+  // (visually on top), preserving relative order within each partition.
   const allInDest = uids.length > 0 && uids.every(u => destPile.some(i => i.uid === u));
   if (allInDest) {
     const canons = new Set();
@@ -2500,14 +2660,30 @@ function moveUidsToPile(uids, destPile) {
       else rest.push(inst);
     }
     destPile.length = 0;
-    destPile.push(...top, ...rest);
+    destPile.push(...rest, ...top);
     return;
   }
-  // Otherwise detach from sources and insert grouped next to any existing
-  // same-name siblings in the destination pile.
+  // Cross-pile drag: pull each uid from its source and append to the end of
+  // destPile, dragging any existing same-name siblings up with it so the
+  // whole name group ends up visually on top as one contiguous block.
   for (const uid of uids) {
     const inst = detachInstance(uid);
-    if (inst) insertInstanceGroupedByCard(destPile, inst);
+    if (!inst) continue;
+    const card = STATE.byId.get(inst.cardId);
+    const canon = card && card.canonical;
+    if (canon) {
+      const sames = [];
+      const rest = [];
+      for (const i of destPile) {
+        const c = STATE.byId.get(i.cardId);
+        if (c && c.canonical === canon) sames.push(i);
+        else rest.push(i);
+      }
+      destPile.length = 0;
+      destPile.push(...rest, ...sames, inst);
+    } else {
+      destPile.push(inst);
+    }
   }
   pruneEmptyPiles();
 }
@@ -2564,7 +2740,7 @@ function resortPiles(zoneName) {
   // Flatten, sort by current pile sort, regroup into piles of 4 by canonical name.
   const zone = STATE.zones[zoneName];
   const all = zone.piles.flat();
-  all.sort((a, b) => compareCards(a, b, STATE.pileSort));
+  all.sort((a, b) => compareCardsChained(a, b, STATE.pileSortChain));
   const newPiles = [];
   let curPile = null;
   let curCanon = null;
@@ -2592,7 +2768,107 @@ function renderAll() {
     renderZoneCount(z);
   }
   renderPiles();
+  captureUndoSnapshot();
 }
+
+// ---------------------------------------------------------------------------
+// Undo / redo (Ctrl+Z / Ctrl+Y)
+// ---------------------------------------------------------------------------
+
+function serializeZones() { return JSON.stringify(STATE.zones); }
+
+// Called at the tail of every renderAll — the central choke point for
+// zone-mutating actions. If the serialized zones differ from the last
+// committed snapshot, push that prior value onto the undo stack. Anything
+// sitting in the redo stack belongs to an alternate timeline that the new
+// mutation has diverged from, so drop it.
+function captureUndoSnapshot() {
+  const current = serializeZones();
+  if (STATE.history.lastSnapshot == null) {
+    STATE.history.lastSnapshot = current;
+    return;
+  }
+  if (current === STATE.history.lastSnapshot) return;
+  STATE.history.past.push(STATE.history.lastSnapshot);
+  if (STATE.history.past.length > UNDO_MAX) STATE.history.past.shift();
+  STATE.history.future.length = 0;
+  STATE.history.lastSnapshot = current;
+}
+
+// Restore a zones JSON and re-render. Clears selection (uids referenced by
+// the selection set are no longer valid for the restored instances), and
+// resyncs uidCounter so newly-added cards don't collide with restored uids.
+function applyZonesSnapshot(json) {
+  STATE.zones = JSON.parse(json);
+  let maxUid = 0;
+  for (const z of Object.values(STATE.zones)) {
+    for (const p of z.piles) for (const i of p) {
+      if (i.uid > maxUid) maxUid = i.uid;
+    }
+  }
+  STATE.uidCounter = Math.max(STATE.uidCounter, maxUid + 1);
+  STATE.selection.clear();
+  // Set lastSnapshot BEFORE renderAll so captureUndoSnapshot's diff is a
+  // no-op — otherwise the restore itself would be recorded as a mutation.
+  STATE.history.lastSnapshot = json;
+  renderAll();
+  // STATE.deckSnapshot (the baseline used by deckIsDirty) is *not* touched —
+  // it's the last save/load/new point, and undo/redo just navigates zone
+  // state around it. deckIsDirty() re-derives the correct answer on demand.
+}
+
+// Drop the entire undo/redo stack and rebaseline on the current zones.
+// Called on deck swaps (New / Import / Load) — undoing back into a prior
+// deck after intentionally switching to a different one would surprise the
+// user more than help them. Save is NOT a swap and intentionally leaves
+// history intact.
+function resetHistory() {
+  STATE.history.past.length = 0;
+  STATE.history.future.length = 0;
+  STATE.history.lastSnapshot = serializeZones();
+}
+
+function undo() {
+  // Don't unwind zones mid-drag — the dragged DOM would be recreated under
+  // the user's cursor and the in-flight drag source would point at a stale
+  // uid.
+  if (STATE.dragging) return;
+  const h = STATE.history;
+  if (h.past.length === 0) return;
+  h.future.push(h.lastSnapshot);
+  if (h.future.length > UNDO_MAX) h.future.shift();
+  applyZonesSnapshot(h.past.pop());
+}
+
+function redo() {
+  if (STATE.dragging) return;
+  const h = STATE.history;
+  if (h.future.length === 0) return;
+  h.past.push(h.lastSnapshot);
+  if (h.past.length > UNDO_MAX) h.past.shift();
+  applyZonesSnapshot(h.future.pop());
+}
+
+function wireUndoRedo() {
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    // Let the browser's native text-undo handle the input/textarea case so
+    // typing corrections aren't hijacked by deck undo.
+    const a = document.activeElement;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
+    const key = ev.key.toLowerCase();
+    if (key === 'z' && !ev.shiftKey) {
+      ev.preventDefault();
+      undo();
+    } else if (key === 'y' || (key === 'z' && ev.shiftKey)) {
+      // Ctrl+Y is the requested redo binding; Ctrl+Shift+Z is the common
+      // alternate (and the macOS convention) — accept both.
+      ev.preventDefault();
+      redo();
+    }
+  });
+}
+
 
 function renderZoneCount(zoneName) {
   document.getElementById('count-' + zoneName).textContent = String(totalCount(zoneName));
@@ -2677,27 +2953,6 @@ function makeRow(zoneName, row) {
   div.addEventListener('mouseenter', (ev) => showPreview(card, ev));
   div.addEventListener('mousemove', positionPreview);
   div.addEventListener('mouseleave', hidePreview);
-  // Right-click removes one copy
-  div.addEventListener('contextmenu', (ev) => {
-    ev.preventDefault();
-    // Remove the most-recently-added matching instance in this zone
-    const zone = STATE.zones[zoneName];
-    for (let p = zone.piles.length - 1; p >= 0; p--) {
-      const pile = zone.piles[p];
-      for (let i = pile.length - 1; i >= 0; i--) {
-        const inst = pile[i];
-        const c = STATE.byId.get(inst.cardId);
-        if (c && c.canonical === card.canonical) {
-          pile.splice(i, 1);
-          if (pile.length === 0) zone.piles.splice(p, 1);
-          renderZoneList(zoneName);
-          renderZoneCount(zoneName);
-          if (STATE.focusedZone === zoneName) renderPiles();
-          return;
-        }
-      }
-    }
-  });
   return div;
 }
 
@@ -2779,6 +3034,131 @@ function currentFace(inst, card) {
   return card;
 }
 
+// Lotus-icon button on the bottom-right of a pile slot. Clicking pops open
+// a floating chip strip with every printing of this card; picking a chip
+// rewrites inst.cardId to that printing's id. If the clicked instance is
+// part of the active selection, every selected instance sharing the same
+// canonical name is swapped alongside it.
+function makeVersionButton(inst, card) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'version-btn';
+  btn.dataset.title = 'Change printing';
+  btn.draggable = false;
+  // Three-petal lotus silhouette — reads recognizably at 14×14.
+  btn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+                + '<path d="M8 14 C6.2 11 6.2 8 8 4 C9.8 8 9.8 11 8 14 Z"/>'
+                + '<path d="M8 14 C4 12 2.3 9 2.3 6.3 C4.5 8.5 6.5 10.5 8 14 Z"/>'
+                + '<path d="M8 14 C12 12 13.7 9 13.7 6.3 C11.5 8.5 9.5 10.5 8 14 Z"/>'
+                + '</svg>';
+  btn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    openVersionPicker(btn, inst, card);
+  });
+  return btn;
+}
+
+function openVersionPicker(anchor, inst, card) {
+  closeVersionPicker();
+  const printings = STATE.byCanonical.get(card.canonical) || [card];
+  if (printings.length <= 1) return;
+  const picker = document.createElement('div');
+  picker.className = 'version-picker';
+  picker.id = 'version-picker';
+  printings.forEach(p => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'version-chip' + (p.id === inst.cardId ? ' current' : '');
+    // Alt-art variants (Pixel/Hero/Cidraeth/...) share set codes with their
+    // base printing, so the chip prefers the stripped variant label when
+    // one was captured during consolidation. Base prints and plain _SETCODE
+    // reprints fall back to the set code as before.
+    chip.textContent = p.variant || p.set || '?';
+    const setMeta = STATE.setsByCode[p.set];
+    const baseTitle = setMeta
+      ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})`
+      : (p.set || '');
+    chip.dataset.title = p.variant ? `${p.variant} — ${baseTitle}` : baseTitle;
+    chip.addEventListener('mousedown', (ev) => ev.stopPropagation());
+    chip.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      swapVersion(inst, p.id);
+      closeVersionPicker();
+    });
+    // Hover preview shows the specific printing's art so users can compare
+    // before committing — same behavior as the search-dropdown chips.
+    chip.addEventListener('mouseenter', (ev) => showPreview(p, ev));
+    chip.addEventListener('mousemove', positionPreview);
+    chip.addEventListener('mouseleave', hidePreview);
+    picker.appendChild(chip);
+  });
+  document.body.appendChild(picker);
+  // Anchor below-right of the button; flip above if it would overflow the
+  // viewport, and nudge horizontally to stay in the viewport.
+  const r = anchor.getBoundingClientRect();
+  const pr = picker.getBoundingClientRect();
+  let top = r.bottom + 4;
+  let left = r.right - pr.width;
+  if (left < 4) left = 4;
+  if (left + pr.width > window.innerWidth - 4) left = window.innerWidth - pr.width - 4;
+  if (top + pr.height > window.innerHeight - 4) top = r.top - pr.height - 4;
+  picker.style.left = left + 'px';
+  picker.style.top = top + 'px';
+  STATE._versionPicker = { el: picker };
+}
+
+function closeVersionPicker() {
+  if (!STATE._versionPicker) return;
+  STATE._versionPicker.el.remove();
+  STATE._versionPicker = null;
+}
+
+function swapVersion(inst, newCardId) {
+  const origCard = STATE.byId.get(inst.cardId);
+  const canon = origCard && origCard.canonical;
+  // If the clicked card is part of a multi-selection, swap every selected
+  // instance whose canonical matches — so "select 3 of 7 ERR Mountains,
+  // pick OLD" changes exactly those 3 without touching unrelated selected
+  // cards.
+  const targetUids = (STATE.selection.size > 0 && STATE.selection.has(inst.uid))
+    ? [...STATE.selection].filter(uid => {
+        const f = findInstance(uid);
+        if (!f) return false;
+        const c = STATE.byId.get(f.inst.cardId);
+        return c && c.canonical === canon;
+      })
+    : [inst.uid];
+  let changed = false;
+  for (const uid of targetUids) {
+    const f = findInstance(uid);
+    if (f && f.inst.cardId !== newCardId) {
+      f.inst.cardId = newCardId;
+      changed = true;
+    }
+  }
+  if (changed) renderAll();
+}
+
+function wireVersionPicker() {
+  document.addEventListener('click', (ev) => {
+    if (!STATE._versionPicker) return;
+    if (STATE._versionPicker.el.contains(ev.target)) return;
+    if (ev.target.closest('.version-btn')) return;
+    closeVersionPicker();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && STATE._versionPicker) closeVersionPicker();
+  });
+  // Scrolling the pile pane or resizing the window leaves the anchor's
+  // rect under the picker stale — close rather than try to re-anchor.
+  const piles = document.getElementById('piles');
+  if (piles) piles.addEventListener('scroll', closeVersionPicker, { passive: true });
+  window.addEventListener('resize', closeVersionPicker);
+}
+
 // Build a transparent center overlay button on a pile-slot card. Click
 // toggles inst.flipped, swaps the slot's <img> source between the front
 // and back face, and updates the slot's title / "flipped" class. The
@@ -2856,7 +3236,11 @@ function makeSlotButtons(inst, card) {
     renderAll();
   }));
   wrap.appendChild(makeBtn('\u2212', 'Remove this copy', () => {
-    removeInstance(inst.uid);
+    if (STATE.selection.size > 0 && STATE.selection.has(inst.uid)) {
+      for (const uid of [...STATE.selection]) removeInstance(uid);
+    } else {
+      removeInstance(inst.uid);
+    }
     STATE.selection.clear();
     renderAll();
   }));
@@ -2967,12 +3351,6 @@ function makePileEl(pile, pileIdx) {
       hideDragTrash();
       document.body.classList.remove('dragging');
     });
-    // Right-click removes one copy from this pile
-    slot.addEventListener('contextmenu', (ev) => {
-      ev.preventDefault();
-      removeInstance(inst.uid);
-      renderAll();
-    });
     // Hover preview — same floating popup the deck-list rows use. Reads
     // inst.flipped fresh each time so flipping a card and then re-hovering
     // pops up the back image.
@@ -2990,6 +3368,12 @@ function makePileEl(pile, pileIdx) {
       // card actually has a back side.
       if (card.back) {
         slot.appendChild(makeFlipButton(inst, card, slot));
+      }
+      // Version-swap lotus button (bottom-right). Omitted when there's only
+      // one printing of this card — clicking would have no choices to offer.
+      const printings = STATE.byCanonical.get(card.canonical);
+      if (printings && printings.length > 1) {
+        slot.appendChild(makeVersionButton(inst, card));
       }
     }
     el.appendChild(slot);
@@ -3161,8 +3545,7 @@ function makeSearchSlotButtons(card) {
       ? [...STATE.searchSelection]
       : [card.id];
     for (const id of ids) addCardToZone(id, zone);
-    renderZoneList(zone);
-    renderZoneCount(zone);
+    renderAll();
   };
   wrap.appendChild(makeBtn('+', 'Add to main deck', () => addTo('main')));
   wrap.appendChild(makeBtn('\u2194', 'Add to sideboard', () => addTo('side')));
@@ -3377,8 +3760,11 @@ function wireToolbar() {
     STATE.zones.side.piles = [];
     STATE.zones.maybe.piles = [];
     STATE.loadedDeckName = null;
+    STATE.loadedDeckFolder = null;
+    STATE.loadedDeckTags = [];
     updateSaveButtons();
     renderAll();
+    resetHistory();
     markDeckClean();
   });
   // Format dropdown: toggle menu on trigger click, pick on item click.
@@ -3490,28 +3876,87 @@ async function clearImageCache() {
   }
 }
 
-function wirePileSort() {
-  document.querySelectorAll('[data-pile-sort]').forEach(btn => {
+// Wire a group of sort-mode buttons that share a `data-<attr>` selector.
+// Clicking a button updates `STATE[stateKey]` to the button's value, toggles
+// the `.active` class across the group, and invokes `afterClick()` to
+// re-render. Used by both pile-sort and zone-list-sort bars, which follow
+// the same pattern.
+function wireSortButtons(attr, stateKey, afterClick) {
+  const sel = `[data-${attr}]`;
+  // Convert the dashed attr name to the camelCased dataset key that DOM
+  // APIs expose (`data-pile-sort` → `dataset.pileSort`).
+  const dataKey = attr.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+  document.querySelectorAll(sel).forEach(btn => {
     btn.addEventListener('click', () => {
-      STATE.pileSort = btn.dataset.pileSort;
-      document.querySelectorAll('[data-pile-sort]').forEach(b => b.classList.toggle('active', b === btn));
+      STATE[stateKey] = btn.dataset[dataKey];
+      document.querySelectorAll(sel).forEach(b => b.classList.toggle('active', b === btn));
+      afterClick();
+    });
+  });
+}
+
+// Pile sort is a dropdown. Each menu item promotes its method to the front
+// of STATE.pileSortChain; previous methods slide down and serve as
+// tiebreakers. Clicking the method that's already primary acts as a plain
+// re-sort (matching the old Re-sort button's behavior).
+const PILE_SORT_LABELS = {
+  type: 'Type',
+  cmc:  'Mana',
+  set:  'Set',
+  color:'Color',
+  name: 'Name',
+};
+
+function wirePileSort() {
+  const btn = document.getElementById('pile-sort-btn');
+  const menu = document.getElementById('pile-sort-menu');
+  const update = () => {
+    const primary = STATE.pileSortChain[0] || 'type';
+    btn.innerHTML = (PILE_SORT_LABELS[primary] || primary) + ' \u25BE';
+    menu.querySelectorAll('button[data-pile-sort]').forEach(b => {
+      b.classList.toggle('active', b.dataset.pileSort === primary);
+    });
+  };
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (ev) => {
+    if (!menu.contains(ev.target) && ev.target !== btn) {
+      menu.classList.add('hidden');
+    }
+  });
+  menu.querySelectorAll('button[data-pile-sort]').forEach(b => {
+    b.addEventListener('click', () => {
+      const method = b.dataset.pileSort;
+      pushPileSort(method);
+      update();
+      menu.classList.add('hidden');
       resortPiles(STATE.focusedZone);
       renderPiles();
     });
   });
-  document.getElementById('btn-resort').addEventListener('click', () => {
-    resortPiles(STATE.focusedZone);
-    renderPiles();
-  });
+  update();
+}
+
+// Promote `method` to the front of the sort chain. If it was already in the
+// chain, move it (don't duplicate) — preserves the relative order of the
+// other tiebreakers.
+function pushPileSort(method) {
+  const chain = STATE.pileSortChain;
+  const i = chain.indexOf(method);
+  if (i >= 0) chain.splice(i, 1);
+  chain.unshift(method);
+  // Cap at the method count so the chain can't grow unbounded from repeated
+  // repicking (naturally bounded since duplicates are removed above, but
+  // defense-in-depth in case the method list grows).
+  if (chain.length > 5) chain.length = 5;
+  STATE.pileSort = chain[0];
 }
 
 function wireListSort() {
-  document.querySelectorAll('[data-list-sort]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      STATE.listSort = btn.dataset.listSort;
-      document.querySelectorAll('[data-list-sort]').forEach(b => b.classList.toggle('active', b === btn));
-      for (const z of Object.keys(STATE.zones)) renderZoneList(z);
-    });
+  wireSortButtons('list-sort', 'listSort', () => {
+    for (const z of Object.keys(STATE.zones)) renderZoneList(z);
   });
 }
 
@@ -3622,17 +4067,19 @@ function wireRegionSelect() {
 
 // Short delay before the floating preview pops up — prevents flicker as the
 // cursor sweeps across many cards. mouseleave (hidePreview) cancels a
-// pending timer, so quick passes never show anything.
+// pending timer, so quick passes never show anything. Keyboard-driven
+// callers (arrow-key nav through search results) pass immediate=true to
+// skip the debounce, since those keystrokes are always deliberate.
 const PREVIEW_DELAY_MS = 250;
 let _previewTimer = null;
 let _previewAvoidEl = null;  // element the preview must not cover (pile slots)
 
-function showPreview(card, ev, avoidEl) {
+function showPreview(card, ev, avoidEl, immediate) {
   if (_previewTimer) clearTimeout(_previewTimer);
   _previewAvoidEl = avoidEl || null;
   // Capture cursor position now; the timer fires later when ev is stale.
   const startEv = { clientX: ev.clientX, clientY: ev.clientY };
-  _previewTimer = setTimeout(() => {
+  const run = () => {
     _previewTimer = null;
     const el = document.getElementById('card-preview');
     const img = document.getElementById('card-preview-img');
@@ -3656,7 +4103,22 @@ function showPreview(card, ev, avoidEl) {
     // from this row can use it as the drag preview image.
     const dragImg = document.getElementById('drag-img');
     if (dragImg) dragImg.src = url;
-  }, PREVIEW_DELAY_MS);
+  };
+  if (immediate) run();
+  else _previewTimer = setTimeout(run, PREVIEW_DELAY_MS);
+}
+
+// Kick off a background fetch for each card's image. Setting `src` on a
+// detached Image() fires a GET that the service worker intercepts and
+// caches (`sw.js` stores under `rev-img-v1`), so a later render that
+// actually shows the image can hit the cache instead of the network.
+// Used to warm search-result neighbors while the user is arrow-keying.
+function prefetchCardImages(cards) {
+  for (const c of cards) {
+    if (!c) continue;
+    const img = new Image();
+    img.src = imgUrl(c);
+  }
 }
 
 function positionPreview(ev) {
@@ -3720,6 +4182,8 @@ function importDeck(text, filename) {
   if (isXml) importCod(text);
   else importTxt(text);
   STATE.loadedDeckName = null;
+  STATE.loadedDeckFolder = null;
+  STATE.loadedDeckTags = [];
   updateSaveButtons();
   markDeckClean();
 }
@@ -3754,6 +4218,7 @@ function importCod(text) {
 
   for (const z of Object.keys(STATE.zones)) resortPiles(z);
   renderAll();
+  resetHistory();
   reportUnknown(unknown);
 }
 
@@ -3788,6 +4253,7 @@ function importTxt(text) {
 
   for (const z of Object.keys(STATE.zones)) resortPiles(z);
   renderAll();
+  resetHistory();
   reportUnknown(unknown);
 }
 
@@ -3979,6 +4445,8 @@ function wirePasteImport() {
     if (!text.trim()) { close(); return; }
     importTxt(text);
     STATE.loadedDeckName = null;
+    STATE.loadedDeckFolder = null;
+    STATE.loadedDeckTags = [];
     updateSaveButtons();
     markDeckClean();
     close();
@@ -4001,7 +4469,8 @@ function wirePasteImport() {
 const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
 
 function listSavedDecks() {
-  // Returns [{ name, savedAt }] sorted by savedAt descending (newest first).
+  // Returns [{ name, savedAt, folder, tags }] sorted by savedAt descending
+  // (newest first). `folder` is a string or null; `tags` is always an array.
   const out = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -4009,7 +4478,12 @@ function listSavedDecks() {
     try {
       const obj = JSON.parse(localStorage.getItem(key));
       if (obj && typeof obj.name === 'string') {
-        out.push({ name: obj.name, savedAt: obj.savedAt || '' });
+        out.push({
+          name: obj.name,
+          savedAt: obj.savedAt || '',
+          folder: (typeof obj.folder === 'string' && obj.folder) ? obj.folder : null,
+          tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
+        });
       }
     } catch (_) { /* ignore corrupted entries */ }
   }
@@ -4017,9 +4491,128 @@ function listSavedDecks() {
   return out;
 }
 
-function saveDeckToStorage(name) {
+function readDeckMeta(name) {
+  // Returns { folder, tags } for a saved deck, or nulls if not found.
+  try {
+    const obj = JSON.parse(localStorage.getItem(SAVED_DECK_PREFIX + name));
+    if (!obj) return { folder: null, tags: [] };
+    return {
+      folder: (typeof obj.folder === 'string' && obj.folder) ? obj.folder : null,
+      tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
+    };
+  } catch (_) { return { folder: null, tags: [] }; }
+}
+
+function writeDeckMeta(name, { folder, tags }) {
+  // Update only the folder/tags fields of an existing saved deck. No-op if
+  // the deck is missing. Does not touch the dirty-snapshot — metadata edits
+  // are independent of zone edits.
+  const raw = localStorage.getItem(SAVED_DECK_PREFIX + name);
+  if (!raw) return;
+  let payload;
+  try { payload = JSON.parse(raw); } catch (_) { return; }
+  if (!payload) return;
+  payload.folder = (typeof folder === 'string' && folder) ? folder : null;
+  payload.tags = Array.isArray(tags) ? tags.slice() : [];
+  localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
+  if (STATE.loadedDeckName === name) {
+    STATE.loadedDeckFolder = payload.folder;
+    STATE.loadedDeckTags = payload.tags.slice();
+  }
+}
+
+function getAllTags() {
+  // Unique tag list across all saved decks, sorted alphabetically (case-insensitive),
+  // preserving first-seen casing.
+  const seen = new Map(); // lower -> original
+  for (const d of listSavedDecks()) {
+    for (const t of d.tags) {
+      const k = t.toLowerCase();
+      if (!seen.has(k)) seen.set(k, t);
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+}
+
+function getAllFolders() {
+  const seen = new Map();
+  for (const d of listSavedDecks()) {
+    if (!d.folder) continue;
+    const k = d.folder.toLowerCase();
+    if (!seen.has(k)) seen.set(k, d.folder);
+  }
+  return [...seen.values()].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+}
+
+// Parse a deck-filter query into structured criteria.
+// Grammar:
+//   tag:<value>         require exact tag (case-insensitive)
+//   -tag:<value>        forbid tag
+//   folder:<value>      require exact folder (case-insensitive)
+//   "quoted value"      spaces inside quotes don't split
+//   <bare words>        case-insensitive substring match on deck name
+// Returns { terms, tags, notTags, folder } where folder is a string or null.
+function parseDeckFilter(query) {
+  const out = { terms: [], tags: [], notTags: [], folder: null };
+  if (!query) return out;
+  const toks = [];
+  let i = 0, cur = '', inQ = false;
+  while (i < query.length) {
+    const c = query[i];
+    if (c === '"') { inQ = !inQ; i++; continue; }
+    if (!inQ && /\s/.test(c)) {
+      if (cur) { toks.push(cur); cur = ''; }
+      i++; continue;
+    }
+    cur += c; i++;
+  }
+  if (cur) toks.push(cur);
+  for (const tok of toks) {
+    const mTag = /^(-)?tag:(.+)$/i.exec(tok);
+    if (mTag && mTag[2]) {
+      const neg = !!mTag[1];
+      (neg ? out.notTags : out.tags).push(mTag[2].toLowerCase());
+      continue;
+    }
+    const mFolder = /^folder:(.+)$/i.exec(tok);
+    if (mFolder && mFolder[1]) {
+      out.folder = mFolder[1].toLowerCase();
+      continue;
+    }
+    out.terms.push(tok.toLowerCase());
+  }
+  return out;
+}
+
+function deckMatchesFilter(deck, filter) {
+  if (filter.folder !== null) {
+    if (!deck.folder || deck.folder.toLowerCase() !== filter.folder) return false;
+  }
+  if (filter.tags.length) {
+    const have = new Set(deck.tags.map(t => t.toLowerCase()));
+    for (const t of filter.tags) if (!have.has(t)) return false;
+  }
+  if (filter.notTags.length) {
+    const have = new Set(deck.tags.map(t => t.toLowerCase()));
+    for (const t of filter.notTags) if (have.has(t)) return false;
+  }
+  if (filter.terms.length) {
+    const lname = deck.name.toLowerCase();
+    const lTags = deck.tags.map(t => t.toLowerCase());
+    for (const t of filter.terms) {
+      if (lname.includes(t)) continue;
+      if (lTags.some(tg => tg.includes(t))) continue;
+      return false;
+    }
+  }
+  return true;
+}
+
+function saveDeckToStorage(name, opts) {
   // Serialize the current zones as arrays of card-name arrays so the deck
   // survives a refresh of the underlying card-data (where ids change).
+  // `opts.folder` / `opts.tags` override; if omitted, existing metadata is
+  // preserved (so "Save" on a loaded deck doesn't wipe its folder/tags).
   const zones = {};
   for (const z of ['main', 'side', 'maybe']) {
     zones[z] = STATE.zones[z].piles.map(pile => pile.map(inst => {
@@ -4027,6 +4620,13 @@ function saveDeckToStorage(name) {
       return c ? c.name : null;
     }).filter(n => n != null));
   }
+  const prev = readDeckMeta(name);
+  const folder = opts && 'folder' in opts
+    ? ((typeof opts.folder === 'string' && opts.folder) ? opts.folder : null)
+    : prev.folder;
+  const tags = opts && 'tags' in opts
+    ? (Array.isArray(opts.tags) ? opts.tags.slice() : [])
+    : prev.tags;
   const payload = {
     name,
     savedAt: new Date().toISOString(),
@@ -4034,6 +4634,8 @@ function saveDeckToStorage(name) {
     format: STATE.format,
     rangeStart: STATE.rangeStart,
     rangeEnd: STATE.rangeEnd,
+    folder,
+    tags,
   };
   localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
   markDeckClean();
@@ -4079,6 +4681,7 @@ function loadDeckFromStorage(name) {
     runSearch(document.getElementById('search').value);
   }
   renderAll();
+  resetHistory();
   markDeckClean();
   if (unknown.length > 0) reportUnknown(unknown);
   return true;
@@ -4190,84 +4793,205 @@ function wireSavedDecks() {
   const saveAsBtn = document.getElementById('btn-save-as');
   const saveDropdown = document.getElementById('save-name-dropdown');
   const nameInput = document.getElementById('save-deck-name');
+  const saveFolderInput = document.getElementById('save-deck-folder');
+  const saveFolderList = document.getElementById('save-deck-folder-list');
+  const saveTagsHost = document.getElementById('save-deck-tags');
   const decksBtn = document.getElementById('btn-decks');
   const decksDropdown = document.getElementById('decks-dropdown');
+  const filterInput = document.getElementById('decks-filter');
   const listEl = document.getElementById('decks-list');
 
-  const DECKS_PER_PAGE = 8;
-  let decksPage = 0;
+  let filterText = '';
+  const collapsedFolders = new Set();
+  let saveDialogTags = [];
 
   function closeAllDropdowns() {
     saveDropdown.classList.add('hidden');
     decksDropdown.classList.add('hidden');
   }
 
-  // --- Save name dropdown ---
-  function openSaveNameDropdown() {
+  function mountChipEditor(host, { getTags, setTags, onClose, autoFocus = true }) {
+    function focusInput() {
+      const inp = host.querySelector('input');
+      if (inp) inp.focus();
+    }
+    function render() {
+      host.innerHTML = '';
+      for (const tag of getTags()) {
+        const chip = document.createElement('span');
+        chip.className = 'deck-tag-chip';
+        chip.textContent = tag;
+        const x = document.createElement('span');
+        x.className = 'chip-x';
+        x.innerHTML = '&times;';
+        x.addEventListener('mousedown', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          setTags(getTags().filter(t => t !== tag));
+          render();
+          focusInput();
+        });
+        chip.appendChild(x);
+        host.appendChild(chip);
+      }
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = getTags().length ? '' : 'add tag…';
+      input.setAttribute('list', 'all-deck-tags-datalist');
+      input.addEventListener('keydown', (ev) => {
+        ev.stopPropagation();
+        if (ev.key === 'Enter' || ev.key === ',') {
+          ev.preventDefault();
+          const val = input.value.trim().replace(/,$/, '');
+          if (val) {
+            const tags = getTags();
+            if (!tags.some(t => t.toLowerCase() === val.toLowerCase())) {
+              setTags([...tags, val]);
+              render();
+              focusInput();
+            } else { input.value = ''; }
+          }
+        } else if (ev.key === 'Backspace' && input.value === '') {
+          const tags = getTags();
+          if (tags.length) { setTags(tags.slice(0, -1)); render(); focusInput(); }
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault();
+          input.blur();
+        }
+      });
+      input.addEventListener('click', (ev) => ev.stopPropagation());
+      input.addEventListener('blur', () => {
+        const val = input.value.trim();
+        let added = false;
+        if (val) {
+          const tags = getTags();
+          if (!tags.some(t => t.toLowerCase() === val.toLowerCase())) {
+            setTags([...tags, val]);
+            added = true;
+          }
+        }
+        if (onClose) {
+          onClose();
+        } else if (added) {
+          // Editor stays open (save dialog case) — re-render so the freshly
+          // committed chip appears inline with the input the user is typing
+          // into. No re-focus: the user actively moved away.
+          render();
+        }
+      });
+      host.appendChild(input);
+      if (autoFocus) setTimeout(() => input.focus(), 0);
+    }
+    render();
+  }
+
+  function refreshTagsDatalist() {
+    let dl = document.getElementById('all-deck-tags-datalist');
+    if (!dl) {
+      dl = document.createElement('datalist');
+      dl.id = 'all-deck-tags-datalist';
+      document.body.appendChild(dl);
+    }
+    dl.innerHTML = '';
+    for (const t of getAllTags()) {
+      const opt = document.createElement('option');
+      opt.value = t;
+      dl.appendChild(opt);
+    }
+  }
+
+  function refreshFolderDatalist() {
+    if (!saveFolderList) return;
+    saveFolderList.innerHTML = '';
+    for (const f of getAllFolders()) {
+      const opt = document.createElement('option');
+      opt.value = f;
+      saveFolderList.appendChild(opt);
+    }
+  }
+
+  function refreshFoldersDatalist() {
+    let dl = document.getElementById('all-deck-folders-datalist');
+    if (!dl) {
+      dl = document.createElement('datalist');
+      dl.id = 'all-deck-folders-datalist';
+      document.body.appendChild(dl);
+    }
+    dl.innerHTML = '';
+    for (const f of getAllFolders()) {
+      const opt = document.createElement('option');
+      opt.value = f;
+      dl.appendChild(opt);
+    }
+  }
+
+  function openSaveNameDropdown(mode /* 'new' | 'as' */) {
     closeAllDropdowns();
-    nameInput.value = '';
+    refreshTagsDatalist();
+    refreshFolderDatalist();
+    if (mode === 'as' && STATE.loadedDeckName) {
+      nameInput.value = STATE.loadedDeckName;
+      saveFolderInput.value = STATE.loadedDeckFolder || '';
+      saveDialogTags = (STATE.loadedDeckTags || []).slice();
+    } else {
+      nameInput.value = '';
+      saveFolderInput.value = '';
+      saveDialogTags = [];
+    }
+    mountChipEditor(saveTagsHost, {
+      getTags: () => saveDialogTags,
+      setTags: (v) => { saveDialogTags = v; },
+      autoFocus: false,
+    });
     saveDropdown.classList.remove('hidden');
-    setTimeout(() => nameInput.focus(), 0);
+    setTimeout(() => { nameInput.focus(); nameInput.select(); }, 0);
   }
 
   async function commitSaveName() {
     const name = nameInput.value.trim();
     if (!name) { nameInput.focus(); return; }
+    const folder = saveFolderInput.value.trim() || null;
+    const tags = saveDialogTags.slice();
     const existing = localStorage.getItem(SAVED_DECK_PREFIX + name);
+    let finalName = name;
     if (existing) {
       const choice = await showNameConflict(name, 'save');
       if (!choice) return;
-      if (choice === 'keep-both') {
-        const newName = uniqueDeckName(name);
-        try { saveDeckToStorage(newName); } catch (e) {
-          alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
-        }
-        STATE.loadedDeckName = newName;
-      } else {
-        // overwrite
-        try { saveDeckToStorage(name); } catch (e) {
-          alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
-        }
-        STATE.loadedDeckName = name;
-      }
-    } else {
-      try { saveDeckToStorage(name); } catch (e) {
-        alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
-      }
-      STATE.loadedDeckName = name;
+      if (choice === 'keep-both') finalName = uniqueDeckName(name);
     }
+    try { saveDeckToStorage(finalName, { folder, tags }); } catch (e) {
+      alert('Could not save deck: ' + (e && e.message ? e.message : e)); return;
+    }
+    STATE.loadedDeckName = finalName;
+    STATE.loadedDeckFolder = folder;
+    STATE.loadedDeckTags = tags;
     closeAllDropdowns();
     updateSaveButtons();
   }
 
-  // "Save deck" button: if a deck is loaded, overwrite it; otherwise show name input.
   saveBtn.addEventListener('click', (ev) => {
     ev.stopPropagation();
     if (STATE.loadedDeckName) {
-      try { saveDeckToStorage(STATE.loadedDeckName); } catch (e) {
+      try {
+        saveDeckToStorage(STATE.loadedDeckName, {
+          folder: STATE.loadedDeckFolder,
+          tags: STATE.loadedDeckTags,
+        });
+      } catch (e) {
         alert('Could not save deck: ' + (e && e.message ? e.message : e));
       }
-      // Quick feedback
       const orig = saveBtn.textContent;
-      saveBtn.textContent = 'Saved \u2713';
+      saveBtn.textContent = 'Saved ✓';
       setTimeout(() => { saveBtn.textContent = orig; }, 1200);
     } else {
-      if (saveDropdown.classList.contains('hidden')) {
-        openSaveNameDropdown();
-      } else {
-        closeAllDropdowns();
-      }
+      if (saveDropdown.classList.contains('hidden')) openSaveNameDropdown('new');
+      else closeAllDropdowns();
     }
   });
 
-  // "Save as" button — always shows name input
   saveAsBtn.addEventListener('click', (ev) => {
     ev.stopPropagation();
-    if (saveDropdown.classList.contains('hidden')) {
-      openSaveNameDropdown(null);
-    } else {
-      closeAllDropdowns();
-    }
+    if (saveDropdown.classList.contains('hidden')) openSaveNameDropdown('as');
+    else closeAllDropdowns();
   });
 
   document.getElementById('save-name-ok').addEventListener('click', (ev) => {
@@ -4284,136 +5008,219 @@ function wireSavedDecks() {
     if (ev.key === 'Escape') { ev.preventDefault(); closeAllDropdowns(); }
   });
   nameInput.addEventListener('click', (ev) => ev.stopPropagation());
+  saveFolderInput.addEventListener('keydown', (ev) => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter') { ev.preventDefault(); commitSaveName(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); closeAllDropdowns(); }
+  });
+  saveFolderInput.addEventListener('click', (ev) => ev.stopPropagation());
 
-  // --- Decks list dropdown ---
   function renderDecksList() {
     listEl.innerHTML = '';
-    const decks = listSavedDecks();
-    if (decks.length === 0) {
+    const all = listSavedDecks();
+    if (all.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'saved-decks-empty';
       empty.textContent = 'No saved decks yet.';
       listEl.appendChild(empty);
-      document.getElementById('decks-pages').classList.add('hidden');
       return;
     }
-
-    const totalPages = Math.ceil(decks.length / DECKS_PER_PAGE);
-    if (decksPage >= totalPages) decksPage = totalPages - 1;
-    if (decksPage < 0) decksPage = 0;
-    const start = decksPage * DECKS_PER_PAGE;
-    const pageDecks = decks.slice(start, start + DECKS_PER_PAGE);
-
-    for (const { name } of pageDecks) {
-      const row = document.createElement('div');
-      row.className = 'saved-deck-row';
-
-      const nameEl = document.createElement('span');
-      nameEl.className = 'deck-name';
-      nameEl.textContent = name;
-      row.appendChild(nameEl);
-
-      // Rename (pencil) button
-      const renameBtn = document.createElement('button');
-      renameBtn.className = 'deck-action';
-      renameBtn.dataset.title = 'Rename';
-      renameBtn.innerHTML = '&#x270E;';
-      renameBtn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        startRename(row, name);
-      });
-      row.appendChild(renameBtn);
-
-      // Delete (trash) button
-      const delBtn = document.createElement('button');
-      delBtn.className = 'deck-action deck-delete';
-      delBtn.dataset.title = 'Delete';
-      delBtn.innerHTML = '&#x1f5d1;';
-      delBtn.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        const ok = await showDeleteConfirm(name);
-        if (!ok) return;
-        deleteDeckFromStorage(name);
-        if (STATE.loadedDeckName === name) {
-          STATE.loadedDeckName = null;
-          updateSaveButtons();
-        }
-        renderDecksList();
-      });
-      row.appendChild(delBtn);
-
-      // Click row to load
-      row.addEventListener('click', () => {
-        if (deckIsDirty() && !confirm('Replace the current deck with \u201c' + name + '\u201d?')) return;
-        const ok = loadDeckFromStorage(name);
-        if (!ok) { alert('Could not load deck \u201c' + name + '\u201d'); return; }
-        STATE.loadedDeckName = name;
-        updateSaveButtons();
-        closeAllDropdowns();
-      });
-
-      listEl.appendChild(row);
+    const filter = parseDeckFilter(filterText);
+    const hasFilter = filterText.trim().length > 0;
+    const decks = all.filter(d => deckMatchesFilter(d, filter));
+    if (decks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'saved-decks-empty';
+      empty.textContent = 'No decks match.';
+      listEl.appendChild(empty);
+      return;
     }
-
-    // Pagination
-    const pagesEl = document.getElementById('decks-pages');
-    if (totalPages > 1) {
-      pagesEl.classList.remove('hidden');
-      document.getElementById('decks-page-info').textContent =
-        (decksPage + 1) + ' / ' + totalPages;
-      document.getElementById('decks-prev').disabled = decksPage === 0;
-      document.getElementById('decks-next').disabled = decksPage >= totalPages - 1;
-    } else {
-      pagesEl.classList.add('hidden');
+    const hasAnyFolder = all.some(d => !!d.folder);
+    const useTree = hasAnyFolder && !hasFilter;
+    if (!useTree) {
+      for (const deck of decks) listEl.appendChild(buildDeckRow(deck, false));
+      return;
+    }
+    const groups = new Map();
+    const unfiled = [];
+    for (const d of decks) {
+      if (!d.folder) { unfiled.push(d); continue; }
+      const k = d.folder.toLowerCase();
+      if (!groups.has(k)) groups.set(k, { display: d.folder, decks: [] });
+      groups.get(k).decks.push(d);
+    }
+    // Unfiled decks render as flat rows at the top — no collapsible header —
+    // so the no-folders-used experience matches the pre-folders UI.
+    for (const deck of unfiled) listEl.appendChild(buildDeckRow(deck, false));
+    const sortedKeys = [...groups.keys()].sort();
+    for (const k of sortedKeys) {
+      const g = groups.get(k);
+      renderFolderGroup(g.display, g.decks);
     }
   }
+  function renderFolderGroup(folderName, groupDecks) {
+    const displayKey = folderName || '__unfiled__';
+    const isCollapsed = collapsedFolders.has(displayKey);
+    const header = document.createElement('div');
+    header.className = 'deck-folder-header' + (isCollapsed ? ' collapsed' : '');
+    const caret = document.createElement('span');
+    caret.className = 'deck-folder-caret';
+    caret.innerHTML = '&#x25BE;';
+    header.appendChild(caret);
+    const nm = document.createElement('span');
+    nm.className = 'deck-folder-name';
+    nm.textContent = folderName || '—';
+    header.appendChild(nm);
+    const ct = document.createElement('span');
+    ct.className = 'deck-folder-count';
+    ct.textContent = String(groupDecks.length);
+    header.appendChild(ct);
+    header.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (collapsedFolders.has(displayKey)) collapsedFolders.delete(displayKey);
+      else collapsedFolders.add(displayKey);
+      renderDecksList();
+    });
+    listEl.appendChild(header);
+    if (isCollapsed) return;
+    for (const deck of groupDecks) listEl.appendChild(buildDeckRow(deck, true));
+  }
 
-  function startRename(row, oldName) {
-    const nameEl = row.querySelector('.deck-name');
-    if (!nameEl) return;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'deck-name-input';
-    input.value = oldName;
-    input.spellcheck = false;
-    nameEl.replaceWith(input);
-    input.focus();
-    input.select();
+  function buildDeckRow(deck, indent) {
+    const row = document.createElement('div');
+    row.className = 'saved-deck-row' + (indent ? ' indent' : '');
 
-    let renameHandled = false;
-    async function finishRename() {
-      if (renameHandled) return;
-      renameHandled = true;
-      const newName = input.value.trim();
-      if (!newName || newName === oldName) {
-        renderDecksList();
-        return;
+    const nameEl = document.createElement('span');
+    nameEl.className = 'deck-name';
+    nameEl.textContent = deck.name;
+    row.appendChild(nameEl);
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'deck-action';
+    renameBtn.dataset.title = 'Edit name and folder';
+    renameBtn.innerHTML = '&#x270E;';
+    renameBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      startEdit(row, deck.name);
+    });
+    row.appendChild(renameBtn);
+
+    const tagBtn = document.createElement('button');
+    tagBtn.className = 'deck-action';
+    tagBtn.dataset.title = 'Edit tags';
+    tagBtn.textContent = '\u{1F3F7}';
+    tagBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      startTagEdit(row, deck.name);
+    });
+    row.appendChild(tagBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'deck-action deck-delete';
+    delBtn.dataset.title = 'Delete';
+    delBtn.innerHTML = '&#x1f5d1;';
+    delBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const ok = await showDeleteConfirm(deck.name);
+      if (!ok) return;
+      deleteDeckFromStorage(deck.name);
+      if (STATE.loadedDeckName === deck.name) {
+        STATE.loadedDeckName = null;
+        STATE.loadedDeckFolder = null;
+        STATE.loadedDeckTags = [];
+        updateSaveButtons();
       }
-      const existing = localStorage.getItem(SAVED_DECK_PREFIX + newName);
-      if (existing) {
-        const choice = await showNameConflict(newName, 'rename');
-        if (!choice) { renderDecksList(); return; }
-        if (choice === 'keep-both') {
-          const safeName = uniqueDeckName(newName);
-          renameDeck(oldName, safeName);
+      renderDecksList();
+    });
+    row.appendChild(delBtn);
+
+    row.addEventListener('click', () => {
+      if (deckIsDirty() && !confirm('Replace the current deck with “' + deck.name + '”?')) return;
+      const ok = loadDeckFromStorage(deck.name);
+      if (!ok) { alert('Could not load deck “' + deck.name + '”'); return; }
+      const meta = readDeckMeta(deck.name);
+      STATE.loadedDeckName = deck.name;
+      STATE.loadedDeckFolder = meta.folder;
+      STATE.loadedDeckTags = meta.tags;
+      updateSaveButtons();
+      closeAllDropdowns();
+    });
+
+    return row;
+  }
+
+  function startEdit(row, oldName) {
+    refreshFoldersDatalist();
+    const meta = readDeckMeta(oldName);
+    row.innerHTML = '';
+    row.classList.add('editing');
+
+    const folderInput = document.createElement('input');
+    folderInput.type = 'text';
+    folderInput.className = 'deck-folder-input';
+    folderInput.setAttribute('list', 'all-deck-folders-datalist');
+    folderInput.placeholder = 'folder (optional)';
+    folderInput.value = meta.folder || '';
+    folderInput.spellcheck = false;
+    row.appendChild(folderInput);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'deck-name-input';
+    nameInput.value = oldName;
+    nameInput.spellcheck = false;
+    row.appendChild(nameInput);
+
+    setTimeout(() => { nameInput.focus(); nameInput.select(); }, 0);
+
+    let handled = false;
+    async function finishEdit() {
+      if (handled) return;
+      handled = true;
+      const newName = nameInput.value.trim();
+      const newFolder = folderInput.value.trim() || null;
+      let finalName = oldName;
+      if (newName && newName !== oldName) {
+        const existing = localStorage.getItem(SAVED_DECK_PREFIX + newName);
+        if (existing) {
+          const choice = await showNameConflict(newName, 'rename');
+          if (!choice) { renderDecksList(); return; }
+          if (choice === 'keep-both') {
+            finalName = uniqueDeckName(newName);
+            renameDeck(oldName, finalName);
+          } else {
+            deleteDeckFromStorage(newName);
+            renameDeck(oldName, newName);
+            finalName = newName;
+          }
         } else {
-          // overwrite: delete the target, then rename
-          deleteDeckFromStorage(newName);
           renameDeck(oldName, newName);
+          finalName = newName;
         }
-      } else {
-        renameDeck(oldName, newName);
       }
+      const keepTags = readDeckMeta(finalName).tags;
+      writeDeckMeta(finalName, { folder: newFolder, tags: keepTags });
       renderDecksList();
     }
 
-    input.addEventListener('keydown', (ev) => {
+    function onKey(ev) {
       ev.stopPropagation();
-      if (ev.key === 'Enter') { ev.preventDefault(); finishRename(); }
-      if (ev.key === 'Escape') { ev.preventDefault(); renderDecksList(); }
-    });
-    input.addEventListener('blur', () => finishRename());
-    input.addEventListener('click', (ev) => ev.stopPropagation());
+      if (ev.key === 'Enter') { ev.preventDefault(); finishEdit(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); handled = true; renderDecksList(); }
+    }
+    function onBlur() {
+      setTimeout(() => {
+        if (handled) return;
+        if (document.activeElement === nameInput || document.activeElement === folderInput) return;
+        finishEdit();
+      }, 0);
+    }
+    nameInput.addEventListener('keydown', onKey);
+    folderInput.addEventListener('keydown', onKey);
+    nameInput.addEventListener('blur', onBlur);
+    folderInput.addEventListener('blur', onBlur);
+    nameInput.addEventListener('click', (ev) => ev.stopPropagation());
+    folderInput.addEventListener('click', (ev) => ev.stopPropagation());
   }
 
   function renameDeck(oldName, newName) {
@@ -4431,33 +5238,62 @@ function wireSavedDecks() {
     } catch (_) {}
   }
 
+  function startTagEdit(row, name) {
+    refreshTagsDatalist();
+    const meta = readDeckMeta(name);
+    let tags = meta.tags.slice();
+    row.innerHTML = '';
+    row.classList.add('editing');
+    const nameEl = document.createElement('span');
+    nameEl.className = 'deck-name';
+    nameEl.textContent = name;
+    row.appendChild(nameEl);
+    const host = document.createElement('div');
+    host.className = 'tag-chip-editor';
+    host.addEventListener('click', (ev) => ev.stopPropagation());
+    row.appendChild(host);
+    mountChipEditor(host, {
+      getTags: () => tags,
+      setTags: (v) => { tags = v; },
+      onClose: () => {
+        writeDeckMeta(name, { folder: meta.folder, tags });
+        renderDecksList();
+      },
+    });
+  }
+
   decksBtn.addEventListener('click', (ev) => {
     ev.stopPropagation();
     if (decksDropdown.classList.contains('hidden')) {
       closeAllDropdowns();
-      decksPage = 0;
       renderDecksList();
-      // Cap width to the rightward space available from the button so the
-      // dropdown never overflows the viewport.
       const btnLeft = decksBtn.getBoundingClientRect().left;
-      const available = Math.max(120, window.innerWidth - btnLeft - 8);
+      const available = Math.max(280, window.innerWidth - btnLeft - 8);
       decksDropdown.style.maxWidth = available + 'px';
       decksDropdown.classList.remove('hidden');
+      setTimeout(() => filterInput.focus(), 0);
     } else {
       closeAllDropdowns();
     }
   });
 
-  document.getElementById('decks-prev').addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    decksPage--;
+  filterInput.addEventListener('input', () => {
+    filterText = filterInput.value;
     renderDecksList();
   });
-  document.getElementById('decks-next').addEventListener('click', (ev) => {
+  filterInput.addEventListener('keydown', (ev) => {
     ev.stopPropagation();
-    decksPage++;
-    renderDecksList();
+    if (ev.key === 'Escape') {
+      if (filterInput.value) {
+        filterInput.value = '';
+        filterText = '';
+        renderDecksList();
+      } else {
+        closeAllDropdowns();
+      }
+    }
   });
+  filterInput.addEventListener('click', (ev) => ev.stopPropagation());
 
   // Stop clicks inside dropdowns from closing them
   saveDropdown.addEventListener('click', (ev) => ev.stopPropagation());

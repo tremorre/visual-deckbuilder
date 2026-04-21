@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Revolution Deckbuilder</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/webp" href="favicon.webp">
 <script>
   // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
   try {
@@ -18,7 +20,7 @@
 <body>
 <header>
   <div class="search-wrap">
-    <input id="search" type="text" placeholder="Search (e.g. t:creature cmc:3 c:u)" autocomplete="off" spellcheck="false">
+    <input id="search" type="text" placeholder="e.g. t:creature" autocomplete="off" spellcheck="false">
     <button id="btn-search-toggle" class="search-toggle" type="button" data-title="Show search results in the main panel (instead of a dropdown)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="2" y="2" width="5" height="5" rx="0.5"/>
@@ -49,6 +51,15 @@
       <button id="btn-save-as" class="hidden" data-title="Save a copy with a new name">Save as</button>
       <div id="save-name-dropdown" class="deck-dropdown hidden">
         <input id="save-deck-name" type="text" placeholder="Deck name" spellcheck="false">
+        <div id="save-deck-folder-field" class="save-meta-field">
+          <label>Folder</label>
+          <input id="save-deck-folder" type="text" placeholder="(none)" spellcheck="false" list="save-deck-folder-list">
+          <datalist id="save-deck-folder-list"></datalist>
+        </div>
+        <div id="save-deck-tags-field" class="save-meta-field">
+          <label>Tags</label>
+          <div id="save-deck-tags" class="tag-chip-editor"></div>
+        </div>
         <div class="save-name-buttons">
           <button id="save-name-ok" class="primary">Save</button>
           <button id="save-name-cancel">Cancel</button>
@@ -58,12 +69,8 @@
     <div class="deck-btn-group">
       <button id="btn-decks" data-title="Browse saved decks">Decks</button>
       <div id="decks-dropdown" class="deck-dropdown hidden">
+        <input id="decks-filter" type="text" placeholder="e.g. tag:aggro" spellcheck="false">
         <div id="decks-list"></div>
-        <div id="decks-pages" class="decks-pages hidden">
-          <button id="decks-prev" data-title="Previous page">&lsaquo;</button>
-          <span id="decks-page-info"></span>
-          <button id="decks-next" data-title="Next page">&rsaquo;</button>
-        </div>
       </div>
     </div>
     <button id="btn-new-deck" class="danger" data-title="Clear all zones and start a new deck">New deck</button>
@@ -124,9 +131,16 @@
       <h2 id="pile-title">Main</h2>
       <div class="piles-sort">
         <span>Pile sort:</span>
-        <button class="sort-btn active" data-pile-sort="type">Type</button>
-        <button class="sort-btn" data-pile-sort="cmc">Mana</button>
-        <button id="btn-resort">Re-sort</button>
+        <div class="sort-dropdown">
+          <button id="pile-sort-btn" class="sort-dropdown-btn">Type &#x25BE;</button>
+          <div id="pile-sort-menu" class="sort-dropdown-menu hidden">
+            <button data-pile-sort="type">Type</button>
+            <button data-pile-sort="cmc">Mana</button>
+            <button data-pile-sort="set">Set</button>
+            <button data-pile-sort="color">Color</button>
+            <button data-pile-sort="name">Name</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="piles" class="piles"></div>

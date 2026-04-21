@@ -442,6 +442,43 @@ button.danger:hover { background: var(--danger-bg); }
   color: var(--text-faint);
 }
 
+/* Sort-mode dropdown (pile-sort bar). Mirrors the format dropdown's open/close
+   pattern but is smaller and anchors left-aligned under its trigger. */
+.sort-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.sort-dropdown-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.sort-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+.sort-dropdown-menu.hidden { display: none; }
+.sort-dropdown-menu > button {
+  padding: 3px 10px;
+  font-size: 11px;
+  text-align: left;
+  border-radius: 0;
+  white-space: nowrap;
+  min-width: 90px;
+}
+.sort-dropdown-menu > button:first-child { border-radius: 3px 3px 0 0; }
+.sort-dropdown-menu > button:last-child  { border-radius: 0 0 3px 3px; }
+.sort-dropdown-menu > button + button { border-top: none; }
+.sort-dropdown-menu > button.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
 main {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -776,6 +813,82 @@ main {
   border-color: var(--accent);
 }
 
+/* Version-swap button (lotus icon, bottom-right of a card slot). Opens a
+   floating chip strip of available printings for the card; clicking a chip
+   replaces this copy's printing (and any selected copies of the same card). */
+.version-btn {
+  pointer-events: auto;
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  cursor: pointer;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  transition: opacity 0.12s, background 0.12s, border-color 0.12s;
+}
+@media (hover: hover) {
+  .version-btn { opacity: 0; }
+  .pile .card-slot:hover .version-btn { opacity: 0.85; }
+}
+.version-btn:hover {
+  opacity: 1 !important;
+  background: rgba(40, 90, 160, 0.95);
+  border-color: var(--accent);
+}
+.version-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* Floating printing picker. Appended to body with fixed positioning so it
+   escapes the card slot's overflow:hidden and the pile pane's scroll. */
+.version-picker {
+  position: fixed;
+  z-index: 300;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  box-shadow: var(--shadow-dropdown-lg);
+  max-width: 260px;
+}
+.version-picker.hidden { display: none; }
+.version-chip {
+  background: var(--accent-chip-bg);
+  border: 1px solid var(--accent-chip-border);
+  color: var(--accent-chip-text);
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.version-chip:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+.version-chip.current {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
 /* Transparent flip button centered on a DFC card slot. Stays invisible at
    rest; a faint icon fades in while the user hovers the slot, and brightens
    on direct hover so it's clear the button is clickable. */
@@ -992,18 +1105,67 @@ button.primary:hover { background: var(--accent-bg-hover); }
   min-width: 0;
   max-width: 340px;
 }
+#decks-filter {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#decks-filter:focus { outline: none; border-bottom-color: var(--accent); }
 #decks-list {
   display: flex;
   flex-direction: column;
+  max-height: 420px;
+  overflow-y: auto;
 }
-.saved-deck-row {
+
+/* Folder headers */
+.deck-folder-header {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-1, var(--bg-2));
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.deck-folder-header:hover { color: var(--text-secondary); }
+.deck-folder-caret {
+  display: inline-block;
+  width: 10px;
+  font-size: 9px;
+  transition: transform 0.1s ease;
+}
+.deck-folder-header.collapsed .deck-folder-caret { transform: rotate(-90deg); }
+.deck-folder-name { flex: 1 1 auto; min-width: 0; }
+.deck-folder-count { font-size: 10px; color: var(--text-dim); }
+
+.saved-deck-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 5px 10px;
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
 }
+/* Only the inline rename / tag editors need to wrap (name + folder input, or
+   name + chip editor). The non-editing row must stay single-line so its
+   intrinsic width forces the dropdown wide enough for name + 3 icons. */
+.saved-deck-row.editing { flex-wrap: wrap; }
+.saved-deck-row.indent { padding-left: 22px; }
 .saved-deck-row:last-child { border-bottom: none; }
 .saved-deck-row:hover { background: var(--bg-row-hover-strong); }
 .saved-deck-row .deck-name {
@@ -1016,23 +1178,32 @@ button.primary:hover { background: var(--accent-bg-hover); }
   text-overflow: ellipsis;
 }
 .saved-deck-row .deck-action { flex-shrink: 0; }
-.saved-deck-row .deck-name-input {
-  flex: 1;
+/* Inline rename inputs size to their own content (field-sizing) and don't
+   grow/shrink, so each shows its full value; flex-wrap on .editing rows
+   drops the second input onto a new line when they can't share one. */
+.saved-deck-row .deck-name-input,
+.saved-deck-row .deck-folder-input {
+  flex: 0 0 auto;
+  field-sizing: content;
+  min-width: 4em;
   background: var(--bg-input);
   color: var(--text-secondary);
   border: 1px solid var(--accent);
   border-radius: 3px;
   padding: 2px 6px;
   font-family: inherit;
-  font-size: 12px;
-  min-width: 0;
 }
-.saved-deck-row .deck-name-input:focus { outline: none; }
+.saved-deck-row .deck-name-input { font-size: 12px; }
+.saved-deck-row .deck-folder-input { font-size: 11px; }
+.saved-deck-row .deck-name-input:focus,
+.saved-deck-row .deck-folder-input:focus { outline: none; }
+.saved-deck-row .deck-folder-input:focus { outline: none; }
+.saved-deck-row .deck-folder-input::placeholder { color: var(--text-dim); font-style: italic; }
 .saved-deck-row .deck-action {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   padding: 2px 4px;
   color: var(--text-muted);
   line-height: 1;
@@ -1047,23 +1218,127 @@ button.primary:hover { background: var(--accent-bg-hover); }
   font-style: italic;
 }
 
-/* Pagination for decks list */
-.decks-pages {
+/* Tag chips on rows (read-only display) */
+.deck-row-tags {
   display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.deck-tag-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-top: 1px solid var(--border-subtle);
+  gap: 3px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.deck-tag-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.deck-tag-chip .chip-x {
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.deck-tag-chip .chip-x:hover { color: var(--danger); }
+
+/* Inline chip editor (used for both row tag edit and save-dialog tags) */
+.tag-chip-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  flex: 1 1 100%;
+  padding: 4px 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  min-height: 22px;
+}
+.tag-chip-editor .deck-tag-chip {
+  cursor: default;
+  border-color: var(--border-strong);
+}
+.tag-chip-editor input {
+  flex: 1 1 80px;
+  min-width: 60px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  outline: none;
+  font-family: inherit;
   font-size: 11px;
+  padding: 1px 2px;
+}
+
+/* Folder edit popover */
+.folder-edit-popover {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+}
+.folder-edit-popover .folder-opt {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.folder-edit-popover .folder-opt:hover { background: var(--bg-row-hover-strong); }
+.folder-edit-popover .folder-opt.active { color: var(--accent); }
+.folder-edit-popover input {
+  background: var(--bg-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 11px;
+}
+.folder-edit-popover input:focus { outline: none; border-color: var(--accent); }
+
+/* Save dialog — folder/tags fields */
+.save-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.save-meta-field > label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
-.decks-pages.hidden { display: none; }
-.decks-pages button {
-  font-size: 13px;
-  padding: 1px 8px;
-  line-height: 1;
+#save-deck-folder {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
+#save-deck-folder:focus { outline: none; border-color: var(--accent); }
 
 /* Always-rendered drag preview img. Must be in the viewport with non-zero
    rendered size for setDragImage to work (Firefox refuses off-screen / hidden
