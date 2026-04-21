@@ -3039,7 +3039,7 @@ function currentFace(inst, card) {
 // rewrites inst.cardId to that printing's id. If the clicked instance is
 // part of the active selection, every selected instance sharing the same
 // canonical name is swapped alongside it.
-function makeVersionButton(inst, card) {
+function makeVersionButton(openPickerAt) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'version-btn';
@@ -3055,22 +3055,21 @@ function makeVersionButton(inst, card) {
   btn.addEventListener('click', (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
-    openVersionPicker(btn, inst, card);
+    openPickerAt(btn);
   });
   return btn;
 }
 
-function openVersionPicker(anchor, inst, card) {
+function openPrintingPicker(anchor, printings, currentId, onPick) {
   closeVersionPicker();
-  const printings = STATE.byCanonical.get(card.canonical) || [card];
-  if (printings.length <= 1) return;
+  if (!printings || printings.length <= 1) return;
   const picker = document.createElement('div');
   picker.className = 'version-picker';
   picker.id = 'version-picker';
   printings.forEach(p => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'version-chip' + (p.id === inst.cardId ? ' current' : '');
+    chip.className = 'version-chip' + (p.id === currentId ? ' current' : '');
     // Alt-art variants (Pixel/Hero/Cidraeth/...) share set codes with their
     // base printing, so the chip prefers the stripped variant label when
     // one was captured during consolidation. Base prints and plain _SETCODE
@@ -3085,7 +3084,7 @@ function openVersionPicker(anchor, inst, card) {
     chip.addEventListener('click', (ev) => {
       ev.stopPropagation();
       ev.preventDefault();
-      swapVersion(inst, p.id);
+      onPick(p);
       closeVersionPicker();
     });
     // Hover preview shows the specific printing's art so users can compare
@@ -3108,6 +3107,11 @@ function openVersionPicker(anchor, inst, card) {
   picker.style.left = left + 'px';
   picker.style.top = top + 'px';
   STATE._versionPicker = { el: picker };
+}
+
+function openVersionPicker(anchor, inst, card) {
+  const printings = STATE.byCanonical.get(card.canonical) || [card];
+  openPrintingPicker(anchor, printings, inst.cardId, (p) => swapVersion(inst, p.id));
 }
 
 function closeVersionPicker() {
@@ -3373,7 +3377,7 @@ function makePileEl(pile, pileIdx) {
       // one printing of this card — clicking would have no choices to offer.
       const printings = STATE.byCanonical.get(card.canonical);
       if (printings && printings.length > 1) {
-        slot.appendChild(makeVersionButton(inst, card));
+        slot.appendChild(makeVersionButton((btn) => openVersionPicker(btn, inst, card)));
       }
     }
     el.appendChild(slot);
@@ -3437,13 +3441,13 @@ function renderSearchPanel() {
     const pile = document.createElement('div');
     pile.className = 'pile';
     pile.style.height = CARD_HEIGHT + 'px';
-    pile.appendChild(makeSearchSlot(picked));
+    pile.appendChild(makeSearchSlot(picked, item));
     wrapper.appendChild(pile);
     container.appendChild(wrapper);
   });
 }
 
-function makeSearchSlot(card) {
+function makeSearchSlot(card, item) {
   const slot = document.createElement('div');
   slot.className = 'card-slot'
                  + (isLegal(card) ? '' : ' illegal')
@@ -3453,14 +3457,19 @@ function makeSearchSlot(card) {
   slot.draggable = true;
   slot.dataset.cardId = String(card.id);
 
+  // Flip state lives on the search-result `item` so cycling printings or
+  // re-rendering keeps the chosen face. The displayed face is resolved via
+  // currentFace so flipped DFCs render their back immediately on mount.
+  const face0 = currentFace(item, card);
   const img = document.createElement('img');
-  img.alt = card.canonical || card.name || '';
-  img.src = imgUrl(card);
+  img.alt = face0.canonical || face0.name || card.canonical || '';
+  img.src = imgUrl(face0);
   img.addEventListener('error', () => {
     slot.classList.add('no-image');
-    slot.textContent = card.canonical || card.name || '???';
+    slot.textContent = face0.canonical || face0.name || '???';
   });
   slot.appendChild(img);
+  if (item && item.flipped && card.back) slot.classList.add('flipped');
 
   const titleParts = [card.canonical, card.type, card.manacost || ''];
   if (card.text) titleParts.push('', card.text);
@@ -3508,11 +3517,28 @@ function makeSearchSlot(card) {
     hideDragTrash();
     document.body.classList.remove('dragging');
   });
-  slot.addEventListener('mouseenter', (ev) => showPreview(card, ev, slot));
+  slot.addEventListener('mouseenter', (ev) => showPreview(currentFace(item, card), ev, slot));
   slot.addEventListener('mousemove', positionPreview);
   slot.addEventListener('mouseleave', hidePreview);
 
   slot.appendChild(makeSearchSlotButtons(card));
+  // DFC flip button — `item` stands in for `inst` since both carry a
+  // `flipped` boolean; reuses the pile pane's widget.
+  if (card.back && item) {
+    slot.appendChild(makeFlipButton(item, card, slot));
+  }
+  // Version-swap lotus. Mutates item.pickedIdx and re-renders the panel so
+  // the tile (and subsequent drags) use the chosen printing.
+  if (item && item.printings && item.printings.length > 1) {
+    const current = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+    slot.appendChild(makeVersionButton((btn) => {
+      openPrintingPicker(btn, item.printings, current ? current.id : null, (p) => {
+        const idx = item.printings.findIndex(pp => pp.id === p.id);
+        if (idx >= 0) item.pickedIdx = idx;
+        renderSearchPanel();
+      });
+    }));
+  }
   return slot;
 }
 
