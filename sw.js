@@ -6,7 +6,12 @@
 // is cleared explicitly from the UI ("Clear images" button).
 
 const IMG_CACHE = 'rev-img-v1';
-const IMG_HOST_PATH = 'raw.githubusercontent.com/cajunwritescode/Revolution';
+// Hosts whose /img/ URLs we own: Revolution's cards live under cajun's
+// repo, Voyager's under voyager-mtg.github.io.
+const IMG_HOSTS = [
+  'raw.githubusercontent.com/cajunwritescode/Revolution',
+  'voyager-mtg.github.io',
+];
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
@@ -15,7 +20,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = req.url;
-  if (!url.includes(IMG_HOST_PATH) || !url.includes('/img/')) return;
+  if (!url.includes('/img/')) return;
+  if (!IMG_HOSTS.some(h => url.includes(h))) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(IMG_CACHE);

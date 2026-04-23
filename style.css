@@ -83,6 +83,8 @@
   --mana-r: #e88787;
   --mana-g: #87c887;
   --mana-c: #c0c0c0;
+  --mana-i: #b8a9cc;
+  --mana-v: #e2b070;
 }
 
 [data-theme="light"] {
@@ -158,6 +160,8 @@
   --mana-r: #b82525;
   --mana-g: #227a22;
   --mana-c: #5a5c62;
+  --mana-i: #6e5c8c;
+  --mana-v: #8a5a12;
 }
 
 * { box-sizing: border-box; }
@@ -441,6 +445,10 @@ button.danger:hover { background: var(--danger-bg); }
 .format-dropdown-menu .range-pickers .range-dash {
   color: var(--text-faint);
 }
+.format-dropdown-menu > button[data-format="voyager"] {
+  border-radius: 0 0 3px 3px;
+  margin-top: 4px;
+}
 
 /* Sort-mode dropdown (pile-sort bar). Mirrors the format dropdown's open/close
    pattern but is smaller and anchors left-aligned under its trigger. */
@@ -539,6 +547,23 @@ main {
   color: var(--text-muted);
 }
 .zone.focused .zone-count { color: var(--text-on-accent); opacity: 0.8; }
+/* Deck-validity flag: count badge goes red when the zone violates a rule
+   (main < 60, side > 15, sanctum > 7, or sanctum has ineligible cards).
+   Hover exposes the specific reason via the element's title. */
+.zone .zone-count.invalid {
+  color: var(--danger, #e04040);
+  font-weight: 600;
+}
+.zone.focused .zone-count.invalid {
+  color: var(--danger, #e04040);
+  opacity: 1;
+}
+/* Sanctum is Voyager-only; hide the zone + its add-to-zone button when
+   not in Voyager mode. Data-plumbing iteration sites still include sanctum
+   so a stashed Voyager deck survives toggles, but the user can't interact
+   with it in Revolution mode. */
+body:not(.voyager-mode) .zone-sanctum-host,
+body:not(.voyager-mode) .sanctum-only { display: none; }
 
 .zone-list {
   /* No internal scroll — the whole sidebar scrolls instead. */
@@ -1388,6 +1413,8 @@ button.primary:hover { background: var(--accent-bg-hover); }
 .mana-r { color: var(--mana-r); }
 .mana-g { color: var(--mana-g); }
 .mana-c { color: var(--mana-c); }
+.mana-i { color: var(--mana-i); }
+.mana-v { color: var(--mana-v); }
 
 /* Drag-to-delete trash can — shown when dragging 2+ cards */
 .drag-trash {
@@ -1446,4 +1473,180 @@ button.primary:hover { background: var(--accent-bg-hover); }
 .floating-actions button:hover {
   background: var(--bg-button);
   color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------- */
+/* Sideboard plans                                                       */
+/* --------------------------------------------------------------------- */
+
+/* Deck/plan title centered in the piles-pane header row. Absolutely
+   positioned so it's centered relative to the pane, independent of the
+   zone title on the left and the pile-sort controls on the right. */
+.piles-header { position: relative; }
+.deck-title-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+  pointer-events: auto;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-title-bar.hidden { display: none; }
+.deck-title-name { font-weight: 500; color: var(--text-secondary); }
+.plan-title-sep { color: var(--text-dim); }
+.plan-title-name { font-weight: 600; color: var(--text-secondary); }
+.plan-status {
+  cursor: help;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.plan-status.match { color: var(--ok, #7cc47c); }
+.plan-status.mismatch { color: var(--danger, #e06c6c); }
+.plan-exit {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.plan-exit:hover { color: var(--danger); }
+
+/* Rows under the currently-loaded deck in the decks dropdown. */
+.saved-deck-row.loaded {
+  background: var(--bg-row-hover, rgba(127,127,127,0.08));
+}
+.saved-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.saved-deck-row.indent + .saved-plan-row,
+.saved-plan-row.indent { padding-left: 40px; }
+.saved-plan-row:hover { background: var(--bg-row-hover-strong); }
+.saved-plan-row .plan-caret {
+  flex-shrink: 0;
+  width: 12px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.saved-plan-row .plan-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saved-plan-row.active .plan-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+.saved-plan-row.active::before {
+  content: '●';
+  color: var(--accent);
+  font-size: 8px;
+  margin-right: 2px;
+}
+.saved-plan-row.stale {
+  opacity: 0.55;
+}
+.saved-plan-row.stale .plan-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  color: var(--text-muted);
+}
+.saved-plan-row .deck-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  color: var(--text-muted);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.saved-plan-row .deck-action:hover { color: var(--text-secondary); }
+.saved-plan-row .deck-action.deck-delete:hover { color: var(--danger); }
+
+.saved-plan-row.create-plan-row {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 11px;
+}
+.saved-plan-row.create-plan-row:hover { color: var(--accent); }
+.saved-plan-row.create-plan-row.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.saved-plan-row.create-plan-row.disabled:hover { color: var(--text-dim); }
+
+/* Maybe zone is locked while a plan is active. Aside lanes, search add-maybe
+   buttons, and any existing "move to maybeboard" affordance dim + block
+   interaction. */
+body.plan-active .zone[data-zone="maybe"] {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  pointer-events: none;
+}
+body.plan-active .zone[data-zone="maybe"] header::after {
+  content: ' 🔒';
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Stale-plans confirmation modal list */
+.stale-plans-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+}
+.stale-plans-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.stale-plans-list li:last-child { border-bottom: none; }
+.stale-plan-name { font-weight: 600; color: var(--text-secondary); }
+.stale-plan-diff { color: var(--text-muted); font-size: 11px; font-family: var(--font-mono, monospace); }
+
+/* Plan-name prompt modal input */
+#plan-name-modal input {
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  margin: 8px 0 12px;
+  box-sizing: border-box;
+}
+#plan-name-modal input:focus {
+  outline: none;
+  border-color: var(--accent);
 }

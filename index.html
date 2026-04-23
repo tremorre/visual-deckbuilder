@@ -85,6 +85,7 @@
           <span class="range-dash">&ndash;</span>
           <select id="range-end" data-title="Latest set in the range"></select>
         </div>
+        <button data-format="voyager" data-title="Switch to the Voyager custom format (separate card pool)">Voyager</button>
       </div>
     </div>
   </div>
@@ -110,6 +111,13 @@
       </header>
       <div class="zone-list" id="list-main"></div>
     </section>
+    <section class="zone zone-sanctum-host" data-zone="sanctum">
+      <header>
+        <span class="zone-title">Sanctum</span>
+        <span class="zone-count" id="count-sanctum">0</span>
+      </header>
+      <div class="zone-list" id="list-sanctum"></div>
+    </section>
     <section class="zone" data-zone="side">
       <header>
         <span class="zone-title">Sideboard</span>
@@ -129,6 +137,13 @@
   <section class="piles-pane">
     <div class="piles-header">
       <h2 id="pile-title">Main</h2>
+      <div id="deck-title-bar" class="deck-title-bar hidden">
+        <span id="deck-title-name" class="deck-title-name"></span>
+        <span id="plan-title-sep" class="plan-title-sep hidden">·</span>
+        <span id="plan-title-name" class="plan-title-name"></span>
+        <span id="plan-status" class="plan-status hidden" data-title=""></span>
+        <button id="plan-exit" class="plan-exit hidden" type="button" data-title="Exit plan and return to the base deck">&times;</button>
+      </div>
       <div class="piles-sort">
         <span>Pile sort:</span>
         <div class="sort-dropdown">
@@ -194,6 +209,32 @@
       <button id="maybe-export-cancel">Cancel</button>
       <button id="maybe-export-keep">Keep separate</button>
       <button id="maybe-export-merge" class="primary">Merge into sideboard</button>
+    </div>
+  </div>
+</div>
+
+<div id="stale-plans-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Plans will become stale</h3>
+    <p class="modal-help">Saving this deck will change its 75. The following sideboard plans will no longer match and won't be loadable until the deck's 75 is restored. Each diff reads <em>relative to the new base</em>: <code>+2 Foo</code> means the plan has 2 extra Foo the new deck no longer does; <code>−2 Bar</code> means the plan is missing 2 Bar the new deck has.</p>
+    <ul id="stale-plans-list" class="stale-plans-list"></ul>
+    <div class="modal-buttons">
+      <button id="stale-plans-cancel">Cancel</button>
+      <button id="stale-plans-ok" class="primary">Save and mark stale</button>
+    </div>
+  </div>
+</div>
+
+<div id="plan-name-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3 id="plan-name-title">New sideboard plan</h3>
+    <p class="modal-help">Name this plan for the matchup it targets (e.g. <code>vs Jeskai control</code>).</p>
+    <input id="plan-name-input" type="text" placeholder="Plan name" spellcheck="false">
+    <div class="modal-buttons">
+      <button id="plan-name-cancel">Cancel</button>
+      <button id="plan-name-ok" class="primary">Create</button>
     </div>
   </div>
 </div>

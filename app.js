@@ -14,15 +14,19 @@ const IMG_BASE = 'https://raw.githubusercontent.com/cajunwritescode/Revolution/r
 // shape: { meta: {}, data: { SETCODE: { name, code, releaseDate, cards: [...] } } }
 const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolution/refs/heads/main/AllSetsEternal.json';
 
-// localStorage key for the refreshed snapshot. Once the user has refreshed,
-// subsequent loads use this and skip even the bundled cards.json fetch.
-// Bumped to v10: page cards now carry a synthesized `pageFace` object with
-// its own type / text / mana / colors / cmc / keywords so searches match
-// face-by-face (no cross-side partial hits between the creature and its
-// Adventure/Discharge spell). Main face keywords are no longer combined
-// with page keywords.
-const STORAGE_VERSION = 11;
+// Voyager is a parallel custom format with its own card pool. Its card data
+// lives in a Cockatrice-format XML file at a separate GitHub Pages host.
+// Selecting "Voyager" in the format dropdown swaps the entire card index
+// (no overlap with Revolution, including alt-art reprints).
+const VOYAGER_URL = 'https://voyager-mtg.github.io/lists/cards.xml';
+
+// localStorage keys for parsed card-data snapshots, one slot per dataset.
+// v14 bump: Voyager reprints now get `_SETCODE` suffixes so alt printings
+// survive save/load (prior cache has 17 collapsed Mountains etc.) and the
+// user's chosen art is preserved.
+const STORAGE_VERSION = 14;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
+const VOYAGER_STORAGE_KEY = `rev-deckbuilder-voyager-v${STORAGE_VERSION}`;
 
 // User preferences (format toggle + chosen set range). Kept separate from
 // the card-data snapshot so refreshing card data doesn't reset the format,
@@ -45,17 +49,28 @@ const STATE = {
 
   // Each zone holds an ordered list of piles, each pile is an array of card-instance objects.
   // A card instance is { uid, cardId } — uid is unique per copy.
+  // `sanctum` is a Voyager-specific zone (basic lands, Wonder-subtype cards,
+  // and cards with Pathbound/Transcend/Usurpate/Heir keywords). It lives in
+  // STATE unconditionally so zone-iteration sites don't need per-dataset
+  // branching; the UI hides it via a body class when not in Voyager mode.
   zones: {
-    main:  { piles: [] },
-    side:  { piles: [] },
-    maybe: { piles: [] },
+    main:    { piles: [] },
+    sanctum: { piles: [] },
+    side:    { piles: [] },
+    maybe:   { piles: [] },
   },
 
   focusedZone: 'main',  // 'main' | 'side' | 'maybe' | 'search' (only when searchPanel is on)
   searchPanel: false,   // when true, hide the dropdown and render results in the pile pane
-  format: 'standard',   // 'standard' | 'eternal' | 'range'
+  format: 'standard',   // 'standard' | 'eternal' | 'range' | 'voyager'
   rangeStart: null,     // set code (only meaningful when format === 'range')
   rangeEnd: null,       // set code (only meaningful when format === 'range')
+  // Per-dataset stash. On dataset switch we snapshot the outgoing dataset's
+  // full working state (zones + loaded-deck pointer + dirty baseline) here,
+  // and restore it when the user returns. This makes each dataset feel like
+  // a persistent workspace: unsaved edits survive, and a loaded deck stays
+  // loaded (not just its cards). Slot is null until first used.
+  stashedByDataset: { revolution: null, voyager: null },
   listSort: 'type',     // how the text deck list is sorted
   pileSort: 'type',     // primary pile-sort method — kept in sync with pileSortChain[0].
   pileSortChain: ['type'], // Most-recent-primary-first list of pile-sort methods. Ties from
@@ -81,6 +96,15 @@ const STATE = {
   loadedDeckFolder: null, // folder string of the loaded deck (null = unfiled)
   loadedDeckTags: [],   // tags of the loaded deck (empty = untagged)
   deckSnapshot: null,   // JSON string of zones at last load/save/new — used to detect unsaved changes
+
+  // Sideboard-plan state. A plan is a named alternate partitioning of the
+  // loaded deck's main+side into main+side — same 75 cards, different split.
+  // Plans live inside the deck's payload under `plans[]`. While a plan is
+  // active, the maybeboard is locked (plans don't touch maybe).
+  loadedPlanName: null, // string | null; null means editing the base deck
+  basePlanZones: null,  // { main: [[names],…], side: [[names],…] } | null;
+                        // captured from the base deck when a plan is loaded,
+                        // used for the live "75 matches" diff indicator.
 
   // Undo/redo history. `lastSnapshot` mirrors the zones JSON as of the last
   // commit; renderAll() compares a fresh serialization against it and pushes
@@ -119,7 +143,7 @@ function pickMainType(types) {
   return best;
 }
 
-const ZONE_LABELS = { main: 'Main', side: 'Sideboard', maybe: 'Maybeboard' };
+const ZONE_LABELS = { main: 'Main', sanctum: 'Sanctum', side: 'Sideboard', maybe: 'Maybeboard' };
 
 // ---------------------------------------------------------------------------
 // Custom drag ghost — bypasses the native drag-image which browsers scale
@@ -235,6 +259,13 @@ function wireDragTrash() {
     const uids = readUidsFromDrag(ev.dataTransfer);
     endDragGhost();
     if (uids.length === 0) return;
+    if (isPlanActive()) {
+      // All deletions are blocked under a plan — removing from main/side
+      // breaks the 75, and maybe is frozen.
+      notePlanLock("Plan has a fixed 75 — can't delete cards.");
+      hideDragTrash();
+      return;
+    }
     for (const uid of uids) removeInstance(uid);
     STATE.selection.clear();
     hideDragTrash();
@@ -253,18 +284,21 @@ function wireDragTrash() {
 
   loadPrefs();
 
+  // Pick the dataset matching the persisted format. If loading Voyager
+  // fails (first-ever switch + offline, bad fetch), fall back to Revolution
+  // / Standard so the page still boots into a usable state.
   let data = null;
   try {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) data = JSON.parse(cached);
+    data = await loadDatasetData(currentDataset());
   } catch (e) {
-    console.warn('Could not read cached card data:', e);
-  }
-  if (!data) {
-    const res = await fetch('cards.json');
-    if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
-    const json = await res.json();
-    data = parseAllSetsJson(json);
+    console.warn('Could not load active dataset, falling back to Standard:', e);
+    if (currentDataset() !== 'revolution') {
+      STATE.format = 'standard';
+      savePrefs();
+      data = await loadDatasetData('revolution');
+    } else {
+      throw e;
+    }
   }
   applyCardData(data);
 
@@ -284,6 +318,10 @@ function wireDragTrash() {
   // to 'search' when panel mode is on from a prior session.
   applySearchPanelMode();
   markDeckClean();
+  // Paint the initial zone counts (and their validity badges) so an empty
+  // deck already shows "main < 60" red on page load, without waiting for
+  // the first user action to trigger renderAll.
+  renderAll();
 
   // Register the image-caching service worker. Needs a secure context
   // (https or localhost) — silently a no-op on file:// or unsupported
@@ -499,7 +537,7 @@ function loadPrefs() {
     if (!raw) return;
     const obj = JSON.parse(raw);
     if (obj && typeof obj === 'object') {
-      if (obj.format === 'standard' || obj.format === 'eternal' || obj.format === 'range') {
+      if (obj.format === 'standard' || obj.format === 'eternal' || obj.format === 'range' || obj.format === 'voyager') {
         STATE.format = obj.format;
       }
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
@@ -782,6 +820,477 @@ async function refreshFromUpstream() {
 }
 
 // ---------------------------------------------------------------------------
+// XML ingestion (Voyager — Cockatrice carddatabase format)
+// ---------------------------------------------------------------------------
+
+// Cockatrice writes type-line subtype separators as U+2013 (en-dash);
+// parseTypeLineParts splits on U+2014 (em-dash), matching Revolution's
+// mtgjson convention. Normalize at parse time so the helper keeps its
+// existing contract.
+function normalizeTypeDash(s) { return s.replace(/–/g, '—'); }
+
+// Turn Voyager's bare mana-cost form ("4I/BI/B", "R/W", "XG") into the
+// mtgjson-style braced form ("{4}{I/B}{I/B}", "{R/W}", "{X}{G}") so the
+// existing formatManaCost / colorsFromManaCost / cmcFromManaCost helpers
+// can consume it unchanged. Digits form one generic pip; a bare letter is
+// one pip; LETTER/LETTER is one hybrid pip. Unknown characters are
+// skipped to keep the loop bounded.
+function voyagerBareManaToBraced(bare) {
+  if (!bare) return '';
+  const out = [];
+  let i = 0;
+  while (i < bare.length) {
+    const ch = bare[i];
+    if (ch === ' ') { i++; continue; }
+    if (/\d/.test(ch)) {
+      let j = i + 1;
+      while (j < bare.length && /\d/.test(bare[j])) j++;
+      out.push(bare.slice(i, j));
+      i = j;
+    } else if (/[A-Za-z]/.test(ch)) {
+      if (i + 2 < bare.length && bare[i + 1] === '/' && /[A-Za-z]/.test(bare[i + 2])) {
+        out.push(bare.slice(i, i + 3));
+        i += 3;
+      } else {
+        out.push(ch);
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+  return out.map(t => '{' + t + '}').join('');
+}
+
+// Build the "back face" record (attached as card.back on the front) from a
+// Cockatrice <card> element whose <prop><side> is "back". Mirrors the
+// back-face shape that parseAllSetsJson emits for transform cards.
+function buildVoyagerBackCard(el) {
+  const get = sel => (el.querySelector(sel)?.textContent || '').trim();
+  const name = get(':scope > name');
+  const text = (el.querySelector(':scope > text')?.textContent || '');
+  const typeLine = normalizeTypeDash(get('prop > type'));
+  const typeParts = parseTypeLineParts(typeLine);
+  const bareMc = get('prop > manacost');
+  const rawManaCost = voyagerBareManaToBraced(bareMc);
+  const ptText = get('prop > pt');
+  let power = '', toughness = '';
+  if (ptText) {
+    const slash = ptText.indexOf('/');
+    if (slash >= 0) { power = ptText.slice(0, slash); toughness = ptText.slice(slash + 1); }
+  }
+  const setEl = el.querySelector(':scope > set');
+  const setCode = (setEl?.textContent || '').trim();
+  const num = (setEl?.getAttribute('num') || '').trim();
+  const picurlRaw = (setEl?.getAttribute('picurl') || '').trim();
+  return {
+    name,
+    canonical: name,
+    text,
+    type: typeLine,
+    maintype: pickMainType(typeParts.types),
+    subtypes: typeParts.subtypes,
+    supertypes: typeParts.supertypes,
+    types: typeParts.types,
+    manacost: formatManaCost(rawManaCost),
+    rawManaCost,
+    colors: get('prop > colors').toUpperCase(),
+    power,
+    toughness,
+    loyalty: get('prop > loyalty'),
+    artist: '',
+    flavor: '',
+    keywords: extractKeywords(text),
+    layout: get('prop > layout') || 'normal',
+    set: setCode,
+    num,
+    imgVersion: 0,
+    picUrl: picurlRaw ? encodeURI(picurlRaw) : '',
+  };
+}
+
+// Parse the Voyager cards.xml document into the same {cards, sets, uuidMap,
+// allSetCodes} shape parseAllSetsJson returns, so applyCardData can ingest
+// it interchangeably. Transform backs are merged onto their front via the
+// <related attach="transform"> pointer; adventure halves become pageFace.
+function parseCockatriceXml(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  const perr = doc.querySelector('parsererror');
+  if (perr) throw new Error('failed to parse Voyager cards.xml: ' + (perr.textContent || ''));
+
+  // Set order is unavailable in the XML, so fabricate release dates from
+  // declaration order. That way setsByCode.releasedate stays populated and
+  // pile sort-by-set has a stable order for Voyager.
+  const sets = {};
+  const allSetCodes = new Set();
+  const setEls = Array.from(doc.querySelectorAll('sets > set'));
+  setEls.forEach((setEl, idx) => {
+    const code = (setEl.querySelector('name')?.textContent || '').trim();
+    if (!code) return;
+    const longname = (setEl.querySelector('longname')?.textContent || '').trim();
+    const day = new Date(Date.UTC(2020, 0, 1 + idx));
+    sets[code] = { code, longname, releasedate: day.toISOString().slice(0, 10) };
+    allSetCodes.add(code);
+  });
+
+  // Index every back-side card by (set, name) so front cards can attach
+  // their back-face in one pass below. A card with multiple printings of
+  // the same transform pair — e.g. Hazard Technician // Hazardous
+  // Technician printed in both AKT and TZE-01 — produces multiple back
+  // entries with identical names, so a name-only key would collide.
+  // Keying by set is always safe because a transform's two faces share
+  // a set.
+  const cardEls = Array.from(doc.querySelectorAll('cards > card'));
+  const backsByKey = new Map();
+  for (const el of cardEls) {
+    const side = (el.querySelector('prop > side')?.textContent || '').trim().toLowerCase();
+    if (side !== 'back') continue;
+    const name = (el.querySelector(':scope > name')?.textContent || '').trim();
+    const setEl = el.querySelector(':scope > set');
+    const setCode = (setEl?.textContent || '').trim();
+    if (name) backsByKey.set(setCode + '|' + name, buildVoyagerBackCard(el));
+  }
+
+  const cards = [];
+  const uuidMap = {};
+  let nextId = 1;
+  // Track claimed front-card names so every printing gets a unique byName
+  // key. Revolution's data already carries `_SETCODE` suffixes for reprints;
+  // Voyager's XML doesn't (17 Mountains all named "Mountain"), so without
+  // disambiguation a chosen printing wouldn't survive save/load. The first
+  // occurrence of a name stays plain; later printings get `_SETCODE`, and
+  // if several are in the same set (e.g. 4 Mountains in FOE), later ones
+  // get `_SETCODE_<collectorNumber>`. An `art` field carries a short label
+  // the version picker can show to distinguish same-set variants.
+  const claimedNames = new Set();
+
+  for (const el of cardEls) {
+    const side = (el.querySelector('prop > side')?.textContent || '').trim().toLowerCase();
+    if (side === 'back') continue;
+    const rawName = (el.querySelector(':scope > name')?.textContent || '').trim();
+    if (!rawName) continue;
+
+    // Adventure cards use "Front // Back" in name/type/manacost, and split
+    // the rules text with a "\n---\n" separator. Every other layout has
+    // plain single-face fields (transform backs live in separate <card>s).
+    const splitIdx = rawName.indexOf(' // ');
+    const frontName = splitIdx >= 0 ? rawName.slice(0, splitIdx) : rawName;
+    const advName   = splitIdx >= 0 ? rawName.slice(splitIdx + 4) : '';
+
+    const rawText = (el.querySelector(':scope > text')?.textContent || '');
+    const textSplit = rawText.indexOf('\n---\n');
+    const frontText = textSplit >= 0 ? rawText.slice(0, textSplit) : rawText;
+    const advText   = textSplit >= 0 ? rawText.slice(textSplit + 5) : '';
+
+    const typeLine = normalizeTypeDash((el.querySelector('prop > type')?.textContent || '').trim());
+    const typeSplit = typeLine.indexOf(' // ');
+    const frontType = typeSplit >= 0 ? typeLine.slice(0, typeSplit).trim() : typeLine;
+    const advType   = typeSplit >= 0 ? typeLine.slice(typeSplit + 4).trim() : '';
+
+    const bareMc = (el.querySelector('prop > manacost')?.textContent || '').trim();
+    const mcSplit = bareMc.indexOf(' // ');
+    const frontBareMc = mcSplit >= 0 ? bareMc.slice(0, mcSplit).trim() : bareMc;
+    const advBareMc   = mcSplit >= 0 ? bareMc.slice(mcSplit + 4).trim() : '';
+
+    const cmcRaw = (el.querySelector('prop > cmc')?.textContent || '').trim();
+    const cmc = cmcRaw ? (parseInt(cmcRaw, 10) || 0) : 0;
+    const colors = (el.querySelector('prop > colors')?.textContent || '').trim().toUpperCase();
+    const ci = (el.querySelector('prop > coloridentity')?.textContent || '').trim().toUpperCase();
+    const ptText = (el.querySelector('prop > pt')?.textContent || '').trim();
+    let power = '', toughness = '';
+    if (ptText) {
+      const slash = ptText.indexOf('/');
+      if (slash >= 0) { power = ptText.slice(0, slash); toughness = ptText.slice(slash + 1); }
+    }
+    const loyalty = (el.querySelector('prop > loyalty')?.textContent || '').trim();
+    const layout = (el.querySelector('prop > layout')?.textContent || '').trim() || 'normal';
+
+    const setEl = el.querySelector(':scope > set');
+    const setCode = (setEl?.textContent || '').trim();
+    const rarity = (setEl?.getAttribute('rarity') || '').trim().toLowerCase();
+    const num = (setEl?.getAttribute('num') || '').trim();
+    const picurlRaw = (setEl?.getAttribute('picurl') || '').trim();
+    const picUrl = picurlRaw ? encodeURI(picurlRaw) : '';
+    const uuid = (setEl?.getAttribute('uuid') || '').trim();
+
+    const typeParts = parseTypeLineParts(frontType);
+    const frontRawManaCost = voyagerBareManaToBraced(frontBareMc);
+
+    const pageData = (advName && advType) ? {
+      name: advName,
+      type: advType,
+      manaCost: voyagerBareManaToBraced(advBareMc),
+      text: advText,
+    } : null;
+
+    // Transform back: <related attach="transform">OtherFaceName</related>.
+    // Scope the lookup to the front's set so collisions between backs with
+    // identical names in different sets resolve correctly.
+    let backData = null;
+    let transformBackName = '';
+    const transformRel = el.querySelector('related[attach="transform"]');
+    if (transformRel) {
+      transformBackName = (transformRel.textContent || '').trim();
+      if (transformBackName) backData = backsByKey.get(setCode + '|' + transformBackName) || null;
+    }
+
+    // Build a unique name for byName. Try plain → +_SETCODE → +_SETCODE_num,
+    // claiming the first form that isn't already taken.
+    let uniqueName = frontName;
+    let variantLabel = null;
+    if (claimedNames.has(uniqueName)) {
+      uniqueName = `${frontName}_${setCode}`;
+      variantLabel = setCode;
+      if (claimedNames.has(uniqueName)) {
+        uniqueName = `${frontName}_${setCode}_${num}`;
+        variantLabel = `${setCode} ${num}`;
+        // Fallback counter if even num collides (shouldn't happen in valid
+        // data, but defensive).
+        let counter = 2;
+        while (claimedNames.has(uniqueName)) {
+          uniqueName = `${frontName}_${setCode}_${num}_${counter}`;
+          counter++;
+        }
+      }
+    }
+    claimedNames.add(uniqueName);
+
+    const id = nextId++;
+    const card = {
+      id,
+      name: uniqueName,
+      canonical: frontName,
+      // `variant` drives the version-picker chip label. Null for the
+      // canonical "base" printing; for reprints it's the set code (or
+      // set-code + collector-number when a single set has multiple
+      // printings of the same card).
+      variant: variantLabel,
+      text: frontText,
+      type: frontType,
+      maintype: pickMainType(typeParts.types),
+      subtypes: typeParts.subtypes,
+      supertypes: typeParts.supertypes,
+      types: typeParts.types,
+      cmc,
+      manacost: formatManaCost(frontRawManaCost),
+      rawManaCost: frontRawManaCost,
+      colors,
+      ci,
+      power,
+      toughness,
+      loyalty,
+      artist: '',
+      flavor: '',
+      keywords: extractKeywords(frontText),
+      pageData,
+      layout,
+      set: setCode,
+      num,
+      rarity,
+      legalities: {},
+      fmt_rev: '',
+      fmt_eternal: '',
+      related: transformBackName,
+      imgVersion: 0,
+      picUrl,
+      back: backData,
+    };
+
+    if (pageData) {
+      const advParts = parseTypeLineParts(pageData.type);
+      card.pageFace = {
+        id,
+        name: pageData.name,
+        canonical: card.canonical,
+        text: pageData.text,
+        type: pageData.type,
+        maintype: pickMainType(advParts.types),
+        subtypes: advParts.subtypes,
+        supertypes: advParts.supertypes,
+        types: advParts.types,
+        cmc: cmcFromManaCost(pageData.manaCost),
+        manacost: formatManaCost(pageData.manaCost),
+        rawManaCost: pageData.manaCost,
+        colors: colorsFromManaCost(pageData.manaCost),
+        ci: card.ci,
+        power: '',
+        toughness: '',
+        loyalty: '',
+        artist: '',
+        flavor: '',
+        keywords: extractKeywords(pageData.text),
+        pageData,
+        layout: card.layout,
+        set: setCode,
+        num,
+        rarity,
+        legalities: {},
+        fmt_rev: '',
+        fmt_eternal: '',
+        related: '',
+        imgVersion: 0,
+        picUrl,
+        back: null,
+      };
+    }
+
+    cards.push(card);
+    if (uuid) uuidMap[uuid] = { cardId: id, set: setCode, num };
+  }
+
+  cards.sort((a, b) => a.name.localeCompare(b.name));
+  return { cards, sets, uuidMap, allSetCodes: Array.from(allSetCodes) };
+}
+
+// Fetch + parse Voyager card data from upstream. Caller is responsible for
+// persisting to localStorage / calling applyCardData().
+async function fetchVoyagerData() {
+  const res = await fetch(VOYAGER_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching Voyager cards.xml`);
+  const xmlText = await res.text();
+  return parseCockatriceXml(xmlText);
+}
+
+// Resolve the parsed card-data snapshot for a dataset. Tries localStorage
+// first, then the bundled static asset (cards.json for Revolution,
+// voyager.xml for Voyager). Upstream is reached only via the "Update
+// cards" button (refreshCurrentDataset) — first-load never touches the
+// network, matching Revolution's behavior.
+async function loadDatasetData(dataset) {
+  const key = dataset === 'voyager' ? VOYAGER_STORAGE_KEY : STORAGE_KEY;
+  try {
+    const cached = localStorage.getItem(key);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {
+    console.warn('Could not read cached card data:', e);
+  }
+  if (dataset === 'voyager') {
+    const res = await fetch('voyager.xml');
+    if (!res.ok) throw new Error(`failed to load voyager.xml (HTTP ${res.status})`);
+    return parseCockatriceXml(await res.text());
+  }
+  const res = await fetch('cards.json');
+  if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
+  return parseAllSetsJson(await res.json());
+}
+
+// Refresh the active dataset's upstream and update the matching cache.
+// Used by the "Update cards" button regardless of which dataset is active.
+async function refreshCurrentDataset() {
+  if (currentDataset() === 'voyager') {
+    const data = await fetchVoyagerData();
+    applyCardData(data);
+    try { localStorage.setItem(VOYAGER_STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  } else {
+    await refreshFromUpstream();
+  }
+}
+
+// Snapshot of the empty zones struct, used when switching to a dataset for
+// the first time (before any stash exists).
+function freshZones() {
+  return {
+    main:    { piles: [] },
+    sanctum: { piles: [] },
+    side:    { piles: [] },
+    maybe:   { piles: [] },
+  };
+}
+
+// Serialize zones as arrays of card-NAME strings per pile, keyed by zone.
+// Same shape saved decks use. cardIds are only meaningful against the
+// currently-loaded card index — after a dataset swap, the other dataset's
+// byId can't resolve them, but names round-trip cleanly.
+function snapshotZonesByName(zones) {
+  const out = {};
+  for (const z of Object.keys(zones)) {
+    out[z] = zones[z].piles.map(pile => pile.map(inst => {
+      const c = STATE.byId.get(inst.cardId);
+      return c ? c.name : null;
+    }).filter(n => n != null));
+  }
+  return out;
+}
+
+// Inverse of snapshotZonesByName — reads through the current STATE.byName
+// to rebuild cardId-based pile instances. Must be called AFTER the new
+// dataset has been loaded via applyCardData (so byName reflects it).
+function rehydrateZonesFromNames(snapshot) {
+  const zones = freshZones();
+  if (!snapshot) return zones;
+  for (const z of Object.keys(snapshot)) {
+    if (!zones[z]) continue;
+    for (const pileNames of snapshot[z]) {
+      const pile = [];
+      for (const name of pileNames) {
+        const card = STATE.byName.get(name)
+                     || STATE.cards.find(c => c.canonical === canonicalName(name));
+        if (card) pile.push({ uid: newUid(), cardId: card.id });
+      }
+      if (pile.length) zones[z].piles.push(pile);
+    }
+  }
+  return zones;
+}
+
+// Switch the active dataset. On the way out we snapshot the outgoing
+// workspace (zones by name + loaded-deck pointer + dirty baseline) into
+// STATE.stashedByDataset so the user can come back and pick up exactly
+// where they left off — including the deck's loaded identity and any
+// unsaved edits. On the way in we either restore the incoming dataset's
+// stash, or start blank if none.
+async function switchDataset(toDataset) {
+  const from = currentDataset();
+  if (from === toDataset) return;
+  // Snapshot outgoing state against the CURRENT card index before we
+  // swap, because the stash uses names and needs STATE.byId to resolve
+  // them. Deep-copy the tags array so later edits don't alias.
+  const outgoingStash = {
+    zones: snapshotZonesByName(STATE.zones),
+    loadedDeckName: STATE.loadedDeckName,
+    loadedDeckFolder: STATE.loadedDeckFolder,
+    loadedDeckTags: (STATE.loadedDeckTags || []).slice(),
+    loadedPlanName: STATE.loadedPlanName,
+    basePlanZones: STATE.basePlanZones,
+    deckSnapshot: STATE.deckSnapshot,
+  };
+  // Preserve the live zones object so we can put everything back on a
+  // failed load (offline, bad fetch). Nothing else has been mutated yet.
+  const savedZones = STATE.zones;
+  STATE.zones = freshZones();
+  let data;
+  try {
+    data = await loadDatasetData(toDataset);
+  } catch (e) {
+    STATE.zones = savedZones;
+    throw e;
+  }
+  // Commit the outgoing stash now that the swap is definitely happening.
+  STATE.stashedByDataset[from] = outgoingStash;
+  applyCardData(data);
+  // Restore incoming dataset's workspace if present; otherwise blank.
+  const incoming = STATE.stashedByDataset[toDataset];
+  if (incoming) {
+    STATE.zones = rehydrateZonesFromNames(incoming.zones);
+    STATE.loadedDeckName = incoming.loadedDeckName;
+    STATE.loadedDeckFolder = incoming.loadedDeckFolder;
+    STATE.loadedDeckTags = (incoming.loadedDeckTags || []).slice();
+    STATE.loadedPlanName = incoming.loadedPlanName;
+    STATE.basePlanZones = incoming.basePlanZones;
+    STATE.deckSnapshot = incoming.deckSnapshot;
+  } else {
+    STATE.zones = freshZones();
+    STATE.loadedDeckName = null;
+    STATE.loadedDeckFolder = null;
+    STATE.loadedDeckTags = [];
+    STATE.loadedPlanName = null;
+    STATE.basePlanZones = null;
+    markDeckClean();
+  }
+  updateSaveButtons();
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -796,6 +1305,64 @@ function canonicalName(name) {
     else break;
   }
   return name;
+}
+
+// Serialize one zone's piles as arrays of card-NAME strings (matching the
+// saved-deck payload shape). Dropped-card ids (orphaned instances) are
+// filtered out.
+function zoneNamesByPile(zoneName) {
+  return STATE.zones[zoneName].piles.map(pile => pile.map(inst => {
+    const c = STATE.byId.get(inst.cardId);
+    return c ? c.name : null;
+  }).filter(n => n != null));
+}
+
+// Build a Map<canonicalName, count> covering main+side combined. Inputs are
+// in the pile-of-names shape that saved decks use. Canonical names collapse
+// different printings of the same card — that's what the "same 75" invariant
+// compares against.
+function canonicalMultiset(pilesMain, pilesSide) {
+  const m = new Map();
+  for (const piles of [pilesMain || [], pilesSide || []]) {
+    for (const pile of piles) {
+      for (const name of pile) {
+        const c = canonicalName(name);
+        m.set(c, (m.get(c) || 0) + 1);
+      }
+    }
+  }
+  return m;
+}
+
+// Compare two canonical multisets. `b` - `a` semantically:
+//   added  = what's extra in `b` (need to side OUT of the base to reach `b`)
+//   removed = what's missing in `b` (need to side IN from the base)
+function diffMultisets(a, b) {
+  const added = [], removed = [];
+  const keys = new Set([...a.keys(), ...b.keys()]);
+  for (const k of keys) {
+    const ca = a.get(k) || 0;
+    const cb = b.get(k) || 0;
+    if (cb > ca) added.push({ name: k, count: cb - ca });
+    else if (ca > cb) removed.push({ name: k, count: ca - cb });
+  }
+  added.sort((x, y) => x.name.localeCompare(y.name));
+  removed.sort((x, y) => x.name.localeCompare(y.name));
+  return { added, removed };
+}
+
+function diffIsEmpty(diff) {
+  return diff.added.length === 0 && diff.removed.length === 0;
+}
+
+// "−2 Llanowar Elves, +2 Duress" — negatives (cards missing from the plan)
+// first, then positives. Uses the unicode minus sign to avoid confusion with
+// a hyphen in card names.
+function describeDiff(diff) {
+  const parts = [];
+  for (const r of diff.removed) parts.push('−' + r.count + ' ' + r.name);
+  for (const a of diff.added) parts.push('+' + a.count + ' ' + a.name);
+  return parts.join(', ');
 }
 
 function typeRank(card) {
@@ -818,6 +1385,9 @@ function cmcBucket(card) {
 // Forest is legal in Standard, every Forest_<SET> printing is legal too.
 function isLegal(card) {
   if (!card) return true;
+  // Voyager is its own dataset; whatever is loaded IS the Voyager pool, so
+  // every card is legal within it. Revolution-family legalities don't apply.
+  if (STATE.format === 'voyager') return true;
   const printings = STATE.byCanonical.get(card.canonical) || [card];
   if (STATE.format === 'eternal') {
     return printings.some(p => p.fmt_eternal === 'legal');
@@ -864,7 +1434,23 @@ function renderRangePickers() {
 }
 
 // Format labels for the dropdown trigger button.
-const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets' };
+const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets', voyager: 'Voyager' };
+
+// Which dataset the given format draws cards from. Voyager is its own pool;
+// the Revolution-family formats (standard/eternal/range) all share the
+// Revolution card pool and just filter by legality/range on top.
+function datasetForFormat(fmt) { return fmt === 'voyager' ? 'voyager' : 'revolution'; }
+function currentDataset() { return datasetForFormat(STATE.format); }
+
+// Deck zones visible to the user in the current dataset. Sanctum is Voyager-
+// only; it's always present in STATE.zones (see the comment on STATE.zones)
+// but the UI hides it outside Voyager mode, so keyboard cycling and any
+// other UI-ordered iteration should skip it there.
+function visibleZoneOrder() {
+  return currentDataset() === 'voyager'
+    ? ['main', 'sanctum', 'side', 'maybe']
+    : ['main', 'side', 'maybe'];
+}
 
 // Sync the visible state of the format dropdown (trigger label, active menu
 // item, range picker visibility) with STATE.
@@ -880,6 +1466,18 @@ function syncFormatUI() {
   const endSel   = document.getElementById('range-end');
   if (startSel && STATE.rangeStart) startSel.value = STATE.rangeStart;
   if (endSel && STATE.rangeEnd)     endSel.value   = STATE.rangeEnd;
+  // "Update cards" refreshes whichever dataset is active. Label stays
+  // generic; the tooltip surfaces which upstream it'll hit.
+  const refreshBtn = document.getElementById('btn-refresh');
+  if (refreshBtn) {
+    refreshBtn.title = currentDataset() === 'voyager'
+      ? 'Re-fetch card data from the upstream Voyager list'
+      : 'Re-fetch card data from the upstream Revolution repo';
+  }
+  // Body class gates voyager-only UI (sanctum zone section, sanctum
+  // add-to-zone button). STATE.zones.sanctum still exists either way so
+  // a stashed Voyager deck round-trips cleanly.
+  document.body.classList.toggle('voyager-mode', currentDataset() === 'voyager');
 }
 
 // Compare two card instances by a single sort method. Returns 0 on tie so
@@ -951,7 +1549,9 @@ function colorSortKey(card) {
   // card-normalization pass at parse time. Treat it as a string of single-
   // letter color codes.
   const cols = card.colors || '';
-  const order = 'WUBRG';
+  // I (silver) appended after WUBRG so I cards sort after Green-monocolor
+  // cards rather than interleaving with them.
+  const order = 'WUBRGI';
   if (cols.length === 0) return '9';
   if (cols.length === 1) {
     const idx = order.indexOf(cols);
@@ -967,10 +1567,11 @@ function colorSortKey(card) {
 }
 
 function imgUrl(card) {
+  // Voyager cards carry an absolute URL directly from cards.xml's picurl.
+  // Revolution cards construct from set/num with cajun's repurposed
+  // multiverseId stamp (YYYYMMDD) as a cache-buster.
+  if (card && card.picUrl) return card.picUrl;
   const base = `${IMG_BASE}/${card.set}/${encodeURIComponent(card.num)}.jpg`;
-  // Cache-busting via cajun's repurposed multiverseId stamp: when an image
-  // is updated upstream, the YYYYMMDD changes, so the URL changes, so the
-  // browser re-fetches instead of serving its cached copy.
   return card.imgVersion ? `${base}?v=${card.imgVersion}` : base;
 }
 
@@ -1012,6 +1613,10 @@ const KNOWN_KEYWORDS = [
   // Revolution-specific (custom-set keywords found in text)
   'spellcharge', 'surface', 'wander', 'traverse', 'invoke', 'reflect',
   'coalesce', 'multitude', 'cybersoul', 'propagate', 'chant',
+  // Voyager-specific (custom-set keywords — sanctum-eligibility depends on
+  // these, so the extractor has to catch them).
+  'pathbound', 'transcend', 'usurpate', 'heir', 'bisapience', 'liberate',
+  'embrace', 'sift',
   // "Discharge", "Adventure", "Omen", "Prepare" are page-frame mechanic
   // subtypes (see pageData below), not ability keywords — they appear on
   // the page's type line, not as line-start abilities on the main card.
@@ -1064,17 +1669,20 @@ function parseTypeLineParts(line) {
 
 // Walk a mana cost string like "{2}{W}{U/B}{X}" and pull out the distinct
 // colors present. Hybrid pips contribute both halves. Returns a subset of
-// "WUBRG" as a string (letters sorted in WUBRG order so output is stable).
+// WUBRG + I (Voyager's silver color) as a string, in that canonical order.
+// The alphabet is dataset-agnostic: Revolution cards never carry I, so
+// including it has no observable effect on them.
+const COLOR_LETTERS = 'WUBRGI';
 function colorsFromManaCost(cost) {
   const seen = new Set();
   const re = /\{([^}]+)\}/g;
   let m;
   while ((m = re.exec(cost || '')) !== null) {
     for (const ch of m[1].toUpperCase()) {
-      if ('WUBRG'.includes(ch)) seen.add(ch);
+      if (COLOR_LETTERS.includes(ch)) seen.add(ch);
     }
   }
-  return 'WUBRG'.split('').filter(ch => seen.has(ch)).join('');
+  return COLOR_LETTERS.split('').filter(ch => seen.has(ch)).join('');
 }
 
 // Converted mana cost from a raw cost string. Generic integers add their
@@ -1120,9 +1728,12 @@ function extractKeywords(text) {
       if (!candidates) continue;
       for (const kw of candidates) {
         if (lower === kw) { found.add(kw); break; }
-        // kw followed by space/em-dash/brace/digit = keyword usage
+        // kw followed by space/dash/brace/digit = keyword usage. Accept
+        // both em-dash (—, Revolution) and en-dash (–, Voyager) — several
+        // Voyager keywords attach their reminder with an en-dash (e.g.
+        // "Heir–You've created...").
         const after = lower.slice(kw.length, kw.length + 1);
-        if (lower.startsWith(kw) && (after === ' ' || after === '—' || after === '{' || after === '' || /\d/.test(after))) {
+        if (lower.startsWith(kw) && (after === ' ' || after === '—' || after === '–' || after === '{' || after === '' || /\d/.test(after))) {
           found.add(kw);
           break;
         }
@@ -1142,18 +1753,21 @@ function formatManaCost(raw) {
 }
 
 function colorizedMana(cost) {
-  // Just colorize WUBRG letters; leave numbers/X alone. Escape HTML entities
-  // first so a card data source (upstream JSON, tampered localStorage) can't
-  // sneak markup through this path into the DOM. The entity expansions
-  // (&amp;, &lt;, etc.) don't contain any uppercase WUBRG, so colorizing the
-  // escaped string still hits the right letters.
+  // Colorize WUBRG, I (silver), and V (Voyager Vertex resource). Numbers
+  // and X are left untouched. Escape HTML entities first so a card data
+  // source (upstream JSON, tampered localStorage) can't sneak markup
+  // through this path into the DOM. The entity expansions (&amp;, &lt;,
+  // etc.) don't contain any uppercase WUBRGIV, so colorizing the escaped
+  // string still hits the right letters.
   if (!cost) return '';
   return escapeHtml(cost)
              .replace(/W/g, '<span class="mana-w">W</span>')
              .replace(/U/g, '<span class="mana-u">U</span>')
              .replace(/B/g, '<span class="mana-b">B</span>')
              .replace(/R/g, '<span class="mana-r">R</span>')
-             .replace(/G/g, '<span class="mana-g">G</span>');
+             .replace(/G/g, '<span class="mana-g">G</span>')
+             .replace(/I/g, '<span class="mana-i">I</span>')
+             .replace(/V/g, '<span class="mana-v">V</span>');
 }
 
 // ---------------------------------------------------------------------------
@@ -1585,15 +2199,20 @@ function splitCostPips(raw) {
 }
 
 // Canonicalise color letters / multi / colorless / count specifiers.
-// Returns { kind: 'count'|'multi'|'colorless'|'letters', value: number|null, letters: 'WUBRG' subset }.
+// Returns { kind: 'count'|'multi'|'colorless'|'letters', value: number|null,
+// letters: WUBRG + I subset }. "silver" is accepted as a synonym for I.
 function parseColorSpec(raw) {
   const v = stripQuotes(raw).toLowerCase();
   if (/^\d+$/.test(v)) return { kind: 'count', value: parseInt(v, 10), letters: '' };
   if (v === 'm' || v === 'multi' || v === 'multicolor') return { kind: 'multi', letters: '' };
+  if (v === 'silver') return { kind: 'letters', letters: 'I' };
+  // 'c' alone is colorless; 'c' embedded in a multi-letter string ("wubrgic")
+  // would be ambiguous, but the existing tokenizer only hits this path for
+  // single tokens so keep the simple rule.
   if (v === 'c' || v === 'colorless') return { kind: 'colorless', letters: '' };
   const letters = [];
   for (const ch of v) {
-    if ('wubrg'.includes(ch)) letters.push(ch.toUpperCase());
+    if ('wubrgi'.includes(ch)) letters.push(ch.toUpperCase());
   }
   return { kind: 'letters', letters: letters.join('') };
 }
@@ -1741,9 +2360,9 @@ function expandOracleShortcuts(body) {
     [/\\spm/g,  '\\+\\d+/-\\d+'],
     [/\\smp/g,  '-\\d+/\\+\\d+'],
     [/\\sbd/g,  '[+-]?\\d+/[+-]?\\d+'],
-    [/\\smr/g,  '\\{[WUBRG]\\}\\{[WUBRG]\\}'],
-    [/\\smh/g,  '\\{[WUBRG]/[WUBRG]\\}'],
-    [/\\sc/g,   '\\{[WUBRG]\\}'],
+    [/\\smr/g,  '\\{[WUBRGI]\\}\\{[WUBRGI]\\}'],
+    [/\\smh/g,  '\\{[WUBRGI]/[WUBRGI]\\}'],
+    [/\\sc/g,   '\\{[WUBRGI]\\}'],
     [/\\sm/g,   '\\{[^}]+\\}'],
   ];
   let out = body;
@@ -1859,7 +2478,11 @@ function splitPipPattern(raw) {
     if (ch === 'H') pips.push({ kind: 'hybrid' });
     else if ('MNO'.includes(ch)) pips.push({ kind: 'var', label: ch });
     else if (ch === 'C') pips.push({ kind: 'any-color' });
-    else if ('WUBRGXP'.includes(ch)) pips.push({ kind: 'exact', pip: ch });
+    // V is Voyager's Vertex resource — not a color, but it appears in
+    // braced pips (`{V}`, `{V/G}`, …) so mana-cost search has to accept it
+    // as an exact-pip letter. `c:V` still returns nothing because no card
+    // carries V in its colors string.
+    else if ('WUBRGIVXP'.includes(ch)) pips.push({ kind: 'exact', pip: ch });
     else if (/\d/.test(ch)) pips.push({ kind: 'exact', pip: ch });
   }
   return pips;
@@ -1870,13 +2493,15 @@ function pipMatches(matcher, cardPip, varBindings) {
     return cardPip === matcher.pip;
   }
   if (matcher.kind === 'hybrid') {
-    return /^[WUBRG]\/[WUBRG]$|^2\/[WUBRG]$|^[WUBRG]\/P$/.test(cardPip);
+    // V pairs with any color in Voyager hybrids (`{V/W}`, `{V/U}`, …) so
+    // the hybrid-pip matcher accepts it on either side.
+    return /^[WUBRGIV]\/[WUBRGIV]$|^2\/[WUBRGIV]$|^[WUBRGIV]\/P$/.test(cardPip);
   }
   if (matcher.kind === 'any-color') {
-    return /^[WUBRG]$/.test(cardPip);
+    return /^[WUBRGI]$/.test(cardPip);
   }
   if (matcher.kind === 'var') {
-    if (!/^[WUBRG]$/.test(cardPip)) return false;
+    if (!/^[WUBRGI]$/.test(cardPip)) return false;
     const prior = varBindings[matcher.label];
     if (matcher.label === 'm') {
       if (prior == null) { varBindings[matcher.label] = cardPip; return true; }
@@ -2008,6 +2633,10 @@ function buildIsPredicate(rawValue) {
     case 'discharge': return (c) => !!(c.pageData
                                       && c.pageData.type
                                       && c.pageData.type.toLowerCase().includes(v));
+    // Voyager's Vertex mechanic: cards whose mana cost contains a V pip
+    // (bare or hybrid). Catches the 7 back-face Vertex spells without
+    // requiring the user to enumerate every V/W, V/U, … hybrid.
+    case 'vertex':    return (c) => /\{[^}]*V[^}]*\}/.test(c.rawManaCost || '');
     // Rarity shortcuts the spec mentions under "Search by Rarity"
     case 'common':
     case 'uncommon':
@@ -2549,7 +3178,33 @@ function placeInstanceIntoZone(zone, inst, card) {
   zone.piles.splice(insertIdx, 0, [inst]);
 }
 
+// While a sideboard plan is active the 75 is fixed — no adds, no removes,
+// no maybe writes. Moves between main and side are still allowed (that's
+// the whole point of a plan), and printing/art swaps are allowed (they
+// don't change canonical identity) and propagate back to the base deck.
+function isMaybeLocked() { return !!STATE.loadedPlanName; }
+function isPlanActive() { return !!STATE.loadedPlanName; }
+
+function notePlanLock(msg) {
+  // Brief status ribbon shown when a plan-mode write is rejected. Reuses
+  // the search error element so there's exactly one "that didn't work"
+  // channel the user scans.
+  const el = document.getElementById('search-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(notePlanLock._t);
+  notePlanLock._t = setTimeout(() => {
+    el.classList.add('hidden');
+    el.textContent = '';
+  }, 1800);
+}
+
 function addCardToZone(cardId, zoneName, count = 1) {
+  if (isPlanActive()) {
+    notePlanLock("Plan has a fixed 75 — can't add new cards.");
+    return;
+  }
   const card = STATE.byId.get(cardId);
   if (!card) return;
   const zone = STATE.zones[zoneName];
@@ -2587,6 +3242,13 @@ function findInstance(uid) {
 function moveInstanceToZone(uid, toZone) {
   const found = findInstance(uid);
   if (!found) return;
+  // Writes into maybe while a plan is active are rejected. Moves OUT of
+  // maybe while a plan is active are also rejected, because maybe isn't a
+  // zone the plan controls — those edits belong on the base deck.
+  if (isMaybeLocked() && (toZone === 'maybe' || found.zoneName === 'maybe')) {
+    notePlanLock('Maybeboard is locked while a sideboard plan is active.');
+    return;
+  }
   const inst = found.inst;
   const card = STATE.byId.get(inst.cardId);
   STATE.zones[found.zoneName].piles[found.pileIdx].splice(found.slotIdx, 1);
@@ -2703,6 +3365,21 @@ function insertNewPileWithUids(uids, zoneName, atIdx) {
 }
 
 function moveUidsToZoneAuto(uids, zoneName) {
+  if (isMaybeLocked() && zoneName === 'maybe') {
+    notePlanLock('Maybeboard is locked while a sideboard plan is active.');
+    return;
+  }
+  // Also reject drags that would SOURCE from maybe while a plan is active —
+  // maybe is supposed to be frozen, not a card pool for the plan.
+  if (isMaybeLocked()) {
+    for (const uid of uids) {
+      const found = findInstance(uid);
+      if (found && found.zoneName === 'maybe') {
+        notePlanLock('Maybeboard is locked while a sideboard plan is active.');
+        return;
+      }
+    }
+  }
   const zone = STATE.zones[zoneName];
   for (const uid of uids) {
     const inst = detachInstance(uid);
@@ -2768,6 +3445,7 @@ function renderAll() {
     renderZoneCount(z);
   }
   renderPiles();
+  updatePlanBanner();
   captureUndoSnapshot();
 }
 
@@ -2871,7 +3549,67 @@ function wireUndoRedo() {
 
 
 function renderZoneCount(zoneName) {
-  document.getElementById('count-' + zoneName).textContent = String(totalCount(zoneName));
+  const el = document.getElementById('count-' + zoneName);
+  if (!el) return;
+  el.textContent = String(totalCount(zoneName));
+  const err = zoneValidityError(zoneName);
+  el.classList.toggle('invalid', !!err);
+  if (err) el.title = err;
+  else el.removeAttribute('title');
+}
+
+// Is this card eligible to live in the Voyager sanctum? Criteria:
+//   (a) a basic land (`Basic` supertype + `Land` type), OR
+//   (b) any printing with the `Wonder`, `Realm`, or `Frontier` subtype, OR
+//   (c) any card with Pathbound, Transcend, Usurpate, or Heir keyword.
+// Kept dataset-agnostic: Revolution cards never satisfy any of these, so
+// the predicate can be called unconditionally without per-dataset gating.
+const SANCTUM_SUBTYPES = ['Wonder', 'Realm', 'Frontier'];
+const SANCTUM_KEYWORDS = ['pathbound', 'transcend', 'usurpate', 'heir'];
+function isSanctumEligible(card) {
+  if (!card) return false;
+  const supers = card.supertypes || [];
+  const types = card.types || [];
+  if (supers.includes('Basic') && types.includes('Land')) return true;
+  const subs = card.subtypes || [];
+  for (const st of SANCTUM_SUBTYPES) if (subs.includes(st)) return true;
+  const kws = card.keywords || [];
+  for (const kw of SANCTUM_KEYWORDS) if (kws.includes(kw)) return true;
+  return false;
+}
+
+// Return a user-facing reason string if `zoneName` is in an invalid state,
+// or null if valid. Rules:
+//   - main < 60 cards
+//   - side > 15 cards
+//   - sanctum > 7 cards or contains cards that aren't sanctum-eligible
+// Deliberately non-blocking: we only mark the count badge red (with a
+// tooltip), never reject the edit that caused it. Matches the existing
+// soft-validation posture the rest of the deckbuilder uses.
+function zoneValidityError(zoneName) {
+  const n = totalCount(zoneName);
+  if (zoneName === 'main') {
+    return n < 60 ? `Main deck has ${n} card${n === 1 ? '' : 's'} (min 60)` : null;
+  }
+  if (zoneName === 'side') {
+    return n > 15 ? `Sideboard has ${n} cards (max 15)` : null;
+  }
+  if (zoneName === 'sanctum') {
+    const parts = [];
+    if (n > 7) parts.push(`Sanctum has ${n} cards (max 7)`);
+    let ineligible = 0;
+    for (const pile of STATE.zones.sanctum.piles) {
+      for (const inst of pile) {
+        const c = STATE.byId.get(inst.cardId);
+        if (c && !isSanctumEligible(c)) ineligible++;
+      }
+    }
+    if (ineligible) {
+      parts.push(`${ineligible} card${ineligible === 1 ? '' : 's'} can't be in sanctum`);
+    }
+    return parts.length ? parts.join('; ') : null;
+  }
+  return null;
 }
 
 function renderZoneList(zoneName) {
@@ -3135,15 +3873,59 @@ function swapVersion(inst, newCardId) {
         return c && c.canonical === canon;
       })
     : [inst.uid];
-  let changed = false;
+  const oldToNewNames = [];
   for (const uid of targetUids) {
     const f = findInstance(uid);
     if (f && f.inst.cardId !== newCardId) {
+      const oldCard = STATE.byId.get(f.inst.cardId);
+      const newCard = STATE.byId.get(newCardId);
+      if (oldCard && newCard) oldToNewNames.push({ oldName: oldCard.name, newName: newCard.name });
       f.inst.cardId = newCardId;
-      changed = true;
     }
   }
-  if (changed) renderAll();
+  if (oldToNewNames.length > 0) {
+    // Art/printing swaps under a plan also update the base deck's saved
+    // payload so the plan and its deck always agree on which art is used.
+    // Canonical identity is unchanged, so the 75 invariant stays intact.
+    if (isPlanActive()) propagatePrintingToBase(oldToNewNames);
+    renderAll();
+  }
+}
+
+function propagatePrintingToBase(swaps) {
+  // `swaps` is an array of { oldName, newName }. For each swap, update ONE
+  // matching name in the base deck's stored main or side piles. Running one
+  // swap at a time means "swap 1 of 4 copies in the plan" also swaps "1 of
+  // 4 copies in the base," which matches the user's local-feeling mutation.
+  if (!STATE.loadedDeckName) return;
+  const payload = readDeckPayload(STATE.loadedDeckName);
+  if (!payload || !payload.zones) return;
+  let changed = false;
+  for (const { oldName, newName } of swaps) {
+    if (oldName === newName) continue;
+    let replaced = false;
+    for (const z of ['main', 'side']) {
+      if (replaced) break;
+      const piles = payload.zones[z] || [];
+      for (let p = 0; p < piles.length && !replaced; p++) {
+        for (let i = 0; i < piles[p].length && !replaced; i++) {
+          if (piles[p][i] === oldName) {
+            piles[p][i] = newName;
+            replaced = true;
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  if (!changed) return;
+  writeDeckPayload(STATE.loadedDeckName, payload);
+  // basePlanZones caches the base's names for the live 75-diff indicator —
+  // keep it in sync so the banner doesn't flash a spurious mismatch.
+  STATE.basePlanZones = {
+    main: payload.zones.main || [],
+    side: payload.zones.side || [],
+  };
 }
 
 function wireVersionPicker() {
@@ -3222,7 +4004,12 @@ function makeSlotButtons(inst, card) {
     return b;
   }
 
-  wrap.appendChild(makeBtn('+', 'Add another copy', () => {
+  // Under a plan the 75 is fixed, so +, −, and ? (maybe) are all rejected
+  // by the write-path guards. Skip rendering them so the user isn't teased
+  // with actions that can't succeed. The main↔side swap is still allowed.
+  const planActive = isPlanActive();
+
+  if (!planActive) wrap.appendChild(makeBtn('+', 'Add another copy', () => {
     const found = findInstance(inst.uid);
     if (!found) return;
     const { zoneName, pileIdx } = found;
@@ -3239,7 +4026,7 @@ function makeSlotButtons(inst, card) {
     STATE.selection.clear();
     renderAll();
   }));
-  wrap.appendChild(makeBtn('\u2212', 'Remove this copy', () => {
+  if (!planActive) wrap.appendChild(makeBtn('\u2212', 'Remove this copy', () => {
     if (STATE.selection.size > 0 && STATE.selection.has(inst.uid)) {
       for (const uid of [...STATE.selection]) removeInstance(uid);
     } else {
@@ -3260,7 +4047,7 @@ function makeSlotButtons(inst, card) {
     STATE.selection.clear();
     renderAll();
   }));
-  wrap.appendChild(makeBtn('?', 'Move to/from maybeboard', () => {
+  if (!planActive) wrap.appendChild(makeBtn('?', 'Move to/from maybeboard', () => {
     const found = findInstance(inst.uid);
     if (!found) return;
     const target = (found.zoneName === 'maybe') ? 'main' : 'maybe';
@@ -3404,6 +4191,16 @@ function makePileEl(pile, pileIdx) {
     // mid-drop as source piles get pruned, so we capture it now).
     const destPile = STATE.zones[STATE.focusedZone].piles[pileIdx];
     if (!destPile) return;
+    // Maybe is read-only under a plan. Gate both same-zone re-orders (when
+    // the user is viewing maybe) and cross-zone drops from/into maybe.
+    if (isMaybeLocked()) {
+      const m = 'Maybeboard is locked while a sideboard plan is active.';
+      if (STATE.focusedZone === 'maybe') { notePlanLock(m); return; }
+      for (const uid of uids) {
+        const found = findInstance(uid);
+        if (found && found.zoneName === 'maybe') { notePlanLock(m); return; }
+      }
+    }
     moveUidsToPile(uids, destPile);
     STATE.selection.clear();
     renderAll();
@@ -3573,9 +4370,17 @@ function makeSearchSlotButtons(card) {
     for (const id of ids) addCardToZone(id, zone);
     renderAll();
   };
-  wrap.appendChild(makeBtn('+', 'Add to main deck', () => addTo('main')));
-  wrap.appendChild(makeBtn('\u2194', 'Add to sideboard', () => addTo('side')));
-  wrap.appendChild(makeBtn('?', 'Add to maybeboard', () => addTo('maybe')));
+  // Under a sideboard plan all adds are blocked — the 75 is fixed.
+  if (!isPlanActive()) {
+    wrap.appendChild(makeBtn('+', 'Add to main deck', () => addTo('main')));
+    // Sanctum button is CSS-hidden outside Voyager mode (see .sanctum-only
+    // in style.css) so Revolution users don't see an option they can't use.
+    const sanctumBtn = makeBtn('\u25a0', 'Add to sanctum', () => addTo('sanctum'));
+    sanctumBtn.classList.add('sanctum-only');
+    wrap.appendChild(sanctumBtn);
+    wrap.appendChild(makeBtn('\u2194', 'Add to sideboard', () => addTo('side')));
+    wrap.appendChild(makeBtn('?', 'Add to maybeboard', () => addTo('maybe')));
+  }
 
   return wrap;
 }
@@ -3730,9 +4535,9 @@ function wireZones() {
     searchSec.addEventListener('click', () => setFocusedZone('search'));
   }
 
-  // Arrow keys cycle focus between main / side / maybe when no text input
-  // is focused (so the search box's own arrow-key handling still works).
-  const ZONE_ORDER = ['main', 'side', 'maybe'];
+  // Arrow keys cycle focus between visible zones when no text input is
+  // focused (so the search box's own arrow-key handling still works).
+  // Sanctum is only in the order when we're in Voyager mode.
   document.addEventListener('keydown', (ev) => {
     if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;
     const a = document.activeElement;
@@ -3742,8 +4547,9 @@ function wireZones() {
     else if (ev.key === 'ArrowUp') delta = -1;
     else return;
     ev.preventDefault();
-    const idx = ZONE_ORDER.indexOf(STATE.focusedZone);
-    const next = ZONE_ORDER[((idx < 0 ? 0 : idx) + delta + ZONE_ORDER.length) % ZONE_ORDER.length];
+    const order = visibleZoneOrder();
+    const idx = order.indexOf(STATE.focusedZone);
+    const next = order[((idx < 0 ? 0 : idx) + delta + order.length) % order.length];
     setFocusedZone(next);
   });
 }
@@ -3780,14 +4586,15 @@ function wireToolbar() {
   wireCopyTxt();
   wireSavedDecks();
   wireDragTrash();
+  wirePlanBanner();
   document.getElementById('btn-new-deck').addEventListener('click', () => {
     if (deckIsDirty() && !confirm('Clear all zones and start a new deck?')) return;
-    STATE.zones.main.piles = [];
-    STATE.zones.side.piles = [];
-    STATE.zones.maybe.piles = [];
+    clearAllZones();
     STATE.loadedDeckName = null;
     STATE.loadedDeckFolder = null;
     STATE.loadedDeckTags = [];
+    STATE.loadedPlanName = null;
+    STATE.basePlanZones = null;
     updateSaveButtons();
     renderAll();
     resetHistory();
@@ -3801,13 +4608,35 @@ function wireToolbar() {
     formatMenu.classList.toggle('hidden');
   });
   formatMenu.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
+    btn.addEventListener('click', async (ev) => {
       ev.stopPropagation();
-      STATE.format = btn.dataset.format;
+      const newFormat = btn.dataset.format;
+      const crossesDataset = datasetForFormat(newFormat) !== currentDataset();
       // Keep menu open when "Sets" is picked so range pickers are accessible.
-      if (btn.dataset.format !== 'range') formatMenu.classList.add('hidden');
+      if (newFormat !== 'range') formatMenu.classList.add('hidden');
+      if (crossesDataset) {
+        // Crossing the Revolution/Voyager boundary: swap the card pool.
+        // First-time Voyager loads fetch live; if that fails, surface the
+        // error and leave the user on the current format.
+        formatBtn.disabled = true;
+        try {
+          await switchDataset(datasetForFormat(newFormat));
+        } catch (e) {
+          console.error(e);
+          alert('Could not load Voyager cards: ' + (e.message || e));
+          formatBtn.disabled = false;
+          return;
+        }
+        formatBtn.disabled = false;
+      }
+      STATE.format = newFormat;
       savePrefs();
       syncFormatUI();
+      // Close the Decks dropdown if it's open — its saved-decks list is
+      // filtered by format, so leaving it rendered would show stale
+      // entries. Next open rebuilds from listSavedDecks().
+      const decksDropdown = document.getElementById('decks-dropdown');
+      if (decksDropdown) decksDropdown.classList.add('hidden');
       runSearch(document.getElementById('search').value);
       renderAll();
     });
@@ -3852,11 +4681,13 @@ function wireToolbar() {
     refreshBtn.disabled = true;
     refreshBtn.textContent = 'Updating\u2026';
     try {
-      await refreshFromUpstream();
-      // New card data almost certainly means some multiverseIds bumped, so
-      // the image URLs those entries point at have changed. Drop the image
-      // cache so stale ?v=<old> entries don't linger forever.
-      await clearImageCache();
+      const wasVoyager = currentDataset() === 'voyager';
+      await refreshCurrentDataset();
+      // Revolution's image URLs carry a multiverseId cache-buster that
+      // bumps on upstream updates; drop the image cache so stale ?v=<old>
+      // entries don't linger. Voyager uses absolute per-card picurls that
+      // change only when the file renames, so its cache stays valid.
+      if (!wasVoyager) await clearImageCache();
       refreshBtn.textContent = 'Updated \u2713';
       setTimeout(() => { refreshBtn.textContent = original; }, 1500);
     } catch (e) {
@@ -4183,9 +5014,9 @@ function hidePreview() {
 // ---------------------------------------------------------------------------
 
 function clearAllZones() {
-  STATE.zones.main.piles = [];
-  STATE.zones.side.piles = [];
-  STATE.zones.maybe.piles = [];
+  for (const z of Object.keys(STATE.zones)) {
+    STATE.zones[z].piles = [];
+  }
 }
 
 function resolveCardName(name, uuid) {
@@ -4210,6 +5041,8 @@ function importDeck(text, filename) {
   STATE.loadedDeckName = null;
   STATE.loadedDeckFolder = null;
   STATE.loadedDeckTags = [];
+  STATE.loadedPlanName = null;
+  STATE.basePlanZones = null;
   updateSaveButtons();
   markDeckClean();
 }
@@ -4231,6 +5064,7 @@ function importCod(text) {
     let target = 'main';
     if (zname === 'side' || zname === 'sideboard') target = 'side';
     else if (zname === 'maybe' || zname === 'maybeboard') target = 'maybe';
+    else if (zname === 'sanctum') target = 'sanctum';
 
     zoneEl.querySelectorAll('card').forEach(cardEl => {
       const number = parseInt(cardEl.getAttribute('number') || '1', 10);
@@ -4249,33 +5083,70 @@ function importCod(text) {
 }
 
 function importTxt(text) {
-  // Group cards by runs of "<count> <name>" lines, separated by anything else
-  // (blank lines, headers, comments). The first run is main, second side,
-  // third maybe.
+  // Group cards by runs of "<count> <name>" lines, separated by anything
+  // else (blank lines, headers, comments). Zone-name headers ("sideboard",
+  // "sanctum", …) are honored when present; runs without a preceding header
+  // fall back to the legacy positional convention (first run → main,
+  // second → side, third → maybe). Sanctum is header-only — no positional
+  // fallback — so old Revolution imports keep their current behavior.
   const cardLine = /^\s*(\d+)\s+(.+?)\s*$/;
-  const groups = [];
+  const HEADER_ALIASES = {
+    main:    ['main', 'maindeck', 'mainboard', 'deck'],
+    side:    ['side', 'sideboard'],
+    maybe:   ['maybe', 'maybeboard'],
+    sanctum: ['sanctum'],
+  };
+  function matchHeader(line) {
+    const lower = line.trim().toLowerCase().replace(/[:.]+$/, '');
+    for (const [zone, aliases] of Object.entries(HEADER_ALIASES)) {
+      if (aliases.includes(lower)) return zone;
+    }
+    return null;
+  }
+
+  const groups = [];  // each: { zone: string|null, entries: [...] }
   let cur = null;
+  let pendingZone = null;
   for (const raw of text.split(/\r?\n/)) {
+    const hdr = matchHeader(raw);
+    if (hdr) {
+      pendingZone = hdr;
+      cur = null;
+      continue;
+    }
     const m = raw.match(cardLine);
     if (m) {
-      if (!cur) { cur = []; groups.push(cur); }
-      cur.push({ count: parseInt(m[1], 10), name: m[2] });
+      if (!cur) {
+        cur = { zone: pendingZone, entries: [] };
+        pendingZone = null;
+        groups.push(cur);
+      }
+      // Strip a single trailing period on the card name — decklists that
+      // end a line with a sentence terminator ("1 Sundown.") shouldn't
+      // cause the lookup to fail.
+      const name = m[2].replace(/\.$/, '').trim();
+      cur.entries.push({ count: parseInt(m[1], 10), name });
     } else {
       cur = null;
     }
   }
 
   clearAllZones();
-  const zoneOrder = ['main', 'side', 'maybe'];
+  const POSITIONAL = ['main', 'side', 'maybe'];
+  let positionalIdx = 0;
   const unknown = [];
-  groups.forEach((group, gi) => {
-    const zone = zoneOrder[gi] || 'maybe';
-    for (const { count, name } of group) {
+  for (const group of groups) {
+    let zone = group.zone;
+    if (!zone) {
+      zone = POSITIONAL[positionalIdx] || 'maybe';
+      positionalIdx++;
+    }
+    for (const { count, name } of group.entries) {
       const cardId = resolveCardName(name, null);
       if (!cardId) { unknown.push(name); continue; }
       addCardToZone(cardId, zone, count);
     }
-  });
+  }
 
   for (const z of Object.keys(STATE.zones)) resortPiles(z);
   renderAll();
@@ -4418,11 +5289,76 @@ ${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', mayb
 `;
 }
 
+// Build a .cod file in Voyager's own export format: tab-indented, no
+// <comments>/<tags>, minimal card attributes (number + name only), and
+// everything-not-main folded into the side zone (Voyager has no maybe
+// or sanctum concept in its .cod output). Insertion order is preserved
+// rather than sorted alphabetically so round-tripping a pasted decklist
+// keeps the user's original ordering — same as voyager-mtg.github.io.
+function buildVoyagerCodXml() {
+  const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  function collect(zoneName, into) {
+    for (const pile of STATE.zones[zoneName].piles) {
+      for (const inst of pile) {
+        const c = STATE.byId.get(inst.cardId);
+        if (!c) continue;
+        const ent = into.get(c.name);
+        if (ent) ent.count++;
+        else into.set(c.name, { count: 1, card: c });
+      }
+    }
+  }
+  const mainMap = new Map();
+  collect('main', mainMap);
+  const sideMap = new Map();
+  for (const z of ['side', 'sanctum', 'maybe']) collect(z, sideMap);
+  const renderZone = (name, map) => {
+    if (map.size === 0) return '';
+    const lines = Array.from(map.values()).map(({ count, card }) =>
+      `\t\t<card number="${count}" name="${xmlEsc(card.name)}"/>`
+    );
+    return `\t<zone name="${name}">\n${lines.join('\n')}\n\t</zone>\n`;
+  };
+  const deckname = xmlEsc(STATE.loadedDeckName || 'undefined');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n`
+       + `<cockatrice_deck version="1">\n`
+       + `\t<deckname>${deckname}</deckname>\n`
+       + renderZone('main', mainMap)
+       + renderZone('side', sideMap)
+       + `</cockatrice_deck>`;
+}
+
 // Save a Cockatrice .cod file. On browsers that support the File System
 // Access API (Chromium-family) the user gets a real "save as" dialog and
 // picks where the file goes. On other browsers (Firefox, Safari) we fall
 // back to the standard download-to-Downloads-folder behaviour.
 async function exportCod() {
+  // Voyager decks export in Voyager's own minimal format — see
+  // buildVoyagerCodXml for the byte-level shape. No maybeboard prompt:
+  // Voyager's format has no maybe/sanctum zones so we just fold both
+  // into side automatically.
+  if (currentDataset() === 'voyager') {
+    const xml = buildVoyagerCodXml();
+    const filename = (STATE.loadedDeckName || 'deck') + '.cod';
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'Cockatrice deck', accept: { 'application/xml': ['.cod'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(xml);
+        await writable.close();
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        console.warn('showSaveFilePicker failed, falling back to download:', e);
+      }
+    }
+    downloadFile(filename, xml, 'application/xml');
+    return;
+  }
   const maybeMode = await resolveMaybeMode('.cod');
   if (maybeMode === 'cancel') return;
   const xml = buildCodXml(maybeMode);
@@ -4473,6 +5409,8 @@ function wirePasteImport() {
     STATE.loadedDeckName = null;
     STATE.loadedDeckFolder = null;
     STATE.loadedDeckTags = [];
+    STATE.loadedPlanName = null;
+    STATE.basePlanZones = null;
     updateSaveButtons();
     markDeckClean();
     close();
@@ -4494,23 +5432,47 @@ function wirePasteImport() {
 
 const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
 
+// Should a deck saved under `deckFormat` be visible while the user is in
+// the currently-active format? Rules:
+//   - Voyager mode shows only Voyager decks (separate card pool).
+//   - Standard mode is strict — only decks explicitly saved as Standard
+//     (plus legacy decks with no stored format, treated as Standard).
+//   - Eternal / Range / Sets mode shows any Revolution-family deck — they
+//     share Revolution's card pool, and the broader format can accommodate
+//     a Standard-only build.
+// Any other deckFormat (future additions, corrupted data) is treated as
+// Revolution-family for back-compat.
+function deckFormatVisibleInCurrentFormat(deckFormat) {
+  const dfmt = deckFormat || 'standard';
+  if (STATE.format === 'voyager') return dfmt === 'voyager';
+  if (dfmt === 'voyager') return false;
+  if (STATE.format === 'standard') return dfmt === 'standard';
+  return true;  // eternal / range / unknown Revolution-family deck
+}
+
 function listSavedDecks() {
-  // Returns [{ name, savedAt, folder, tags }] sorted by savedAt descending
-  // (newest first). `folder` is a string or null; `tags` is always an array.
+  // Returns [{ name, savedAt, folder, tags, format }] sorted by savedAt
+  // descending (newest first), filtered to just the decks compatible with
+  // the currently-active format. Decks built for a different card pool
+  // (e.g. Voyager decks while browsing in Revolution, or Eternal decks
+  // while browsing in Standard) are hidden so users don't accidentally
+  // load a deck they can't use.
   const out = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith(SAVED_DECK_PREFIX)) continue;
     try {
       const obj = JSON.parse(localStorage.getItem(key));
-      if (obj && typeof obj.name === 'string') {
-        out.push({
-          name: obj.name,
-          savedAt: obj.savedAt || '',
-          folder: (typeof obj.folder === 'string' && obj.folder) ? obj.folder : null,
-          tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
-        });
-      }
+      if (!obj || typeof obj.name !== 'string') continue;
+      const format = (typeof obj.format === 'string' && obj.format) ? obj.format : 'standard';
+      if (!deckFormatVisibleInCurrentFormat(format)) continue;
+      out.push({
+        name: obj.name,
+        savedAt: obj.savedAt || '',
+        folder: (typeof obj.folder === 'string' && obj.folder) ? obj.folder : null,
+        tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
+        format,
+      });
     } catch (_) { /* ignore corrupted entries */ }
   }
   out.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
@@ -4640,11 +5602,8 @@ function saveDeckToStorage(name, opts) {
   // `opts.folder` / `opts.tags` override; if omitted, existing metadata is
   // preserved (so "Save" on a loaded deck doesn't wipe its folder/tags).
   const zones = {};
-  for (const z of ['main', 'side', 'maybe']) {
-    zones[z] = STATE.zones[z].piles.map(pile => pile.map(inst => {
-      const c = STATE.byId.get(inst.cardId);
-      return c ? c.name : null;
-    }).filter(n => n != null));
+  for (const z of ['main', 'sanctum', 'side', 'maybe']) {
+    zones[z] = zoneNamesByPile(z);
   }
   const prev = readDeckMeta(name);
   const folder = opts && 'folder' in opts
@@ -4653,6 +5612,20 @@ function saveDeckToStorage(name, opts) {
   const tags = opts && 'tags' in opts
     ? (Array.isArray(opts.tags) ? opts.tags.slice() : [])
     : prev.tags;
+
+  // Preserve existing sideboard plans and recompute staleness against the
+  // new main+side. A plan is stale iff its (main+side) canonical multiset
+  // no longer matches the deck's (main+side) canonical multiset.
+  const prevPayload = readDeckPayload(name);
+  const prevPlans = (prevPayload && Array.isArray(prevPayload.plans)) ? prevPayload.plans : [];
+  const newBaseMulti = canonicalMultiset(zones.main, zones.side);
+  const plans = prevPlans.map(plan => {
+    const pz = plan.zones || { main: [], side: [] };
+    const pMulti = canonicalMultiset(pz.main, pz.side);
+    const diff = diffMultisets(newBaseMulti, pMulti);
+    return { ...plan, zones: pz, stale: !diffIsEmpty(diff) };
+  });
+
   const payload = {
     name,
     savedAt: new Date().toISOString(),
@@ -4662,9 +5635,20 @@ function saveDeckToStorage(name, opts) {
     rangeEnd: STATE.rangeEnd,
     folder,
     tags,
+    plans,
   };
   localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
   markDeckClean();
+}
+
+function readDeckPayload(name) {
+  const raw = localStorage.getItem(SAVED_DECK_PREFIX + name);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+function writeDeckPayload(name, payload) {
+  localStorage.setItem(SAVED_DECK_PREFIX + name, JSON.stringify(payload));
 }
 
 function loadDeckFromStorage(name) {
@@ -4678,7 +5662,7 @@ function loadDeckFromStorage(name) {
   // Replace all zones, resolving card names against the current card index.
   // Cards that no longer exist (renamed / removed upstream) are dropped.
   const unknown = [];
-  for (const z of ['main', 'side', 'maybe']) {
+  for (const z of ['main', 'sanctum', 'side', 'maybe']) {
     const piles = (payload.zones[z] || []).map(pileNames => {
       const pile = [];
       for (const name of pileNames) {
@@ -4698,6 +5682,10 @@ function loadDeckFromStorage(name) {
     STATE.zones[z].piles = piles;
   }
   STATE.selection.clear();
+  // Loading a base deck always clears any active plan — the plan belongs to
+  // whichever deck was loaded before.
+  STATE.loadedPlanName = null;
+  STATE.basePlanZones = null;
   if (payload.format === 'standard' || payload.format === 'eternal' || payload.format === 'range') {
     STATE.format = payload.format;
     STATE.rangeStart = payload.rangeStart || null;
@@ -4709,12 +5697,250 @@ function loadDeckFromStorage(name) {
   renderAll();
   resetHistory();
   markDeckClean();
+  updateSaveButtons();
   if (unknown.length > 0) reportUnknown(unknown);
   return true;
 }
 
 function deleteDeckFromStorage(name) {
   localStorage.removeItem(SAVED_DECK_PREFIX + name);
+}
+
+// ---------------------------------------------------------------------------
+// Sideboard plans (per-deck, stored inside the deck payload's plans[] array)
+// ---------------------------------------------------------------------------
+
+function listPlans(deckName) {
+  const p = readDeckPayload(deckName);
+  return (p && Array.isArray(p.plans)) ? p.plans : [];
+}
+
+function createPlan(deckName, planName) {
+  const payload = readDeckPayload(deckName);
+  if (!payload) throw new Error('Deck "' + deckName + '" not found.');
+  if (!Array.isArray(payload.plans)) payload.plans = [];
+  if (payload.plans.some(p => p.name === planName)) {
+    throw new Error('A plan named "' + planName + '" already exists for this deck.');
+  }
+  payload.plans.push({
+    name: planName,
+    savedAt: new Date().toISOString(),
+    zones: { main: zoneNamesByPile('main'), side: zoneNamesByPile('side') },
+    stale: false,
+  });
+  writeDeckPayload(deckName, payload);
+}
+
+function deletePlan(deckName, planName) {
+  const payload = readDeckPayload(deckName);
+  if (!payload || !Array.isArray(payload.plans)) return;
+  payload.plans = payload.plans.filter(p => p.name !== planName);
+  writeDeckPayload(deckName, payload);
+}
+
+function renamePlan(deckName, oldName, newName) {
+  const payload = readDeckPayload(deckName);
+  if (!payload || !Array.isArray(payload.plans)) return false;
+  if (oldName === newName) return true;
+  if (payload.plans.some(p => p.name === newName)) return false;
+  const plan = payload.plans.find(p => p.name === oldName);
+  if (!plan) return false;
+  plan.name = newName;
+  writeDeckPayload(deckName, payload);
+  if (STATE.loadedDeckName === deckName && STATE.loadedPlanName === oldName) {
+    STATE.loadedPlanName = newName;
+  }
+  return true;
+}
+
+function loadPlanFromStorage(deckName, planName) {
+  const payload = readDeckPayload(deckName);
+  if (!payload || !Array.isArray(payload.plans)) return false;
+  const plan = payload.plans.find(p => p.name === planName);
+  if (!plan) return false;
+  if (plan.stale) {
+    const baseMulti = canonicalMultiset(payload.zones.main || [], payload.zones.side || []);
+    const pMulti = canonicalMultiset(plan.zones.main || [], plan.zones.side || []);
+    const diff = diffMultisets(baseMulti, pMulti);
+    alert('Plan "' + planName + '" no longer matches the deck\'s 75:\n  ' +
+          describeDiff(diff) +
+          '\nEdit the base deck back to match (or delete this plan) to use it again.');
+    return false;
+  }
+
+  const unknown = [];
+  function materialize(pileNameLists) {
+    return pileNameLists.map(pileNames => {
+      const pile = [];
+      for (const name of pileNames) {
+        const card = STATE.byName.get(name);
+        if (!card) {
+          const fallback = STATE.cards.find(c => c.canonical === canonicalName(name));
+          if (fallback) pile.push({ uid: newUid(), cardId: fallback.id });
+          else unknown.push(name);
+          continue;
+        }
+        pile.push({ uid: newUid(), cardId: card.id });
+      }
+      return pile;
+    }).filter(p => p.length > 0);
+  }
+  STATE.zones.main.piles = materialize(plan.zones.main || []);
+  STATE.zones.side.piles = materialize(plan.zones.side || []);
+  // maybeboard is untouched — it belongs to the base deck.
+  STATE.selection.clear();
+  STATE.loadedPlanName = planName;
+  STATE.basePlanZones = {
+    main: payload.zones.main || [],
+    side: payload.zones.side || [],
+  };
+  renderAll();
+  resetHistory();
+  markDeckClean();
+  updateSaveButtons();
+  if (unknown.length > 0) reportUnknown(unknown);
+  return true;
+}
+
+// Without mutating storage: for the deck named `deckName`, figure out which
+// of its existing plans would become stale if we saved STATE.zones's
+// main+side right now. Returns [{ planName, diff }]. Empty array if none.
+function planStalenessPreview(deckName) {
+  const payload = readDeckPayload(deckName);
+  if (!payload || !Array.isArray(payload.plans)) return [];
+  const newBase = canonicalMultiset(zoneNamesByPile('main'), zoneNamesByPile('side'));
+  const out = [];
+  for (const plan of payload.plans) {
+    const pMulti = canonicalMultiset((plan.zones || {}).main || [], (plan.zones || {}).side || []);
+    const diff = diffMultisets(newBase, pMulti);
+    if (!diffIsEmpty(diff)) out.push({ planName: plan.name, diff });
+  }
+  return out;
+}
+
+function showStalePlansConfirm(stalePlans) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('stale-plans-modal');
+    const list = document.getElementById('stale-plans-list');
+    list.innerHTML = '';
+    for (const { planName, diff } of stalePlans) {
+      const li = document.createElement('li');
+      const nm = document.createElement('span');
+      nm.className = 'stale-plan-name';
+      nm.textContent = planName;
+      const d = document.createElement('span');
+      d.className = 'stale-plan-diff';
+      d.textContent = describeDiff(diff);
+      li.appendChild(nm);
+      li.appendChild(d);
+      list.appendChild(li);
+    }
+    modal.classList.remove('hidden');
+    function cleanup() {
+      modal.classList.add('hidden');
+      document.getElementById('stale-plans-ok').removeEventListener('click', onOk);
+      document.getElementById('stale-plans-cancel').removeEventListener('click', onCancel);
+      modal.querySelector('.modal-backdrop').removeEventListener('click', onCancel);
+    }
+    function onOk()     { cleanup(); resolve(true); }
+    function onCancel() { cleanup(); resolve(false); }
+    document.getElementById('stale-plans-ok').addEventListener('click', onOk);
+    document.getElementById('stale-plans-cancel').addEventListener('click', onCancel);
+    modal.querySelector('.modal-backdrop').addEventListener('click', onCancel);
+  });
+}
+
+// Modal that prompts for a plan name. Returns the entered name (trimmed) or
+// null if cancelled.
+function showPlanNamePrompt(defaultName) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('plan-name-modal');
+    const input = document.getElementById('plan-name-input');
+    input.value = defaultName || '';
+    modal.classList.remove('hidden');
+    setTimeout(() => { input.focus(); input.select(); }, 0);
+    function cleanup() {
+      modal.classList.add('hidden');
+      document.getElementById('plan-name-ok').removeEventListener('click', onOk);
+      document.getElementById('plan-name-cancel').removeEventListener('click', onCancel);
+      modal.querySelector('.modal-backdrop').removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+    }
+    function onOk() {
+      const v = input.value.trim();
+      if (!v) { input.focus(); return; }
+      cleanup(); resolve(v);
+    }
+    function onCancel() { cleanup(); resolve(null); }
+    function onKey(ev) {
+      ev.stopPropagation();
+      if (ev.key === 'Enter') { ev.preventDefault(); onOk(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); onCancel(); }
+    }
+    document.getElementById('plan-name-ok').addEventListener('click', onOk);
+    document.getElementById('plan-name-cancel').addEventListener('click', onCancel);
+    modal.querySelector('.modal-backdrop').addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
+function exitPlanMode() {
+  // Return the editor to the base deck. Used by the × button on the plan
+  // banner, and as a precondition for import/new-deck flows when a plan is
+  // active (avoids silently blowing away the plan's context).
+  if (!STATE.loadedPlanName || !STATE.loadedDeckName) return false;
+  const name = STATE.loadedDeckName;
+  const ok = loadDeckFromStorage(name);
+  if (!ok) {
+    // Base deck vanished out from under us — clear plan state anyway so the
+    // UI isn't stuck.
+    STATE.loadedPlanName = null;
+    STATE.basePlanZones = null;
+    renderAll();
+    updateSaveButtons();
+  }
+  return true;
+}
+
+// Diff of the current main+side zones against the base deck's main+side,
+// when a plan is active. Returns null if no plan is active. Used both by the
+// live indicator and by the save-active-plan validation.
+function currentPlanDiff() {
+  if (!STATE.basePlanZones) return null;
+  const base = canonicalMultiset(STATE.basePlanZones.main, STATE.basePlanZones.side);
+  const cur = canonicalMultiset(zoneNamesByPile('main'), zoneNamesByPile('side'));
+  return diffMultisets(base, cur);
+}
+
+function saveActivePlan() {
+  if (!STATE.loadedDeckName || !STATE.loadedPlanName) {
+    throw new Error('No active plan to save.');
+  }
+  const payload = readDeckPayload(STATE.loadedDeckName);
+  if (!payload || !Array.isArray(payload.plans)) {
+    throw new Error('Base deck "' + STATE.loadedDeckName + '" not found.');
+  }
+  const plan = payload.plans.find(p => p.name === STATE.loadedPlanName);
+  if (!plan) throw new Error('Plan "' + STATE.loadedPlanName + '" not found.');
+  const curMain = zoneNamesByPile('main');
+  const curSide = zoneNamesByPile('side');
+  const baseMulti = canonicalMultiset(payload.zones.main || [], payload.zones.side || []);
+  const curMulti = canonicalMultiset(curMain, curSide);
+  const diff = diffMultisets(baseMulti, curMulti);
+  if (!diffIsEmpty(diff)) {
+    throw new Error("Plan doesn't match the deck's 75: " + describeDiff(diff));
+  }
+  plan.zones = { main: curMain, side: curSide };
+  plan.savedAt = new Date().toISOString();
+  plan.stale = false;
+  // Refresh basePlanZones from the payload so the live indicator stays
+  // accurate (the base didn't change, but it's cheap to re-cache).
+  STATE.basePlanZones = {
+    main: payload.zones.main || [],
+    side: payload.zones.side || [],
+  };
+  writeDeckPayload(STATE.loadedDeckName, payload);
+  markDeckClean();
 }
 
 function deckIsEmpty() {
@@ -4726,7 +5952,7 @@ function deckIsEmpty() {
 // don't create false positives.
 function snapshotDeck() {
   const zones = {};
-  for (const z of ['main', 'side', 'maybe']) {
+  for (const z of ['main', 'sanctum', 'side', 'maybe']) {
     zones[z] = STATE.zones[z].piles.map(pile => pile.map(inst => {
       const c = STATE.byId.get(inst.cardId);
       return c ? c.name : null;
@@ -4746,7 +5972,11 @@ function deckIsDirty() {
 function updateSaveButtons() {
   const saveBtn = document.getElementById('btn-save-deck');
   const saveAsBtn = document.getElementById('btn-save-as');
-  if (STATE.loadedDeckName) {
+  if (STATE.loadedPlanName) {
+    saveBtn.textContent = 'Save plan';
+    saveAsBtn.classList.add('hidden');
+    document.title = STATE.loadedDeckName + ' · ' + STATE.loadedPlanName + ' — Revolution Deckbuilder';
+  } else if (STATE.loadedDeckName) {
     saveBtn.textContent = 'Save deck';
     saveAsBtn.classList.remove('hidden');
     document.title = STATE.loadedDeckName + ' — Revolution Deckbuilder';
@@ -4754,6 +5984,54 @@ function updateSaveButtons() {
     saveBtn.textContent = 'Save deck';
     saveAsBtn.classList.add('hidden');
     document.title = 'Revolution Deckbuilder';
+  }
+  updatePlanBanner();
+}
+
+function updatePlanBanner() {
+  // Drives the centered deck/plan title bar sitting above the pile-title.
+  //   no deck loaded      → bar hidden
+  //   deck loaded         → "BG Midrange"
+  //   plan active         → "BG Midrange · vs Jeskai ✓"  (✗ on mismatch)
+  // The ✓/✗ pill carries the full per-card diff in its tooltip; the exit
+  // × only shows in plan mode. The body.plan-active class drives the
+  // maybe-zone dim and any other plan-mode styling.
+  document.body.classList.toggle('plan-active', !!STATE.loadedPlanName);
+  const bar = document.getElementById('deck-title-bar');
+  if (!bar) return;
+  const hasDeck = !!STATE.loadedDeckName;
+  const hasPlan = !!STATE.loadedPlanName;
+  if (!hasDeck && !hasPlan) { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  document.getElementById('deck-title-name').textContent = STATE.loadedDeckName || '';
+  const sep = document.getElementById('plan-title-sep');
+  const planNameEl = document.getElementById('plan-title-name');
+  const statusEl = document.getElementById('plan-status');
+  const exitEl = document.getElementById('plan-exit');
+  if (hasPlan) {
+    sep.classList.remove('hidden');
+    planNameEl.classList.remove('hidden');
+    planNameEl.textContent = STATE.loadedPlanName;
+    statusEl.classList.remove('hidden');
+    exitEl.classList.remove('hidden');
+    const diff = currentPlanDiff();
+    if (!diff || diffIsEmpty(diff)) {
+      statusEl.textContent = '✓';
+      statusEl.classList.remove('mismatch');
+      statusEl.classList.add('match');
+      statusEl.dataset.title = '75 matches the base deck';
+    } else {
+      statusEl.textContent = '✗';
+      statusEl.classList.remove('match');
+      statusEl.classList.add('mismatch');
+      statusEl.dataset.title = describeDiff(diff);
+    }
+  } else {
+    sep.classList.add('hidden');
+    planNameEl.classList.add('hidden');
+    planNameEl.textContent = '';
+    statusEl.classList.add('hidden');
+    exitEl.classList.add('hidden');
   }
 }
 
@@ -4994,9 +6272,24 @@ function wireSavedDecks() {
     updateSaveButtons();
   }
 
-  saveBtn.addEventListener('click', (ev) => {
+  saveBtn.addEventListener('click', async (ev) => {
     ev.stopPropagation();
+    if (STATE.loadedPlanName) {
+      try { saveActivePlan(); }
+      catch (e) { alert('Could not save plan: ' + (e && e.message ? e.message : e)); return; }
+      updatePlanBanner();
+      renderDecksList();
+      const orig = saveBtn.textContent;
+      saveBtn.textContent = 'Saved ✓';
+      setTimeout(() => { saveBtn.textContent = orig; }, 1200);
+      return;
+    }
     if (STATE.loadedDeckName) {
+      const stale = planStalenessPreview(STATE.loadedDeckName);
+      if (stale.length > 0) {
+        const ok = await showStalePlansConfirm(stale);
+        if (!ok) return;
+      }
       try {
         saveDeckToStorage(STATE.loadedDeckName, {
           folder: STATE.loadedDeckFolder,
@@ -5004,7 +6297,9 @@ function wireSavedDecks() {
         });
       } catch (e) {
         alert('Could not save deck: ' + (e && e.message ? e.message : e));
+        return;
       }
+      renderDecksList();
       const orig = saveBtn.textContent;
       saveBtn.textContent = 'Saved ✓';
       setTimeout(() => { saveBtn.textContent = orig; }, 1200);
@@ -5064,7 +6359,7 @@ function wireSavedDecks() {
     const hasAnyFolder = all.some(d => !!d.folder);
     const useTree = hasAnyFolder && !hasFilter;
     if (!useTree) {
-      for (const deck of decks) listEl.appendChild(buildDeckRow(deck, false));
+      for (const deck of decks) appendDeckAndPlans(deck, false);
       return;
     }
     const groups = new Map();
@@ -5077,12 +6372,26 @@ function wireSavedDecks() {
     }
     // Unfiled decks render as flat rows at the top — no collapsible header —
     // so the no-folders-used experience matches the pre-folders UI.
-    for (const deck of unfiled) listEl.appendChild(buildDeckRow(deck, false));
+    for (const deck of unfiled) appendDeckAndPlans(deck, false);
     const sortedKeys = [...groups.keys()].sort();
     for (const k of sortedKeys) {
       const g = groups.get(k);
+      // Folder headers only render when the format filter hasn't emptied
+      // them out — a Revolution-only folder shouldn't show a lonely "0"
+      // header while browsing in Voyager mode.
+      if (g.decks.length === 0) continue;
       renderFolderGroup(g.display, g.decks);
     }
+  }
+
+  function appendDeckAndPlans(deck, indent) {
+    listEl.appendChild(buildDeckRow(deck, indent));
+    if (deck.name !== STATE.loadedDeckName) return;
+    // Only the currently-loaded deck's row expands with its plans + the
+    // "+ Create plan" affordance. Other deck rows stay compact.
+    const plans = listPlans(deck.name);
+    for (const plan of plans) listEl.appendChild(buildPlanRow(deck.name, plan));
+    listEl.appendChild(buildCreatePlanRow(deck.name));
   }
   function renderFolderGroup(folderName, groupDecks) {
     const displayKey = folderName || '__unfiled__';
@@ -5109,12 +6418,13 @@ function wireSavedDecks() {
     });
     listEl.appendChild(header);
     if (isCollapsed) return;
-    for (const deck of groupDecks) listEl.appendChild(buildDeckRow(deck, true));
+    for (const deck of groupDecks) appendDeckAndPlans(deck, true);
   }
 
   function buildDeckRow(deck, indent) {
     const row = document.createElement('div');
     row.className = 'saved-deck-row' + (indent ? ' indent' : '');
+    if (STATE.loadedDeckName === deck.name) row.classList.add('loaded');
 
     const nameEl = document.createElement('span');
     nameEl.className = 'deck-name';
@@ -5154,6 +6464,8 @@ function wireSavedDecks() {
         STATE.loadedDeckName = null;
         STATE.loadedDeckFolder = null;
         STATE.loadedDeckTags = [];
+        STATE.loadedPlanName = null;
+        STATE.basePlanZones = null;
         updateSaveButtons();
       }
       renderDecksList();
@@ -5172,6 +6484,106 @@ function wireSavedDecks() {
       closeAllDropdowns();
     });
 
+    return row;
+  }
+
+  function buildPlanRow(deckName, plan) {
+    const row = document.createElement('div');
+    row.className = 'saved-plan-row';
+    if (plan.stale) row.classList.add('stale');
+    if (STATE.loadedDeckName === deckName && STATE.loadedPlanName === plan.name) {
+      row.classList.add('active');
+    }
+
+    const caret = document.createElement('span');
+    caret.className = 'plan-caret';
+    caret.innerHTML = '&#x21B3;';
+    row.appendChild(caret);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'plan-name';
+    nameEl.textContent = plan.name;
+    if (plan.stale) nameEl.dataset.title = "Plan no longer matches the deck's 75 — edit the deck back or delete the plan.";
+    row.appendChild(nameEl);
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'deck-action';
+    renameBtn.dataset.title = 'Rename plan';
+    renameBtn.innerHTML = '&#x270E;';
+    renameBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const v = await showPlanNamePrompt(plan.name);
+      if (!v || v === plan.name) return;
+      if (!renamePlan(deckName, plan.name, v)) {
+        alert('A plan named "' + v + '" already exists for this deck.');
+        return;
+      }
+      updateSaveButtons();
+      renderDecksList();
+    });
+    row.appendChild(renameBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'deck-action deck-delete';
+    delBtn.dataset.title = 'Delete plan';
+    delBtn.innerHTML = '&#x1f5d1;';
+    delBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (!confirm('Delete plan “' + plan.name + '”?')) return;
+      const wasActive = (STATE.loadedPlanName === plan.name && STATE.loadedDeckName === deckName);
+      deletePlan(deckName, plan.name);
+      if (wasActive) exitPlanMode();
+      renderDecksList();
+    });
+    row.appendChild(delBtn);
+
+    row.addEventListener('click', () => {
+      if (plan.stale) {
+        // loadPlanFromStorage surfaces its own alert with the diff.
+        loadPlanFromStorage(deckName, plan.name);
+        return;
+      }
+      if (deckIsDirty() && !confirm('Discard unsaved changes and switch to plan “' + plan.name + '”?')) return;
+      const ok = loadPlanFromStorage(deckName, plan.name);
+      if (!ok) return;
+      closeAllDropdowns();
+    });
+
+    return row;
+  }
+
+  function buildCreatePlanRow(deckName) {
+    const row = document.createElement('div');
+    row.className = 'saved-plan-row create-plan-row';
+    const have75 = totalCount('main') + totalCount('side') > 0;
+    const dirty = deckIsDirty();
+    const planActive = !!STATE.loadedPlanName;
+    const disabled = !have75 || dirty || planActive;
+    if (disabled) row.classList.add('disabled');
+
+    const plus = document.createElement('span');
+    plus.className = 'plan-caret';
+    plus.textContent = '+';
+    row.appendChild(plus);
+
+    const label = document.createElement('span');
+    label.className = 'create-plan-label';
+    if (!have75) { label.textContent = 'Create plan (add cards)'; row.title = 'Main or sideboard must have cards before you can create a plan'; }
+    else if (dirty) { label.textContent = 'Create plan (save first)'; row.title = 'Save the deck before creating a plan'; }
+    else if (planActive) { label.textContent = 'Create plan (exit plan)'; row.title = 'Exit the current plan before creating a new one'; }
+    else label.textContent = 'Create plan';
+    row.appendChild(label);
+
+    if (!disabled) {
+      row.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const name = await showPlanNamePrompt('');
+        if (!name) return;
+        try { createPlan(deckName, name); }
+        catch (e) { alert(e && e.message ? e.message : e); return; }
+        renderDecksList();
+      });
+    }
     return row;
   }
 
@@ -5329,6 +6741,16 @@ function wireSavedDecks() {
   document.addEventListener('click', () => closeAllDropdowns());
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') closeAllDropdowns();
+  });
+}
+
+function wirePlanBanner() {
+  const btn = document.getElementById('plan-exit');
+  if (!btn) return;
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (deckIsDirty() && !confirm('Discard unsaved plan changes?')) return;
+    exitPlanMode();
   });
 }
 
