@@ -2637,6 +2637,15 @@ function buildIsPredicate(rawValue) {
     // (bare or hybrid). Catches the 7 back-face Vertex spells without
     // requiring the user to enumerate every V/W, V/U, … hybrid.
     case 'vertex':    return (c) => /\{[^}]*V[^}]*\}/.test(c.rawManaCost || '');
+    // Any braced pip with a slash — covers WUBRG hybrids, colorless
+    // hybrids (`{C/W}`), Voyager silver hybrids (`{I/B}`), Vertex
+    // hybrids (`{V/G}`), and future `{2/W}` monohybrids if either
+    // dataset adopts them. Prismatic `{Vp}` has no slash and is a
+    // distinct atomic pip, so it doesn't match.
+    case 'hybrid':    return (c) => /\{[^}]*\/[^}]*\}/.test(c.rawManaCost || '');
+    // Revolution's POP-set prismatic mana renders as `{Vp}` — a single
+    // atomic pip (not a slash-hybrid). Only the POP set uses it.
+    case 'prismatic': return (c) => /\{Vp\}/.test(c.rawManaCost || '');
     // Rarity shortcuts the spec mentions under "Search by Rarity"
     case 'common':
     case 'uncommon':
@@ -2857,16 +2866,18 @@ function fallbackNamePredicate(raw) {
              || c.canonical.toLowerCase().includes(needle);
 }
 
-// Sort the result list. Default is alphabetical by canonical name. sort:X
-// entries from the parsed query can override — pull a value for the chosen
-// field, ties broken by canonical name. A leading -sort desc direction is
-// stored as desc=true on the entry (currently always false — the grammar
-// accepts -sort:mv but we treat the minus as NOT and drop the sort; see
-// the FIXME below if we want proper descending support).
+// Sort the result list. When the query includes sort:X, the parsed spec
+// wins (ties broken by canonical name). Otherwise fall back to the current
+// pile-sort chain so the displayed order matches the Pile-sort dropdown
+// label — an alphabetical default would make the label look like a no-op.
+// A leading -sort desc direction is stored as desc=true on the entry
+// (currently always false — the grammar accepts -sort:mv but we treat the
+// minus as NOT and drop the sort; see the FIXME below if we want proper
+// descending support).
 function sortSearchItems(items, sortSpec) {
   const specs = (sortSpec && sortSpec.length) ? sortSpec : null;
   if (!specs) {
-    items.sort((a, b) => a.canonical.localeCompare(b.canonical));
+    sortSearchItemsByPileChain(items);
     return;
   }
   const keyFns = specs.map(s => sortKeyFn(s.field)).filter(Boolean);
@@ -2889,6 +2900,20 @@ function sortSearchItems(items, sortSpec) {
       const cmp = compareAny(va, vb);
       if (cmp !== 0) return desc ? -cmp : cmp;
     }
+    return a.canonical.localeCompare(b.canonical);
+  });
+}
+
+// Sort search items using the current pile-sort chain, via the same
+// comparator the deck panes use. Wraps each item's newest printing in a
+// minimal { cardId } stand-in so compareCardsChained (which expects card
+// instances) can look the card up in STATE.byId.
+function sortSearchItemsByPileChain(items) {
+  items.sort((a, b) => {
+    const ac = a.printings[a.printings.length - 1];
+    const bc = b.printings[b.printings.length - 1];
+    const c = compareCardsChained({ cardId: ac.id }, { cardId: bc.id }, STATE.pileSortChain);
+    if (c !== 0) return c;
     return a.canonical.localeCompare(b.canonical);
   });
 }
@@ -4228,8 +4253,8 @@ function renderSearchPanel() {
   // in-zone drop targets, which search results don't need.
   container.classList.add('search-mode');
   // Each result is its own single-card pile so tile spacing matches the
-  // deck panes. Results come back in the search's own relevance/name order;
-  // no pile-sort re-bucketing is applied.
+  // deck panes. Results are ordered by an explicit sort:X in the query if
+  // present, otherwise by the current pile-sort chain (see sortSearchItems).
   STATE.search.results.forEach((item) => {
     const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
     if (!picked) return;
@@ -4789,7 +4814,11 @@ function wirePileSort() {
       pushPileSort(method);
       update();
       menu.classList.add('hidden');
-      resortPiles(STATE.focusedZone);
+      if (STATE.focusedZone === 'search') {
+        sortSearchItemsByPileChain(STATE.search.results);
+      } else {
+        resortPiles(STATE.focusedZone);
+      }
       renderPiles();
     });
   });
