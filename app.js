@@ -1478,6 +1478,14 @@ function syncFormatUI() {
   // add-to-zone button). STATE.zones.sanctum still exists either way so
   // a stashed Voyager deck round-trips cleanly.
   document.body.classList.toggle('voyager-mode', currentDataset() === 'voyager');
+  // Swap the tab icon to the silver variant while Voyager is active. Only
+  // the webp link is mutated — all evergreen browsers prefer it over the
+  // png fallback, and the png stays pointing at the default on the off
+  // chance a browser without webp support is in use.
+  const favLink = document.querySelector('link[rel="icon"][type="image/webp"]');
+  if (favLink) {
+    favLink.href = currentDataset() === 'voyager' ? 'favicon-silver.webp' : 'favicon.webp';
+  }
 }
 
 // Compare two card instances by a single sort method. Returns 0 on tie so
@@ -3246,6 +3254,12 @@ function addCardToZone(cardId, zoneName, count = 1) {
     notePlanLock("Plan has a fixed 75 — can't add new cards.");
     return;
   }
+  placeCardsInZone(cardId, zoneName, count);
+}
+
+// Unguarded placement used by the import flow, which needs to rewrite zones
+// even while a plan is active (the 75-invariant is checked after load).
+function placeCardsInZone(cardId, zoneName, count = 1) {
   const card = STATE.byId.get(cardId);
   if (!card) return;
   const zone = STATE.zones[zoneName];
@@ -3537,7 +3551,7 @@ function applyZonesSnapshot(json) {
 }
 
 // Drop the entire undo/redo stack and rebaseline on the current zones.
-// Called on deck swaps (New / Import / Load) — undoing back into a prior
+// Called on deck swaps (New / Load) — undoing back into a prior
 // deck after intentionally switching to a different one would surprise the
 // user more than help them. Save is NOT a swap and intentionally leaves
 // history intact.
@@ -5076,34 +5090,45 @@ function resolveCardName(name, uuid) {
   return null;
 }
 
-function importDeck(text, filename) {
-  // Sniff format. .cod is XML; .txt is line-based. The first non-whitespace
-  // character is enough to tell them apart.
+// Apply an imported decklist to the current zones. Behavior splits on
+// whether a sideboard plan is active:
+//   - Plan active: overwrite the main/side split, then verify the 75 still
+//     matches the plan's base. On mismatch, revert and alert the user.
+//   - Otherwise: overwrite the zones as the current deck's new contents.
+// Import is a single undo step in both cases — Ctrl+Z restores pre-import.
+function importDeck(text) {
   const stripped = text.replace(/^\uFEFF/, '').trimStart();
   const isXml = stripped.startsWith('<');
-  if (isXml) importCod(text);
-  else importTxt(text);
-  STATE.loadedDeckName = null;
-  STATE.loadedDeckFolder = null;
-  STATE.loadedDeckTags = [];
-  STATE.loadedPlanName = null;
-  STATE.basePlanZones = null;
+  const pre = serializeZones();
+  const planActive = isPlanActive();
+  const result = isXml ? importCod(text) : importTxt(text);
+  if (!result) return;
+  if (planActive) {
+    const diff = currentPlanDiff();
+    if (!diffIsEmpty(diff)) {
+      STATE.zones = JSON.parse(pre);
+      renderAll();
+      alert("Imported list doesn't match this plan's 75: " + describeDiff(diff));
+      return;
+    }
+  }
+  renderAll();
   updateSaveButtons();
-  markDeckClean();
+  reportUnknown(result.unknown);
 }
 
 function importCod(text) {
   let doc;
   try {
     doc = new DOMParser().parseFromString(text, 'application/xml');
-  } catch (e) { alert('Failed to parse XML: ' + e); return; }
+  } catch (e) { alert('Failed to parse XML: ' + e); return null; }
   const err = doc.querySelector('parsererror');
-  if (err) { alert('Failed to parse .cod: ' + err.textContent); return; }
+  if (err) { alert('Failed to parse .cod: ' + err.textContent); return null; }
 
   clearAllZones();
 
   const zones = doc.querySelectorAll('zone');
-  let unknown = [];
+  const unknown = [];
   zones.forEach(zoneEl => {
     const zname = (zoneEl.getAttribute('name') || '').toLowerCase();
     let target = 'main';
@@ -5117,14 +5142,12 @@ function importCod(text) {
       const uuid = cardEl.getAttribute('uuid') || '';
       const cardId = resolveCardName(name, uuid);
       if (!cardId) { unknown.push(name); return; }
-      addCardToZone(cardId, target, number);
+      placeCardsInZone(cardId, target, number);
     });
   });
 
   for (const z of Object.keys(STATE.zones)) resortPiles(z);
-  renderAll();
-  resetHistory();
-  reportUnknown(unknown);
+  return { unknown };
 }
 
 function importTxt(text) {
@@ -5189,14 +5212,12 @@ function importTxt(text) {
     for (const { count, name } of group.entries) {
       const cardId = resolveCardName(name, null);
       if (!cardId) { unknown.push(name); continue; }
-      addCardToZone(cardId, zone, count);
+      placeCardsInZone(cardId, zone, count);
     }
   }
 
   for (const z of Object.keys(STATE.zones)) resortPiles(z);
-  renderAll();
-  resetHistory();
-  reportUnknown(unknown);
+  return { unknown };
 }
 
 function reportUnknown(unknown) {
@@ -5450,14 +5471,7 @@ function wirePasteImport() {
   const submit = () => {
     const text = textarea.value;
     if (!text.trim()) { close(); return; }
-    importTxt(text);
-    STATE.loadedDeckName = null;
-    STATE.loadedDeckFolder = null;
-    STATE.loadedDeckTags = [];
-    STATE.loadedPlanName = null;
-    STATE.basePlanZones = null;
-    updateSaveButtons();
-    markDeckClean();
+    importDeck(text);
     close();
   };
 
