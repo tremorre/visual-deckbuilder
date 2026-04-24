@@ -2753,11 +2753,10 @@ function wireSearch() {
       // But do refocus and reset selection.
       renderSearchResults();
       renderAll();
-    } else if (ev.key === 'Escape') {
-      results.classList.add('hidden');
-      hidePreview();
-      input.blur();
     }
+    // Escape is handled by the wrap-level listener below so it also works
+    // when focus is on the panel-toggle button (not just the input) — e.g.
+    // after the user clicks the toggle off mid-search.
   });
 
   input.addEventListener('focus', () => {
@@ -2771,6 +2770,23 @@ function wireSearch() {
       hidePreview();
     }
   });
+
+  // Escape from anywhere inside the search wrap (input *or* the panel-toggle
+  // button) blurs focus and hides the dropdown. Needed because the toolbar
+  // is suppressed via `.search-wrap:focus-within` — if focus stays on the
+  // toggle button after turning panel mode off, the toolbar stays hidden
+  // until we blur something.
+  const wrap = document.querySelector('.search-wrap');
+  if (wrap) {
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape') return;
+      const a = document.activeElement;
+      if (!a || !wrap.contains(a)) return;
+      results.classList.add('hidden');
+      hidePreview();
+      a.blur();
+    });
+  }
 }
 
 // Cap on how many result rows the dropdown renders. Not a "top N by
