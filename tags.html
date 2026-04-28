@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Revolution Tagger</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/webp" href="favicon.webp">
+<script>
+  // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
+  try {
+    var raw = localStorage.getItem('rev-deckbuilder-prefs-v1');
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && p.theme === 'light') document.documentElement.dataset.theme = 'light';
+    }
+  } catch (_) {}
+  // Flip app.js into tag-tool mode. Must run before the app.js tag below.
+  window.TAG_MODE = true;
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="tag-mode">
+<header>
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="e.g. t:creature" autocomplete="off" spellcheck="false">
+    <button id="btn-search-toggle" class="search-toggle" type="button" data-title="Show search results in the main panel (instead of a dropdown)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="2" width="5" height="5" rx="0.5"/>
+        <rect x="9" y="2" width="5" height="5" rx="0.5"/>
+        <rect x="2" y="9" width="5" height="5" rx="0.5"/>
+        <rect x="9" y="9" width="5" height="5" rx="0.5"/>
+      </svg>
+    </button>
+    <div id="search-results" class="hidden"></div>
+    <div id="search-error" class="hidden"></div>
+  </div>
+  <div class="search-hints tag-search-hints">
+    <span><kbd>↑</kbd><kbd>↓</kbd> nav</span>
+    <span><kbd>Tab</kbd> pick</span>
+    <span><kbd>Enter</kbd> repeat tag</span>
+    <span><kbd>Shift</kbd>+<kbd>Enter</kbd> new tag</span>
+  </div>
+  <div class="toolbar">
+    <a id="btn-deckbuilder-link" href="index.html" class="toolbar-link" data-title="Switch to the deckbuilder">Deckbuilder</a>
+    <div class="deck-btn-group">
+      <button id="btn-save-deck" class="hidden"></button>
+      <button id="btn-save-as" class="hidden"></button>
+      <div id="save-name-dropdown" class="deck-dropdown hidden">
+        <input id="save-deck-name" type="text" placeholder="" spellcheck="false">
+        <div id="save-deck-folder-field" class="save-meta-field">
+          <label>Folder</label>
+          <input id="save-deck-folder" type="text" placeholder="" spellcheck="false" list="save-deck-folder-list">
+          <datalist id="save-deck-folder-list"></datalist>
+        </div>
+        <div id="save-deck-tags-field" class="save-meta-field">
+          <label>Tags</label>
+          <div id="save-deck-tags" class="tag-chip-editor"></div>
+        </div>
+        <div class="save-name-buttons">
+          <button id="save-name-ok" class="primary"></button>
+          <button id="save-name-cancel"></button>
+        </div>
+      </div>
+    </div>
+    <div class="deck-btn-group">
+      <button id="btn-decks" class="hidden"></button>
+      <div id="decks-dropdown" class="deck-dropdown hidden">
+        <input id="decks-filter" type="text" placeholder="" spellcheck="false">
+        <div id="decks-list"></div>
+      </div>
+    </div>
+    <button id="btn-new-deck" class="hidden"></button>
+    <button id="btn-import" class="hidden"></button>
+    <input type="file" id="file-import" accept=".cod,.xml,.txt,.dec" hidden>
+    <button id="btn-paste-import" class="hidden"></button>
+    <button id="btn-copy-txt" class="hidden"></button>
+    <button id="btn-export-cod" class="hidden"></button>
+    <div class="format-dropdown">
+      <button id="format-btn" class="format-dropdown-btn">Standard &#x25BE;</button>
+      <div id="format-menu" class="format-dropdown-menu hidden">
+        <button data-format="standard">Standard</button>
+        <button data-format="eternal" class="tag-hidden-format">Eternal</button>
+        <button data-format="range" class="tag-hidden-format">Sets</button>
+        <div id="range-pickers" class="range-pickers hidden">
+          <select id="range-start"></select>
+          <span class="range-dash">&ndash;</span>
+          <select id="range-end"></select>
+        </div>
+        <button data-format="voyager" data-title="Switch to the Voyager tag map (separate card pool)">Voyager</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside class="zones">
+    <!-- Stub sort bar so app.js wiring (data-list-sort / pile-sort) doesn't
+         throw; hidden in tag mode via body.tag-mode in style.css. -->
+    <div class="sort-bar">
+      <span>Sort:</span>
+      <button class="sort-btn active" data-list-sort="type">Type</button>
+      <button class="sort-btn" data-list-sort="cmc">Mana</button>
+    </div>
+    <section class="zone zone-search hidden" data-zone="search">
+      <header>
+        <span class="zone-title">Search</span>
+        <span class="zone-count" id="count-search">0</span>
+      </header>
+    </section>
+    <section class="zone" data-zone="main">
+      <header><span class="zone-title">Main</span><span class="zone-count" id="count-main">0</span></header>
+      <div class="zone-list" id="list-main"></div>
+    </section>
+    <section class="zone zone-sanctum-host" data-zone="sanctum">
+      <header><span class="zone-title">Sanctum</span><span class="zone-count" id="count-sanctum">0</span></header>
+      <div class="zone-list" id="list-sanctum"></div>
+    </section>
+    <section class="zone" data-zone="side">
+      <header><span class="zone-title">Sideboard</span><span class="zone-count" id="count-side">0</span></header>
+      <div class="zone-list" id="list-side"></div>
+    </section>
+    <section class="zone" data-zone="maybe">
+      <header><span class="zone-title">Maybeboard</span><span class="zone-count" id="count-maybe">0</span></header>
+      <div class="zone-list" id="list-maybe"></div>
+    </section>
+  </aside>
+
+  <aside class="tag-zones">
+    <section id="tag-search-tab" class="zone tag-zone tag-search-tab" data-zone="search" data-title="Back to search results (Esc)">
+      <header>
+        <span class="zone-title">Search</span>
+      </header>
+    </section>
+    <div class="tag-sidebar-header">
+      <span class="tag-sidebar-title">Tags</span>
+      <span id="tag-save-status" class="tag-save-status"></span>
+    </div>
+    <div id="tag-sections"></div>
+  </aside>
+
+  <section class="piles-pane">
+    <div class="piles-header">
+      <h2 id="pile-title">Card pool</h2>
+      <div id="deck-title-bar" class="deck-title-bar hidden">
+        <span id="deck-title-name" class="deck-title-name"></span>
+        <span id="plan-title-sep" class="plan-title-sep hidden">·</span>
+        <span id="plan-title-name" class="plan-title-name"></span>
+        <span id="plan-status" class="plan-status hidden"></span>
+        <button id="plan-exit" class="plan-exit hidden" type="button"></button>
+      </div>
+      <div class="piles-sort">
+        <span>Pile sort:</span>
+        <div class="sort-dropdown">
+          <button id="pile-sort-btn" class="sort-dropdown-btn">Type &#x25BE;</button>
+          <div id="pile-sort-menu" class="sort-dropdown-menu hidden">
+            <button data-pile-sort="type">Type</button>
+            <button data-pile-sort="cmc">Mana</button>
+            <button data-pile-sort="set">Set</button>
+            <button data-pile-sort="color">Color</button>
+            <button data-pile-sort="name">Name</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="piles" class="piles"></div>
+  </section>
+</main>
+
+<!-- Stub modals so wiring doesn't crash; hidden and unused in tag mode. -->
+<div id="name-conflict-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3 id="conflict-title"></h3><p id="conflict-msg" class="modal-help"></p><div class="modal-buttons"><button id="conflict-cancel"></button><button id="conflict-keep-both"></button><button id="conflict-overwrite"></button></div></div></div>
+<div id="delete-confirm-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p id="delete-confirm-msg" class="modal-help"></p><div class="modal-buttons"><button id="delete-cancel"></button><button id="delete-confirm"></button></div></div></div>
+<div id="paste-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p class="modal-help"></p><textarea id="paste-textarea"></textarea><div class="modal-buttons"><button id="paste-cancel"></button><button id="paste-confirm"></button></div></div></div>
+<div id="maybe-export-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p id="maybe-export-msg" class="modal-help"></p><div class="modal-buttons"><button id="maybe-export-cancel"></button><button id="maybe-export-keep"></button><button id="maybe-export-merge"></button></div></div></div>
+<div id="stale-plans-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p class="modal-help"></p><ul id="stale-plans-list"></ul><div class="modal-buttons"><button id="stale-plans-cancel"></button><button id="stale-plans-ok"></button></div></div></div>
+<div id="plan-name-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3 id="plan-name-title"></h3><p class="modal-help"></p><input id="plan-name-input"><div class="modal-buttons"><button id="plan-name-cancel"></button><button id="plan-name-ok"></button></div></div></div>
+
+<div id="drag-trash" class="drag-trash hidden">
+  <svg class="trash-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 4h12M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4M6.5 7v4.5M9.5 7v4.5"/>
+    <path d="M3.5 4l.7 8.5a1 1 0 0 0 1 .9h5.6a1 1 0 0 0 1-.9L12.5 4"/>
+  </svg>
+  <span class="trash-label">Remove cards</span>
+</div>
+
+<div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
+<img id="drag-img" alt="">
+
+<div class="floating-actions">
+  <button id="btn-theme" data-title="Toggle light / dark mode">Light mode</button>
+  <button id="btn-refresh" data-title="Re-fetch card data from the upstream source">Update cards</button>
+  <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

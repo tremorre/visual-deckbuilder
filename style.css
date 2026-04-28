@@ -1125,7 +1125,9 @@ button.primary:hover { background: var(--accent-bg-hover); }
   padding: 3px 10px;
 }
 
-/* Decks list dropdown */
+/* Decks list dropdown.
+   NOTE: do NOT anchor this from the right edge of its button. That
+   placement has been explicitly rejected — don't reintroduce it. */
 #decks-dropdown {
   min-width: 0;
   max-width: 340px;
@@ -1649,4 +1651,236 @@ body.plan-active .zone[data-zone="maybe"] header::after {
 #plan-name-modal input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Tagging tool (static/tags.html — body.tag-mode)
+ *
+ * The same DOM scaffolding as the deckbuilder with:
+ *   - .tag-zones sidebar visible, .zones sidebar hidden
+ *   - every deck-only toolbar item hidden (they're kept in the DOM as stubs
+ *     so app.js's wiring doesn't blow up on null.addEventListener)
+ *   - piles pane always on in search-panel mode
+ *   - tag-btn slot buttons (transparent) instead of +/square/arrow/?
+ * --------------------------------------------------------------------------- */
+
+body.tag-mode .zones,
+body.tag-mode .sort-bar,
+body.tag-mode .search-hints:not(.tag-search-hints),
+body.tag-mode #deck-title-bar,
+body.tag-mode .toolbar > button:not(.format-dropdown-btn),
+body.tag-mode .toolbar .deck-btn-group,
+body.tag-mode .tag-hidden-format,
+body.tag-mode #btn-search-toggle,
+body.tag-mode .floating-actions #btn-clear-imgs {
+  display: none !important;
+}
+
+/* The stock CSS hides the search-hints band when the input isn't focused,
+ * and hides the toolbar whenever the search-active body class is on. In
+ * tag mode we want the hints persistently visible (they're the only place
+ * the user sees the tag-specific keybindings) and the format toolbar
+ * shouldn't vanish just because the search input has focus. */
+body.tag-mode .tag-search-hints { display: flex !important; }
+body.tag-mode.search-active .toolbar,
+body.tag-mode .search-wrap:focus-within ~ .toolbar { display: flex !important; }
+
+/* The stub modals from tags.html have no <h3> content; keep them hidden even
+ * if another code path toggles `.hidden` off. */
+body.tag-mode .modal { display: none !important; }
+
+body.tag-mode main {
+  grid-template-columns: 280px 1fr;
+}
+
+body.tag-mode .toolbar {
+  gap: 8px;
+}
+
+.toolbar-link {
+  display: inline-block;
+  padding: 4px 10px;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.toolbar-link:hover {
+  background: var(--accent-bg);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+
+/* Tag sidebar — mirrors .zones so tag sections feel like deck zones. */
+.tag-zones {
+  display: none;  /* only shown in tag mode */
+  flex-direction: column;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+body.tag-mode .tag-zones { display: flex; }
+
+.tag-sidebar-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 10px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.tag-sidebar-title {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+.tag-save-status {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+.tag-save-status.tag-save-saving { color: var(--text-muted); }
+.tag-save-status.tag-save-saved  { color: var(--accent, #6ea8ff); }
+.tag-save-status.tag-save-error,
+.tag-save-status.tag-save-offline { color: var(--danger, #e04040); }
+
+.tag-zone > header {
+  position: sticky;
+  top: 28px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--border-weak);
+  cursor: pointer;
+  user-select: none;
+}
+.tag-zone.focused {
+  background: var(--bg-zone-focused);
+}
+.tag-zone.focused > header {
+  background: var(--accent-bg);
+  color: var(--text-on-accent);
+}
+.tag-zone.focused .zone-count { color: var(--text-on-accent); opacity: 0.8; }
+.tag-zone.drag-over > header {
+  background: var(--accent-bg);
+  color: var(--text-on-accent);
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+/* Navigation tab that returns the pile pane to search results. Sits above
+ * the "Tags" sidebar header — sticky would collide with the top:0
+ * sidebar-header below it, so this one scrolls with the list. */
+.tag-search-tab > header {
+  position: static;
+  border-top: 1px solid var(--border);
+}
+
+/* Transparent tag-mode tile buttons. Same 20x20 footprint as the deck-add
+ * buttons but with a lower-contrast fill — they're the primary affordance
+ * in tag mode, not a busy badge. */
+.slot-btn.tag-btn {
+  background: rgba(20, 40, 70, 0.35);
+  border-color: rgba(255, 255, 255, 0.25);
+  font-size: 13px;
+}
+.slot-btn.tag-btn.tag-repeat-btn {
+  font-size: 11px;
+}
+.slot-btn.tag-btn.disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* Popover for tag entry. Fixed-position so it floats over the piles pane. */
+.tag-popover {
+  position: fixed;
+  z-index: 60;
+  width: 220px;
+  padding: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tag-popover.hidden { display: none; }
+.tag-popover input {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.tag-popover input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.tag-popover-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.tag-popover-hint kbd {
+  font-family: inherit;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0 3px;
+}
+
+/* Chip strip overlaid on each tag-member tile. Clicking a chip removes that
+ * tag from the card. */
+.card-tag-chips {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 4;
+}
+.card-tag-chip {
+  pointer-events: auto;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9px;
+  padding: 2px 7px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-tag-chip.focused {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+.card-tag-chip:hover {
+  background: var(--danger, #e04040);
+  border-color: var(--danger, #e04040);
 }

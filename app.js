@@ -111,6 +111,24 @@ const STATE = {
   // the previous value onto `past` whenever they differ. `future` holds the
   // stack of states the user can redo into (populated by undo()).
   history: { past: [], future: [], lastSnapshot: null },
+
+  // Tags (loaded from static/tags.json). Keyed by dataset, then by
+  // canonical card name. `order` is the tag MRU list — the most recently
+  // added-to tag is first; what the tagger sidebar and `is:<tag>` searches
+  // both read. Revolution and Voyager have separate maps so a tag applied
+  // in one dataset never leaks into the other.
+  tags: {
+    revolution: { cards: {}, order: [] },
+    voyager:    { cards: {}, order: [] },
+  },
+  // Tagging tool — set to true when app.js is loaded via tags.html (which
+  // sets window.TAG_MODE before the script tag). Switches the sidebar to
+  // tag sections, swaps the search-tile action buttons, and enables
+  // drag-to-tag drops. Never flips at runtime.
+  tagMode: !!(typeof window !== 'undefined' && window.TAG_MODE),
+  focusedTag: null,     // which tag section is currently showing in the pile pane
+  lastUsedTag: null,    // most-recent tag applied — the "repeat" button uses this
+  tagSaveState: 'idle', // 'idle' | 'saving' | 'saved' | 'error' | 'offline'
 };
 
 const UNDO_MAX = 50;
@@ -302,6 +320,12 @@ function wireDragTrash() {
   }
   applyCardData(data);
 
+  // Tags are a separate static asset, read from disk (or /tags.json on the
+  // deployed host). Loading runs in parallel with wiring — the file is
+  // tiny and only affects is:<tag> matches + the tagger sidebar, both of
+  // which tolerate empty tags cleanly.
+  await loadTags();
+
   wireSearch();
   wireZones();
   wireToolbar();
@@ -317,6 +341,7 @@ function wireDragTrash() {
   // applySearchPanelMode comes after setFocusedZone so it can override focus
   // to 'search' when panel mode is on from a prior session.
   applySearchPanelMode();
+  if (STATE.tagMode) initTagMode();
   markDeckClean();
   // Paint the initial zone counts (and their validity badges) so an empty
   // deck already shows "main < 60" red on page load, without waiting for
@@ -1156,6 +1181,156 @@ async function fetchVoyagerData() {
 // voyager.xml for Voyager). Upstream is reached only via the "Update
 // cards" button (refreshCurrentDataset) — first-load never touches the
 // network, matching Revolution's behavior.
+// Load persisted tags from static/tags.json. This is the SAME data the
+// deployed static site reads on page load, so `is:<tag>` works there too;
+// the tagger just has an extra write path (POST /api/tags) that the
+// production host doesn't serve. Missing / malformed file is fine: we
+// stay with an empty tag map and the tagger behaves as if no tags exist.
+async function loadTags() {
+  try {
+    const res = await fetch('tags.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || typeof data !== 'object') return;
+    for (const ds of ['revolution', 'voyager']) {
+      const d = data[ds];
+      if (!d) continue;
+      const slot = STATE.tags[ds];
+      if (d.cards && typeof d.cards === 'object') {
+        // Shallow-copy each array so in-memory edits don't alias the
+        // parsed JSON (we later mutate these).
+        slot.cards = {};
+        for (const canon of Object.keys(d.cards)) {
+          const arr = d.cards[canon];
+          if (Array.isArray(arr) && arr.length > 0) {
+            slot.cards[canon] = arr.filter(t => typeof t === 'string');
+          }
+        }
+      }
+      if (Array.isArray(d.order)) {
+        slot.order = d.order.filter(t => typeof t === 'string');
+      }
+    }
+  } catch (e) {
+    console.warn('could not load tags.json:', e);
+  }
+}
+
+// Debounced POST of the current STATE.tags to /api/tags. Only meaningful
+// when running under server.py (local dev); the deployed static host
+// rejects POST, so we tag the save state as 'offline' so the tagger
+// sidebar can surface that to the user.
+let _tagsSaveTimer = null;
+function persistTags() {
+  if (_tagsSaveTimer) clearTimeout(_tagsSaveTimer);
+  STATE.tagSaveState = 'saving';
+  renderTagSaveStatus();
+  _tagsSaveTimer = setTimeout(() => {
+    _tagsSaveTimer = null;
+    doSaveTags();
+  }, 250);
+}
+async function doSaveTags() {
+  const payload = {
+    revolution: STATE.tags.revolution,
+    voyager: STATE.tags.voyager,
+  };
+  try {
+    const res = await fetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 405 || res.status === 404) {
+      STATE.tagSaveState = 'offline';
+    } else if (!res.ok) {
+      STATE.tagSaveState = 'error';
+    } else {
+      STATE.tagSaveState = 'saved';
+    }
+  } catch (e) {
+    STATE.tagSaveState = 'error';
+    console.warn('tag save failed:', e);
+  }
+  renderTagSaveStatus();
+}
+
+// Core mutators. `canonicals` is a list of canonical card names. Adding a
+// tag moves it to the top of the MRU order even if every card already had
+// it — matches the spec: the sidebar's top slot is the most recently
+// ACTED-ON tag, not the most recently newly-created.
+function addTagToCards(tag, canonicals, dataset = currentDataset()) {
+  tag = String(tag || '').trim();
+  if (!tag) return null;
+  const slot = STATE.tags[dataset];
+  if (!slot) return null;
+  const low = tag.toLowerCase();
+  let changed = false;
+  for (const canon of canonicals) {
+    if (!canon) continue;
+    let arr = slot.cards[canon];
+    if (!arr) { arr = []; slot.cards[canon] = arr; changed = true; }
+    if (!arr.some(t => t.toLowerCase() === low)) {
+      arr.push(tag);
+      changed = true;
+    }
+  }
+  // Move tag to the head of `order` (MRU). Preserves the display casing
+  // the user first entered it with.
+  const idx = slot.order.findIndex(t => t.toLowerCase() === low);
+  let display = tag;
+  if (idx >= 0) {
+    display = slot.order[idx];
+    slot.order.splice(idx, 1);
+  }
+  slot.order.unshift(display);
+  STATE.lastUsedTag = display;
+  persistTags();
+  return display;
+}
+
+function removeTagFromCard(tag, canonical, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot) return;
+  const low = String(tag).toLowerCase();
+  const arr = slot.cards[canonical];
+  if (!arr) return;
+  const filtered = arr.filter(t => t.toLowerCase() !== low);
+  if (filtered.length === arr.length) return;
+  if (filtered.length === 0) delete slot.cards[canonical];
+  else slot.cards[canonical] = filtered;
+  // If no card still has this tag, retire it from `order` so the sidebar
+  // doesn't show an empty section.
+  const stillUsed = Object.values(slot.cards).some(a =>
+    a.some(t => t.toLowerCase() === low));
+  if (!stillUsed) {
+    slot.order = slot.order.filter(t => t.toLowerCase() !== low);
+    if (STATE.focusedTag && STATE.focusedTag.toLowerCase() === low) {
+      STATE.focusedTag = null;
+    }
+  }
+  persistTags();
+}
+
+function tagsForCard(canonical, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot) return [];
+  return (slot.cards[canonical] || []).slice();
+}
+
+function cardsForTag(tag, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot) return [];
+  const low = String(tag).toLowerCase();
+  const out = [];
+  for (const canon of Object.keys(slot.cards)) {
+    if (slot.cards[canon].some(t => t.toLowerCase() === low)) {
+      out.push(canon);
+    }
+  }
+  return out;
+}
+
 async function loadDatasetData(dataset) {
   const key = dataset === 'voyager' ? VOYAGER_STORAGE_KEY : STORAGE_KEY;
   try {
@@ -2660,7 +2835,24 @@ function buildIsPredicate(rawValue) {
     case 'rare':
     case 'mythic':
     case 'special':   return (c) => c.rarity === v;
-    default:          return (_c) => false;  // see SEARCH_SKIPPED.md
+    default: {
+      // Fall back to user-defined tags from static/tags.json. Scoped to the
+      // active dataset (Revolution / Voyager never overlap) and keyed by
+      // canonical name so reprints share tags. Case-insensitive. Built-in
+      // is:X values above win; a user tag named "page" or "reprint" is
+      // unreachable via is:<tag> and shouldn't be created.
+      const ds = currentDataset();
+      return (c) => {
+        const slot = STATE.tags[ds];
+        if (!slot) return false;
+        const arr = slot.cards[c.canonical] || slot.cards[c.name];
+        if (!arr) return false;
+        for (const t of arr) {
+          if (String(t).toLowerCase() === v) return true;
+        }
+        return false;
+      };
+    }
   }
 }
 
@@ -3759,6 +3951,7 @@ const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
 
 function renderPiles() {
   if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
+  if (STATE.tagMode && STATE.focusedZone === 'tag') { renderTagMemberPanel(); return; }
   document.getElementById('pile-title').textContent =
     `${ZONE_LABELS[STATE.focusedZone]} (${totalCount(STATE.focusedZone)})`;
   const container = document.getElementById('piles');
@@ -4025,6 +4218,10 @@ function makeFlipButton(inst, card, slot) {
     if (img) {
       img.src = imgUrl(face);
       img.alt = face.canonical || face.name || card.canonical;
+      // Tile may still carry a data-src from the lazy-load observer. Clear
+      // it so a later intersection callback can't overwrite the flipped
+      // face with the front-face URL.
+      img.removeAttribute('data-src');
     }
     slot.classList.toggle('flipped', !!inst.flipped);
   });
@@ -4315,12 +4512,22 @@ function makeSearchSlot(card, item) {
   const face0 = currentFace(item, card);
   const img = document.createElement('img');
   img.alt = face0.canonical || face0.name || card.canonical || '';
-  img.src = imgUrl(face0);
+  // Lazy-load: broad queries can return 100+ results, and eager-loading every
+  // tile fires a storm of parallel image requests (many of which the user
+  // will never scroll to). The observer swaps data-src → src when the tile
+  // is within a viewport or two of the scrolled-into view, so only ~30
+  // tiles' worth fetch at a time.
+  img.dataset.src = imgUrl(face0);
   img.addEventListener('error', () => {
     slot.classList.add('no-image');
     slot.textContent = face0.canonical || face0.name || '???';
   });
   slot.appendChild(img);
+  // Observe *after* the slot lands in the DOM so the observer has a valid
+  // ancestor chain to compute intersection against; scheduled as a
+  // microtask since the caller appends to the container synchronously
+  // right after we return.
+  queueMicrotask(() => getSearchImgObserver().observe(img));
   if (item && item.flipped && card.back) slot.classList.add('flipped');
 
   const titleParts = [card.canonical, card.type, card.manacost || ''];
@@ -4399,10 +4606,10 @@ function makeSearchSlotButtons(card) {
   wrap.className = 'slot-buttons';
   wrap.draggable = false;
 
-  function makeBtn(label, title, onClick) {
+  function makeBtn(label, title, onClick, extraClass) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'slot-btn';
+    b.className = 'slot-btn' + (extraClass ? ' ' + extraClass : '');
     b.textContent = label;
     b.dataset.title = title;
     b.draggable = false;
@@ -4410,9 +4617,39 @@ function makeSearchSlotButtons(card) {
     b.addEventListener('click', (ev) => {
       ev.stopPropagation();
       ev.preventDefault();
-      onClick();
+      onClick(b, ev);
     });
     return b;
+  }
+
+  // Tag mode swaps the 4 deck-add buttons for 2 tag actions: open the
+  // popover to enter a tag (with autocomplete), or apply the last-used
+  // tag directly. Multi-select semantics mirror the deck-mode buttons.
+  if (STATE.tagMode) {
+    const pickCanonicals = () => {
+      const ids = (STATE.searchSelection.size > 0 && STATE.searchSelection.has(card.id))
+        ? [...STATE.searchSelection]
+        : [card.id];
+      return ids.map(id => STATE.byId.get(id)?.canonical).filter(Boolean);
+    };
+    wrap.appendChild(makeBtn('+', 'Add a tag (autocomplete)', (btn) => {
+      openTagPopover(btn, pickCanonicals());
+    }, 'tag-btn'));
+    const repeatTitle = STATE.lastUsedTag
+      ? `Apply "${STATE.lastUsedTag}"`
+      : 'No recent tag yet — opens picker';
+    const repeatBtn = makeBtn('↻', repeatTitle, () => {
+      if (!STATE.lastUsedTag) {
+        openTagPopover(repeatBtn, pickCanonicals());
+        return;
+      }
+      addTagToCards(STATE.lastUsedTag, pickCanonicals());
+      renderTagSidebar();
+      if (STATE.focusedTag) renderPiles();
+    }, 'tag-btn tag-repeat-btn');
+    if (!STATE.lastUsedTag) repeatBtn.classList.add('disabled');
+    wrap.appendChild(repeatBtn);
+    return wrap;
   }
 
   const addTo = (zone) => {
@@ -4991,6 +5228,10 @@ let _previewTimer = null;
 let _previewAvoidEl = null;  // element the preview must not cover (pile slots)
 
 function showPreview(card, ev, avoidEl, immediate) {
+  // The tag popover sits next to the card the user just clicked — suppress
+  // the hover preview while it's open so it doesn't cover the input.
+  const pop = document.getElementById('tag-popover');
+  if (pop && !pop.classList.contains('hidden')) return;
   if (_previewTimer) clearTimeout(_previewTimer);
   _previewAvoidEl = avoidEl || null;
   // Capture cursor position now; the timer fires later when ev is stale.
@@ -5022,6 +5263,39 @@ function showPreview(card, ev, avoidEl, immediate) {
   };
   if (immediate) run();
   else _previewTimer = setTimeout(run, PREVIEW_DELAY_MS);
+}
+
+// Shared IntersectionObserver for search-panel / tag-panel tiles. Tiles
+// render with `data-src` but no `src`, and this observer swaps them in as
+// each tile scrolls within ~one viewport of being visible. That keeps the
+// initial burst to roughly a screenful (~30 tiles) instead of a full
+// flood for 100+ result queries, while still prefetching a screen ahead
+// so scrolling stays lag-free.
+let _searchImgObserver = null;
+function getSearchImgObserver() {
+  if (_searchImgObserver) return _searchImgObserver;
+  const piles = document.getElementById('piles');
+  _searchImgObserver = new IntersectionObserver((entries, obs) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (src) {
+        img.src = src;
+        img.removeAttribute('data-src');
+      }
+      obs.unobserve(img);
+    }
+  }, {
+    // `.piles` is the scroll container (overflow:auto). Fall back to the
+    // viewport when it doesn't exist (defensive — it's baked into both HTMLs).
+    root: piles || null,
+    // ~one viewport of predictive margin — a screen's worth of tiles load
+    // before they scroll into view, so scrolling isn't gated on the network.
+    rootMargin: '400px 0px',
+    threshold: 0,
+  });
+  return _searchImgObserver;
 }
 
 // Kick off a background fetch for each card's image. Setting `src` on a
@@ -6171,7 +6445,33 @@ function wireSavedDecks() {
   function closeAllDropdowns() {
     saveDropdown.classList.add('hidden');
     decksDropdown.classList.add('hidden');
+    decksDropdown.style.left = '';
   }
+
+  // Shift the decks panel leftward when a long plan name would push its
+  // right edge past the viewport. Keeps the panel anchored to the button's
+  // left side in the normal case, but lets it overhang to the left when it
+  // has to. Capped so the panel's left edge never crosses the viewport's
+  // left margin.
+  function positionDecksDropdown() {
+    if (decksDropdown.classList.contains('hidden')) return;
+    decksDropdown.style.left = '';
+    const margin = 8;
+    const rect = decksDropdown.getBoundingClientRect();
+    const overflowRight = rect.right - (window.innerWidth - margin);
+    if (overflowRight <= 0) return;
+    const maxShift = Math.max(0, rect.left - margin);
+    const shift = Math.min(overflowRight, maxShift);
+    decksDropdown.style.left = (-shift) + 'px';
+  }
+
+  // Reposition on every size change of the panel — covers row adds/removes
+  // from renderDecksList and, importantly, the inline rename input growing
+  // as you type (it uses field-sizing: content). Moving the panel via
+  // style.left doesn't count as a resize, so this won't loop.
+  new ResizeObserver(() => {
+    if (!decksDropdown.classList.contains('hidden')) positionDecksDropdown();
+  }).observe(decksDropdown);
 
   function mountChipEditor(host, { getTags, setTags, onClose, autoFocus = true }) {
     function focusInput() {
@@ -6764,14 +7064,16 @@ function wireSavedDecks() {
     if (decksDropdown.classList.contains('hidden')) {
       closeAllDropdowns();
       renderDecksList();
-      const btnLeft = decksBtn.getBoundingClientRect().left;
-      const available = Math.max(280, window.innerWidth - btnLeft - 8);
-      decksDropdown.style.maxWidth = available + 'px';
       decksDropdown.classList.remove('hidden');
+      positionDecksDropdown();
       setTimeout(() => filterInput.focus(), 0);
     } else {
       closeAllDropdowns();
     }
+  });
+
+  window.addEventListener('resize', () => {
+    if (!decksDropdown.classList.contains('hidden')) positionDecksDropdown();
   });
 
   filterInput.addEventListener('input', () => {
@@ -6861,3 +7163,375 @@ function buildTxtExport(maybeMode) {
   }
   return sections.join('\n\n') + '\n';
 }
+
+// ---------------------------------------------------------------------------
+// Tagging tool (window.TAG_MODE === true)
+//
+// The tagger reuses the deckbuilder's card index, search input, format
+// dropdown, and piles pane. What it swaps in is:
+//   - a "Tags" sidebar (#tag-sections) that replaces the zone sidebar
+//   - 2 tile buttons (add-tag + repeat-last-tag) per search result
+//   - a floating popover (#tag-popover) for tag entry with autocomplete
+//   - a focused-tag panel (renderTagMemberPanel) when a tag section is clicked
+//   - /api/tags POST writes whenever tags change (no-op when offline)
+// Tag data is loaded in init() via loadTags() in every mode, so is:<tag>
+// searches work in the deckbuilder too — the tagger just writes the file.
+// ---------------------------------------------------------------------------
+
+function initTagMode() {
+  document.body.classList.add('tag-mode');
+  // Tagger always runs in search-panel mode. The pile pane shows search
+  // results by default; clicking a tag section swaps it to that tag's
+  // card list.
+  STATE.searchPanel = true;
+  applySearchPanelMode();
+  // applySearchPanelMode left focus on the synthetic 'search' zone; the
+  // tagger builds its own sidebar and starts there.
+  ensureTagPopover();
+  wireTagPopover();
+  wireTagSearchTab();
+  renderTagSidebar();
+  renderTagSaveStatus();
+  // Focus the search input so the user can start typing immediately.
+  const input = document.getElementById('search');
+  if (input) input.focus();
+  // Dataset swaps (Revolution <-> Voyager) rebuild the tag sidebar so it
+  // reflects the dataset's own tag map. Hook into the existing format
+  // dropdown by watching the format button's label text change — simpler
+  // than reaching into switchDataset and less invasive than a state
+  // observer.
+  const formatBtn = document.getElementById('format-btn');
+  if (formatBtn) {
+    const mo = new MutationObserver(() => {
+      STATE.focusedTag = null;
+      setFocusedZone('search');
+      renderTagSidebar();
+    });
+    mo.observe(formatBtn, { childList: true, characterData: true, subtree: true });
+  }
+}
+
+// Wire the sidebar's "Search" tab (static element in tags.html) and the
+// document-level Escape handler that returns to the search pane from a
+// focused tag view. Both are tag-mode only.
+function wireTagSearchTab() {
+  const tab = document.getElementById('tag-search-tab');
+  if (tab) {
+    tab.addEventListener('click', () => {
+      STATE.focusedTag = null;
+      setFocusedZone('search');
+      renderTagSidebar();
+    });
+  }
+  document.addEventListener('keydown', (ev) => {
+    if (!STATE.tagMode) return;
+    if (ev.key !== 'Escape') return;
+    // Let the popover's own Escape handler close it first.
+    const pop = document.getElementById('tag-popover');
+    if (pop && !pop.classList.contains('hidden')) return;
+    if (!STATE.focusedTag) return;
+    ev.preventDefault();
+    STATE.focusedTag = null;
+    setFocusedZone('search');
+    renderTagSidebar();
+  });
+}
+
+function renderTagSidebar() {
+  const host = document.getElementById('tag-sections');
+  if (!host) return;
+  host.innerHTML = '';
+  const ds = currentDataset();
+  const slot = STATE.tags[ds];
+  if (!slot) return;
+
+  // Per-tag sections in MRU order — the top section is the most-recently
+  // acted-on tag, matching the spec. No prepended "all/card pool" entry:
+  // clicking a focused section a second time unfocuses it (falls back to
+  // the search results), and typing in the search box already auto-flips
+  // focus back to 'search' via wireSearch's input handler.
+  for (const tag of slot.order) {
+    const low = tag.toLowerCase();
+    let count = 0;
+    for (const canon of Object.keys(slot.cards)) {
+      if (slot.cards[canon].some(t => t.toLowerCase() === low)) count++;
+    }
+    const sec = document.createElement('section');
+    sec.className = 'zone tag-zone'
+                  + (STATE.focusedTag && STATE.focusedTag.toLowerCase() === low ? ' focused' : '');
+    sec.dataset.tag = tag;
+    sec.innerHTML = `
+      <header>
+        <span class="zone-title">${escapeHtml(tag)}</span>
+        <span class="zone-count">${count}</span>
+      </header>
+    `;
+    sec.addEventListener('click', () => {
+      // Second click on the already-focused section returns to the card
+      // pool (search view) — the tag list should never need a pseudo-entry
+      // above the most-recent-tag section to navigate back.
+      if (STATE.focusedTag && STATE.focusedTag.toLowerCase() === tag.toLowerCase()) {
+        STATE.focusedTag = null;
+        setFocusedZone('search');
+      } else {
+        STATE.focusedTag = tag;
+        setFocusedZone('tag');
+      }
+      renderTagSidebar();
+    });
+    sec.addEventListener('dragover', (ev) => {
+      if (!STATE.dragging) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = 'copy';
+      sec.classList.add('drag-over');
+    });
+    sec.addEventListener('dragleave', (ev) => {
+      if (!sec.contains(ev.relatedTarget)) sec.classList.remove('drag-over');
+    });
+    sec.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      sec.classList.remove('drag-over');
+      const canonicals = canonicalsFromDrag(ev);
+      endDragGhost();
+      if (!canonicals.length) return;
+      addTagToCards(tag, canonicals);
+      renderTagSidebar();
+      if (STATE.focusedTag) renderPiles();
+    });
+    host.appendChild(sec);
+  }
+
+  // Refresh the datalist that the popover's autocomplete reads from.
+  refreshTagDatalist();
+}
+
+function renderTagSaveStatus() {
+  const el = document.getElementById('tag-save-status');
+  if (!el) return;
+  const map = {
+    idle:    '',
+    saving:  'saving…',
+    saved:   'saved',
+    error:   'save failed',
+    offline: 'offline (tags not persisted)',
+  };
+  el.textContent = map[STATE.tagSaveState] || '';
+  el.className = 'tag-save-status tag-save-' + STATE.tagSaveState;
+}
+
+// Given a drop event from any source in tag mode, return the list of
+// canonical card names involved. Handles:
+//   - search-tile drags (STATE.dragging.fromSearch + cardIds)
+//   - tag-panel drags (STATE.dragging.fromTag + canonicals)
+function canonicalsFromDrag(ev) {
+  if (STATE.dragging && STATE.dragging.fromSearch) {
+    return (STATE.dragging.cardIds || [])
+      .map(id => STATE.byId.get(id)?.canonical)
+      .filter(Boolean);
+  }
+  if (STATE.dragging && STATE.dragging.fromTag) {
+    return (STATE.dragging.canonicals || []).slice();
+  }
+  // Fallback: a plain text payload containing the canonical (used by the
+  // preview-image drag for readability; not a primary path).
+  const txt = ev.dataTransfer && ev.dataTransfer.getData('text/canonical');
+  return txt ? [txt] : [];
+}
+
+// Render the piles pane as the member-cards view for STATE.focusedTag.
+// Reuses makeSearchSlot for visual parity with the search grid — each
+// card is one printing picked by the newest-printing-first default.
+function renderTagMemberPanel() {
+  const tag = STATE.focusedTag;
+  const ds = currentDataset();
+  const canonicals = tag ? cardsForTag(tag, ds) : [];
+  document.getElementById('pile-title').textContent =
+    tag ? `${tag} (${canonicals.length})` : 'Tag';
+  const container = document.getElementById('piles');
+  container.innerHTML = '';
+  container.classList.add('search-mode');
+
+  // Sort members by name for stability; users who want a different
+  // ordering can filter / sort in the search input instead (the pool
+  // remains accessible via the "Card pool" sidebar entry).
+  canonicals.sort((a, b) => a.localeCompare(b));
+
+  for (const canon of canonicals) {
+    const printings = STATE.byCanonical.get(canon) || [];
+    if (printings.length === 0) continue;
+    const picked = printings[printings.length - 1];
+    const item = {
+      canonical: canon,
+      printings,
+      pickedIdx: printings.length - 1,
+      flipped: false,
+    };
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pile-wrapper';
+    const pile = document.createElement('div');
+    pile.className = 'pile';
+    pile.style.height = CARD_HEIGHT + 'px';
+    const slot = makeSearchSlot(picked, item);
+    // Overlay the current tags on the member tile as chips so the user
+    // can see (and click-× to remove) every tag on the card without
+    // leaving the panel.
+    slot.appendChild(makeCardTagChips(canon));
+    pile.appendChild(slot);
+    wrapper.appendChild(pile);
+    container.appendChild(wrapper);
+  }
+}
+
+function makeCardTagChips(canonical) {
+  const ds = currentDataset();
+  const tags = tagsForCard(canonical, ds);
+  const strip = document.createElement('div');
+  strip.className = 'card-tag-chips';
+  strip.draggable = false;
+  for (const tag of tags) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'card-tag-chip';
+    if (STATE.focusedTag && STATE.focusedTag.toLowerCase() === tag.toLowerCase()) {
+      chip.classList.add('focused');
+    }
+    chip.textContent = tag;
+    chip.dataset.title = `Remove "${tag}"`;
+    chip.draggable = false;
+    chip.addEventListener('mousedown', (ev) => ev.stopPropagation());
+    chip.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      removeTagFromCard(tag, canonical);
+      renderTagSidebar();
+      renderPiles();
+    });
+    strip.appendChild(chip);
+  }
+  return strip;
+}
+
+// Build the popover DOM lazily on first use. Lives at body level so it
+// can float over the piles pane without clipping.
+function ensureTagPopover() {
+  if (document.getElementById('tag-popover')) return;
+  const pop = document.createElement('div');
+  pop.id = 'tag-popover';
+  pop.className = 'tag-popover hidden';
+  pop.innerHTML = `
+    <input id="tag-popover-input" type="text" placeholder="tag…"
+           autocomplete="off" spellcheck="false" list="tag-datalist">
+    <datalist id="tag-datalist"></datalist>
+    <div class="tag-popover-hint"><kbd>Enter</kbd> add · <kbd>Esc</kbd> cancel</div>
+  `;
+  document.body.appendChild(pop);
+}
+
+function refreshTagDatalist() {
+  const dl = document.getElementById('tag-datalist');
+  if (!dl) return;
+  const ds = currentDataset();
+  const order = (STATE.tags[ds]?.order || []).slice();
+  dl.innerHTML = order.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
+// Popover state — the canonicals the next Enter/submit applies to.
+const _tagPopoverState = { canonicals: [], anchorEl: null };
+
+function openTagPopover(anchorEl, canonicals) {
+  ensureTagPopover();
+  refreshTagDatalist();
+  const pop = document.getElementById('tag-popover');
+  const input = document.getElementById('tag-popover-input');
+  if (!pop || !input) return;
+  _tagPopoverState.canonicals = (canonicals || []).slice();
+  _tagPopoverState.anchorEl = anchorEl;
+  input.value = '';
+  pop.classList.remove('hidden');
+  // The popover anchors next to the card the user just clicked; leaving the
+  // floating hover preview up would cover the input. showPreview also
+  // short-circuits while the popover is visible, so new mouseenter events
+  // on nearby tiles won't bring it back.
+  hidePreview();
+  // Anchor to the right edge of the triggering button, falling back to
+  // the center of the viewport when no anchor is given (keyboard path).
+  if (anchorEl && anchorEl.getBoundingClientRect) {
+    const r = anchorEl.getBoundingClientRect();
+    const popW = 220;
+    let left = r.right + 8;
+    if (left + popW > window.innerWidth - 8) left = r.left - popW - 8;
+    if (left < 8) left = 8;
+    pop.style.left = left + 'px';
+    pop.style.top  = Math.max(8, r.top) + 'px';
+  } else {
+    pop.style.left = (window.innerWidth / 2 - 110) + 'px';
+    pop.style.top  = (window.innerHeight / 3) + 'px';
+  }
+  input.focus();
+  input.select();
+}
+
+function closeTagPopover() {
+  const pop = document.getElementById('tag-popover');
+  if (!pop) return;
+  pop.classList.add('hidden');
+  _tagPopoverState.canonicals = [];
+  _tagPopoverState.anchorEl = null;
+}
+
+function wireTagPopover() {
+  const input = document.getElementById('tag-popover-input');
+  if (!input) return;
+  input.addEventListener('keydown', (ev) => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const v = input.value.trim();
+      if (!v) { closeTagPopover(); return; }
+      addTagToCards(v, _tagPopoverState.canonicals);
+      closeTagPopover();
+      renderTagSidebar();
+      if (STATE.focusedTag) renderPiles();
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      closeTagPopover();
+    }
+  });
+  // Click-out closes the popover — but the input itself is inside, and
+  // autocomplete's datalist popup fires blur/click events we must not
+  // treat as outside.
+  document.addEventListener('mousedown', (ev) => {
+    const pop = document.getElementById('tag-popover');
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (pop.contains(ev.target)) return;
+    // Slot-button clicks that open the popover also fire mousedown here;
+    // skip those by checking for a .tag-btn target in the path.
+    if (ev.target.closest && ev.target.closest('.tag-btn')) return;
+    closeTagPopover();
+  });
+}
+
+// Search-input Enter (which normally adds to main/maybe/side) applies the
+// most-recent tag to the highlighted result instead when in tag mode.
+// Shift+Enter in tag mode opens the popover. Hooked in initTagMode by
+// intercepting at capture so the default handler never runs.
+document.addEventListener('keydown', (ev) => {
+  if (!STATE.tagMode) return;
+  const input = document.getElementById('search');
+  if (!input || document.activeElement !== input) return;
+  if (ev.key !== 'Enter') return;
+  const r = STATE.search.results;
+  if (r.length === 0) return;
+  const item = r[STATE.search.selectedIdx];
+  const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
+  const canon = picked.canonical;
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (ev.shiftKey || !STATE.lastUsedTag) {
+    openTagPopover(input, [canon]);
+  } else {
+    addTagToCards(STATE.lastUsedTag, [canon]);
+    renderTagSidebar();
+    if (STATE.focusedTag) renderPiles();
+  }
+}, /*capture*/ true);

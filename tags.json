@@ -1,0 +1,103 @@
+{
+  "revolution": {
+    "cards": {},
+    "order": []
+  },
+  "voyager": {
+    "cards": {
+      "Platinum's Spymaster": [
+        "counterspell"
+      ],
+      "Avlod Charm": [
+        "counterspell"
+      ],
+      "Painted Distorter": [
+        "counterspell"
+      ],
+      "Bamboozle": [
+        "counterspell"
+      ],
+      "Blossoming Comprehension": [
+        "counterspell"
+      ],
+      "Choked Essence": [
+        "counterspell"
+      ],
+      "Denied by Nature": [
+        "counterspell"
+      ],
+      "Disappointing Show": [
+        "counterspell"
+      ],
+      "Due Dismissal": [
+        "counterspell"
+      ],
+      "Energy Tax": [
+        "counterspell"
+      ],
+      "Fold the Truth": [
+        "counterspell"
+      ],
+      "Indoctrinate": [
+        "counterspell"
+      ],
+      "Memory Hole": [
+        "counterspell"
+      ],
+      "Mire in Sorrow": [
+        "counterspell"
+      ],
+      "Pristine Denial": [
+        "counterspell"
+      ],
+      "Power Null": [
+        "counterspell"
+      ],
+      "Perfect Stillness": [
+        "counterspell"
+      ],
+      "Outclass": [
+        "counterspell"
+      ],
+      "Naval Diplomacy": [
+        "counterspell"
+      ],
+      "Reject Input": [
+        "counterspell"
+      ],
+      "Security Breach": [
+        "counterspell"
+      ],
+      "Sensations Overwhelming": [
+        "counterspell"
+      ],
+      "Tactical Diversion": [
+        "counterspell"
+      ],
+      "Repel the Invasion": [
+        "counterspell"
+      ],
+      "Negate": [
+        "counterspell"
+      ],
+      "When Words Don't Work": [
+        "counterspell"
+      ],
+      "Veil of Dreams": [
+        "counterspell"
+      ],
+      "Unweave": [
+        "counterspell"
+      ],
+      "Skin's Division": [
+        "counterspell"
+      ],
+      "Nilshroud Absorption": [
+        "counterspell"
+      ]
+    },
+    "order": [
+      "counterspell"
+    ]
+  }
+}
