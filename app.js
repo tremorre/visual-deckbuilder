@@ -3952,6 +3952,7 @@ const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
 function renderPiles() {
   if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
   if (STATE.tagMode && STATE.focusedZone === 'tag') { renderTagMemberPanel(); return; }
+  if (STATE.tagMode && STATE.focusedZone === 'tag-list') { renderAllTagsPanel(); return; }
   document.getElementById('pile-title').textContent =
     `${ZONE_LABELS[STATE.focusedZone]} (${totalCount(STATE.focusedZone)})`;
   const container = document.getElementById('piles');
@@ -4854,6 +4855,8 @@ function setFocusedZone(zoneName) {
   // (e.g., they're clicking result tiles). Tied to the focused zone so the
   // deck panes still get the normal toolbar.
   document.body.classList.toggle('search-active', zoneName === 'search');
+  const allTagsBtn = document.getElementById('btn-all-tags');
+  if (allTagsBtn) allTagsBtn.classList.toggle('active', zoneName === 'tag-list');
   renderPiles();
 }
 
@@ -5014,6 +5017,81 @@ function wireToolbar() {
       clearImgsBtn.disabled = false;
     }
   });
+
+  const cacheImgsBtn = document.getElementById('btn-cache-imgs');
+  if (cacheImgsBtn) {
+    let cancelCache = false;
+    cacheImgsBtn.addEventListener('click', async () => {
+      // Second click while running cancels.
+      if (cacheImgsBtn.dataset.running === '1') { cancelCache = true; return; }
+      const original = cacheImgsBtn.textContent;
+      cacheImgsBtn.dataset.running = '1';
+      cancelCache = false;
+      try {
+        const result = await cacheAllImages((done, total, failed) => {
+          cacheImgsBtn.textContent = `${done}/${total}` + (failed ? ` (${failed} failed)` : '');
+          return cancelCache;
+        });
+        if (result.cancelled) {
+          cacheImgsBtn.textContent = 'Stopped';
+        } else {
+          cacheImgsBtn.textContent = result.failed
+            ? `Cached \u2713 (${result.failed} failed)`
+            : 'Cached \u2713';
+        }
+        setTimeout(() => { cacheImgsBtn.textContent = original; }, 2500);
+      } catch (e) {
+        console.error(e);
+        cacheImgsBtn.textContent = 'Failed';
+        setTimeout(() => { cacheImgsBtn.textContent = original; }, 2500);
+      } finally {
+        delete cacheImgsBtn.dataset.running;
+      }
+    });
+  }
+}
+
+// Pre-fetch every card image in the current dataset so the SW caches them.
+// Sequential-ish with a small concurrency window to avoid hammering the
+// upstream host. progressCb(done, total, failed) can return truthy to stop.
+async function cacheAllImages(progressCb) {
+  const urls = new Set();
+  for (const card of STATE.cards) {
+    const u = imgUrl(card);
+    if (u) urls.add(u);
+    if (card.back) {
+      const bu = imgUrl(card.back);
+      if (bu) urls.add(bu);
+    }
+  }
+  const list = [...urls];
+  const total = list.length;
+  let done = 0, failed = 0, cancelled = false;
+  let idx = 0;
+  const CONCURRENCY = 6;
+  function fetchOne(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+  }
+  async function worker() {
+    while (idx < list.length && !cancelled) {
+      const myIdx = idx++;
+      const ok = await fetchOne(list[myIdx]);
+      if (!ok) failed++;
+      done++;
+      if (progressCb && progressCb(done, total, failed)) {
+        cancelled = true;
+        return;
+      }
+    }
+  }
+  const workers = Array(Math.min(CONCURRENCY, list.length)).fill(0).map(worker);
+  await Promise.all(workers);
+  return { total, done, failed, cancelled };
 }
 
 async function clearImageCache() {
@@ -7223,13 +7301,27 @@ function wireTagSearchTab() {
       renderTagSidebar();
     });
   }
+  const allTagsBtn = document.getElementById('btn-all-tags');
+  if (allTagsBtn) {
+    allTagsBtn.addEventListener('click', () => {
+      // Toggle: clicking again from the all-tags view drops back to search.
+      if (STATE.focusedZone === 'tag-list') {
+        STATE.focusedTag = null;
+        setFocusedZone('search');
+      } else {
+        STATE.focusedTag = null;
+        setFocusedZone('tag-list');
+      }
+      renderTagSidebar();
+    });
+  }
   document.addEventListener('keydown', (ev) => {
     if (!STATE.tagMode) return;
     if (ev.key !== 'Escape') return;
     // Let the popover's own Escape handler close it first.
     const pop = document.getElementById('tag-popover');
     if (pop && !pop.classList.contains('hidden')) return;
-    if (!STATE.focusedTag) return;
+    if (!STATE.focusedTag && STATE.focusedZone !== 'tag-list') return;
     ev.preventDefault();
     STATE.focusedTag = null;
     setFocusedZone('search');
@@ -7241,6 +7333,8 @@ function renderTagSidebar() {
   const host = document.getElementById('tag-sections');
   if (!host) return;
   host.innerHTML = '';
+  const allTagsBtn = document.getElementById('btn-all-tags');
+  if (allTagsBtn) allTagsBtn.classList.toggle('active', STATE.focusedZone === 'tag-list');
   const ds = currentDataset();
   const slot = STATE.tags[ds];
   if (!slot) return;
@@ -7380,6 +7474,53 @@ function renderTagMemberPanel() {
     wrapper.appendChild(pile);
     container.appendChild(wrapper);
   }
+}
+
+// Render the piles pane as a flat alphabetical list of every known tag for
+// the current dataset. Triggered by clicking the "Tags" header above the
+// sidebar. Each row click focuses that tag (same behavior as clicking a
+// section in the sidebar).
+function renderAllTagsPanel() {
+  const ds = currentDataset();
+  const slot = STATE.tags[ds];
+  const order = slot ? slot.order.slice() : [];
+  // Tag-card counts.
+  const counts = new Map();
+  if (slot) {
+    for (const canon of Object.keys(slot.cards)) {
+      for (const t of slot.cards[canon]) {
+        const low = t.toLowerCase();
+        counts.set(low, (counts.get(low) || 0) + 1);
+      }
+    }
+  }
+  order.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  document.getElementById('pile-title').textContent = `All tags (${order.length})`;
+  const container = document.getElementById('piles');
+  container.innerHTML = '';
+  container.classList.remove('search-mode');
+  const list = document.createElement('div');
+  list.className = 'tag-list-view';
+  for (const tag of order) {
+    const row = document.createElement('div');
+    row.className = 'tag-list-row';
+    row.dataset.tag = tag;
+    const name = document.createElement('span');
+    name.className = 'tag-list-name';
+    name.textContent = tag;
+    const count = document.createElement('span');
+    count.className = 'tag-list-count';
+    count.textContent = counts.get(tag.toLowerCase()) || 0;
+    row.appendChild(name);
+    row.appendChild(count);
+    row.addEventListener('click', () => {
+      STATE.focusedTag = tag;
+      setFocusedZone('tag');
+      renderTagSidebar();
+    });
+    list.appendChild(row);
+  }
+  container.appendChild(list);
 }
 
 function makeCardTagChips(canonical) {

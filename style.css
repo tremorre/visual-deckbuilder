@@ -1744,6 +1744,47 @@ body.tag-mode .tag-zones { display: flex; }
   letter-spacing: 0.6px;
   color: var(--text-muted);
 }
+button.tag-sidebar-title {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+button.tag-sidebar-title:hover { color: var(--text-secondary); }
+button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
+
+/* All-tags list view in the piles pane. */
+.tag-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  overflow-y: auto;
+}
+.tag-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-weak);
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+}
+.tag-list-row:hover {
+  background: var(--accent-bg);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+.tag-list-row .tag-list-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+.tag-list-row:hover .tag-list-count { color: var(--text-on-accent); opacity: 0.85; }
 .tag-save-status {
   font-size: 10px;
   color: var(--text-muted);

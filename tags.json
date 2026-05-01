@@ -1,7 +1,1411 @@
 {
   "revolution": {
-    "cards": {},
-    "order": []
+    "cards": {
+      "Aldegar of Path Unwoven": [
+        "coco"
+      ],
+      "Ameret, Seeker of the Sun": [
+        "coco"
+      ],
+      "Anhamei, Star Sower": [
+        "coco"
+      ],
+      "Ayeshi, Time's Jailer": [
+        "coco"
+      ],
+      "Caphella, Endlight Catalyst": [
+        "coco"
+      ],
+      "Celise, Syndicate Pariah": [
+        "coco"
+      ],
+      "Garren, Returned Prophet": [
+        "coco"
+      ],
+      "Gericho, Ageless Wanderer": [
+        "coco"
+      ],
+      "Giyama, Scion of Kage": [
+        "coco"
+      ],
+      "Illustrious Sheng Fa": [
+        "coco"
+      ],
+      "Iviana, Dragon Tamer": [
+        "coco"
+      ],
+      "Jack, Monster Mentor": [
+        "coco"
+      ],
+      "Karina, Budding Diplomat": [
+        "coco"
+      ],
+      "Kazimierz, Bound in Flesh": [
+        "coco"
+      ],
+      "Marilye, Dreaming Big": [
+        "coco"
+      ],
+      "Oberys, Ley-Pilgrim": [
+        "coco"
+      ],
+      "Sanaito, Voidsinger": [
+        "coco"
+      ],
+      "Severin, Sparkmind": [
+        "coco"
+      ],
+      "Simul, Genetic Artisan": [
+        "coco"
+      ],
+      "Sylvia, the Rewoven Oath": [
+        "coco"
+      ],
+      "Tamiyo, Sun-Seeking": [
+        "coco"
+      ],
+      "The Dutiful Wanderer": [
+        "coco"
+      ],
+      "The Weftheart": [
+        "coco"
+      ],
+      "Tsubasa Shigane": [
+        "coco"
+      ],
+      "Vasilisa, Helping Hand": [
+        "coco"
+      ],
+      "Xiv, Replisparked": [
+        "coco"
+      ],
+      "Zukar, Null Champion": [
+        "coco"
+      ],
+      "Abyssal Burrower": [
+        "coco"
+      ],
+      "Adorned Kitsune": [
+        "coco"
+      ],
+      "Advent Herald": [
+        "coco"
+      ],
+      "Aether Dancer": [
+        "coco"
+      ],
+      "Alcadia, Cardinal Judge": [
+        "coco"
+      ],
+      "Amber, Nimble Companion": [
+        "coco"
+      ],
+      "Ambitious Angel": [
+        "coco"
+      ],
+      "Andir Ley-Tower": [
+        "coco"
+      ],
+      "Archaeovolcanologist": [
+        "coco"
+      ],
+      "Architect of Ascension": [
+        "coco"
+      ],
+      "Archive Ascetic": [
+        "coco"
+      ],
+      "Army Reserves": [
+        "coco"
+      ],
+      "Artful Hologram": [
+        "coco"
+      ],
+      "Ascended Salamander": [
+        "coco"
+      ],
+      "Assert Mediator": [
+        "coco"
+      ],
+      "Astraling": [
+        "coco"
+      ],
+      "Battle Physicist": [
+        "coco"
+      ],
+      "Battlefield Tactician": [
+        "coco"
+      ],
+      "Berry Fermenter": [
+        "coco"
+      ],
+      "Backdoor Prowler": [
+        "coco"
+      ],
+      "Bitscan Freerunner": [
+        "coco"
+      ],
+      "Aurora Glider": [
+        "coco"
+      ],
+      "Black Dawn Sellsword": [
+        "coco"
+      ],
+      "Blackout Grifter": [
+        "coco"
+      ],
+      "Blade of Borrowed Breath": [
+        "coco"
+      ],
+      "Bladecross Student": [
+        "coco"
+      ],
+      "Blighted Mistress": [
+        "coco"
+      ],
+      "Blightstalker": [
+        "coco"
+      ],
+      "Border Junction": [
+        "coco"
+      ],
+      "Brazen Blackcoats": [
+        "coco"
+      ],
+      "Breach Herald": [
+        "coco"
+      ],
+      "Brutal Throatcrusher": [
+        "coco"
+      ],
+      "Bubbling Firesnail": [
+        "coco"
+      ],
+      "Buffer Botanist": [
+        "coco"
+      ],
+      "Bull of the Branded Flame": [
+        "coco"
+      ],
+      "Burgeoning Consciousness": [
+        "coco"
+      ],
+      "Butterfly Dragonling": [
+        "coco"
+      ],
+      "Caersol Ley-Tower": [
+        "coco"
+      ],
+      "Calamity Cat": [
+        "coco"
+      ],
+      "Catabolist": [
+        "coco"
+      ],
+      "Catch Constable": [
+        "coco"
+      ],
+      "Catch Defector": [
+        "coco"
+      ],
+      "Catch Vanguard": [
+        "coco"
+      ],
+      "Central Processor": [
+        "coco"
+      ],
+      "Charismatic Chameleon": [
+        "coco"
+      ],
+      "Chiming Soul": [
+        "coco"
+      ],
+      "Chomei's Brawler": [
+        "coco"
+      ],
+      "Chorus of One": [
+        "coco"
+      ],
+      "Cirriform Dragon": [
+        "coco"
+      ],
+      "Codename: Cicada": [
+        "coco"
+      ],
+      "Coercive Contractor": [
+        "coco"
+      ],
+      "Cogwork Harvester": [
+        "coco"
+      ],
+      "Colossal Pathrazer": [
+        "coco"
+      ],
+      "Comazoa": [
+        "coco"
+      ],
+      "Combat Corporal": [
+        "coco"
+      ],
+      "Comet Conduit": [
+        "coco"
+      ],
+      "Competitive Hedonist": [
+        "coco"
+      ],
+      "Composer of Skylines": [
+        "coco"
+      ],
+      "Contest Star": [
+        "coco"
+      ],
+      "Convergence Harmonist": [
+        "coco"
+      ],
+      "Corpsepyre Fiend": [
+        "coco"
+      ],
+      "Crestfallen Colossus": [
+        "coco"
+      ],
+      "Crust Gorger": [
+        "coco"
+      ],
+      "Cybersaurus": [
+        "coco"
+      ],
+      "Cyberzoologist": [
+        "coco"
+      ],
+      "Daring Shinobi": [
+        "coco"
+      ],
+      "Crackling Moonkite": [
+        "coco"
+      ],
+      "Crane Dancer": [
+        "coco"
+      ],
+      "Devouring Seishin": [
+        "coco"
+      ],
+      "Dire Visionary": [
+        "coco"
+      ],
+      "Discordant Voidling": [
+        "coco"
+      ],
+      "Distinguished Weaverkin": [
+        "coco"
+      ],
+      "Dormant Camel": [
+        "coco"
+      ],
+      "Dormant Monstrosity": [
+        "coco"
+      ],
+      "Draconos Tyrannos": [
+        "coco"
+      ],
+      "Dregstreet Inquisitor": [
+        "coco"
+      ],
+      "Dropped_Polygon": [
+        "coco"
+      ],
+      "Earworm DJ": [
+        "coco"
+      ],
+      "Echo Choreographer": [
+        "coco"
+      ],
+      "Echocrafter": [
+        "coco"
+      ],
+      "Ecosa of the Old Blood": [
+        "coco"
+      ],
+      "Elder Tattooist": [
+        "coco"
+      ],
+      "Eleanor, Royal Captain": [
+        "coco"
+      ],
+      "Elma's Regular": [
+        "coco"
+      ],
+      "Enspirited Ore": [
+        "coco"
+      ],
+      "Envoy of the Fallen": [
+        "coco"
+      ],
+      "Exotic Transformer": [
+        "coco"
+      ],
+      "Expendable Medic": [
+        "coco"
+      ],
+      "Ember-Eyed Skirmisher": [
+        "coco"
+      ],
+      "Emulation Expert": [
+        "coco"
+      ],
+      "Estranged Aristocrat": [
+        "coco"
+      ],
+      "Expendable Researcher": [
+        "coco"
+      ],
+      "Fan Favorite Daredevil": [
+        "coco"
+      ],
+      "Fault_Injection": [
+        "coco"
+      ],
+      "Feasting Predator": [
+        "coco"
+      ],
+      "Fickle Gourmand": [
+        "coco"
+      ],
+      "Fission Feaster": [
+        "coco"
+      ],
+      "Fluttering Sun": [
+        "coco"
+      ],
+      "Foraging Grub": [
+        "coco"
+      ],
+      "Flametip Goliath": [
+        "coco"
+      ],
+      "Floating Familiar": [
+        "coco"
+      ],
+      "Florazoa": [
+        "coco"
+      ],
+      "Fortune Bearer": [
+        "coco"
+      ],
+      "Friendly Dragonling": [
+        "coco"
+      ],
+      "Garbage Collector": [
+        "coco"
+      ],
+      "Gatherer of Grievances": [
+        "coco"
+      ],
+      "Debt Collectors": [
+        "coco"
+      ],
+      "Decryption Puzzlemancer": [
+        "coco"
+      ],
+      "Delivery Gull": [
+        "coco"
+      ],
+      "Demographer": [
+        "coco"
+      ],
+      "Gilded Death": [
+        "coco"
+      ],
+      "General Diadem, Usurper": [
+        "coco"
+      ],
+      "Gerrymanderer": [
+        "coco"
+      ],
+      "Gongwielder Abbot": [
+        "coco"
+      ],
+      "Grave Prophet": [
+        "coco"
+      ],
+      "Grip Pinch-Hitter": [
+        "coco"
+      ],
+      "Grognard": [
+        "coco"
+      ],
+      "Guardian of Ashen Oaths": [
+        "coco"
+      ],
+      "Hazakh Ambassador": [
+        "coco"
+      ],
+      "Heap Delver": [
+        "coco"
+      ],
+      "Helia Extinguisher": [
+        "coco"
+      ],
+      "Herald of the Radiant Banner": [
+        "coco"
+      ],
+      "Heraldic Ley-Pillar": [
+        "coco"
+      ],
+      "Higana, Dragonscribe": [
+        "coco"
+      ],
+      "High Rollers": [
+        "coco"
+      ],
+      "Hollow Prophet": [
+        "coco"
+      ],
+      "Horizon Blotter": [
+        "coco"
+      ],
+      "Horizon Vassal": [
+        "coco"
+      ],
+      "Huskforger Acolyte": [
+        "coco"
+      ],
+      "Identity Forger": [
+        "coco"
+      ],
+      "Idolized Coordinator": [
+        "coco"
+      ],
+      "Illusory Savior": [
+        "coco"
+      ],
+      "Impenetrable Ronin": [
+        "coco"
+      ],
+      "Imperious Admin": [
+        "coco"
+      ],
+      "Inexorable Shepherd": [
+        "coco"
+      ],
+      "Inklight Dancer": [
+        "coco"
+      ],
+      "Invoker's Guidebeast": [
+        "coco"
+      ],
+      "Iris Agent": [
+        "coco"
+      ],
+      "Iris Cultist": [
+        "coco"
+      ],
+      "Ironback Tyke": [
+        "coco"
+      ],
+      "Irreverent Modder": [
+        "coco"
+      ],
+      "Iviana's Spellmaw": [
+        "coco"
+      ],
+      "Jetstream Cruiser": [
+        "coco"
+      ],
+      "Kage's Mercenary": [
+        "coco"
+      ],
+      "Kaluthax's Challenger": [
+        "coco"
+      ],
+      "Kicking Fowl": [
+        "coco"
+      ],
+      "Lacufae Kin-Caller": [
+        "coco"
+      ],
+      "Lacufae Ley-Tower": [
+        "coco"
+      ],
+      "King of Gluttons": [
+        "coco"
+      ],
+      "Kinox Naturalist": [
+        "coco"
+      ],
+      "Lavaborn Slug": [
+        "coco"
+      ],
+      "Lesser Dragon": [
+        "coco"
+      ],
+      "Lightless Diviner": [
+        "coco"
+      ],
+      "Lightning Warmonger": [
+        "coco"
+      ],
+      "Living Compass": [
+        "coco"
+      ],
+      "Lonesome Afterimage": [
+        "coco"
+      ],
+      "Loophole Exploiter": [
+        "coco"
+      ],
+      "Lost Pilgrim": [
+        "coco"
+      ],
+      "Lost Resistor": [
+        "coco"
+      ],
+      "Lustrous Starfish": [
+        "coco"
+      ],
+      "Magnetic Mystery": [
+        "coco"
+      ],
+      "Magnetling": [
+        "coco"
+      ],
+      "Maiden of the Waters": [
+        "coco"
+      ],
+      "Malicious Skycleaver": [
+        "coco"
+      ],
+      "Mana Harvesters": [
+        "coco"
+      ],
+      "Masksmith": [
+        "coco"
+      ],
+      "Master of Stances": [
+        "coco"
+      ],
+      "Master of the Peaks": [
+        "coco"
+      ],
+      "Maw Impostor": [
+        "coco"
+      ],
+      "Mellan, Defense Attorney": [
+        "coco"
+      ],
+      "Menagerie Mechanic": [
+        "coco"
+      ],
+      "Merciless Headsman": [
+        "coco"
+      ],
+      "Mercurial Wright": [
+        "coco"
+      ],
+      "Medari Ley-Spire": [
+        "coco"
+      ],
+      "Mesmage": [
+        "coco"
+      ],
+      "Metatactician": [
+        "coco"
+      ],
+      "Mev's Holographist": [
+        "coco"
+      ],
+      "Midnight Duo": [
+        "coco"
+      ],
+      "Mimicry Elemental": [
+        "coco"
+      ],
+      "Minister of Utility": [
+        "coco"
+      ],
+      "Mirage Model": [
+        "coco"
+      ],
+      "Mirageform Shinobi": [
+        "coco"
+      ],
+      "Mist-Draped Delver": [
+        "coco"
+      ],
+      "Mobilization Technician": [
+        "coco"
+      ],
+      "Moon-Scarred Champion": [
+        "coco"
+      ],
+      "Moon-Scarred Mystic": [
+        "coco"
+      ],
+      "Moonblade Ninja": [
+        "coco"
+      ],
+      "Myriad Crusader": [
+        "coco"
+      ],
+      "Mystery Egg": [
+        "coco"
+      ],
+      "Mystic of Returns": [
+        "coco"
+      ],
+      "Natori Skyblade": [
+        "coco"
+      ],
+      "Nerve-Strike Disciple": [
+        "coco"
+      ],
+      "Neuralinked Hive": [
+        "coco"
+      ],
+      "Newborn Oni": [
+        "coco"
+      ],
+      "Nightshade Extricator": [
+        "coco"
+      ],
+      "Nimble Mentor": [
+        "coco"
+      ],
+      "No_Response_Received": [
+        "coco"
+      ],
+      "Nourishing Orator": [
+        "coco"
+      ],
+      "Nullblade Artisan": [
+        "coco"
+      ],
+      "Oblivion's Escort": [
+        "coco"
+      ],
+      "Ofuda Mistress": [
+        "coco"
+      ],
+      "Not_A_Teletype": [
+        "coco"
+      ],
+      "Olfven Skylord": [
+        "coco"
+      ],
+      "Olis's Axiom": [
+        "coco"
+      ],
+      "Ozanwood Huntsman": [
+        "coco"
+      ],
+      "Peaceweaver Adept": [
+        "coco"
+      ],
+      "Omenhorn": [
+        "coco"
+      ],
+      "Orochi Soulfang": [
+        "coco"
+      ],
+      "Phantom_Interrupt": [
+        "coco"
+      ],
+      "Pixel Pixie": [
+        "coco"
+      ],
+      "Penrath Ambassador": [
+        "coco"
+      ],
+      "Plated Tunneler": [
+        "coco"
+      ],
+      "Poisoned Rose": [
+        "coco"
+      ],
+      "Precognitive Combatant": [
+        "coco"
+      ],
+      "Priestess of Chains": [
+        "coco"
+      ],
+      "Prism Catcher": [
+        "coco"
+      ],
+      "Prolific Fisher": [
+        "coco"
+      ],
+      "Protean Golem": [
+        "coco"
+      ],
+      "Psychohopper": [
+        "coco"
+      ],
+      "Qaraz Martyr": [
+        "coco"
+      ],
+      "Qimis, Central Intelligence": [
+        "coco"
+      ],
+      "Ragecloak Shifter": [
+        "coco"
+      ],
+      "Pursuer of Divinity": [
+        "coco"
+      ],
+      "Qaraz Doomsayer": [
+        "coco"
+      ],
+      "Realm-Delver Whelp": [
+        "coco"
+      ],
+      "Reclusive Percipient": [
+        "coco"
+      ],
+      "Ribbon Dancer": [
+        "coco"
+      ],
+      "Rift Partisan": [
+        "coco"
+      ],
+      "Recurring_Noise": [
+        "coco"
+      ],
+      "Recursive Cogitator": [
+        "coco"
+      ],
+      "Restless Sloth": [
+        "coco"
+      ],
+      "Rooftop Leaper": [
+        "coco"
+      ],
+      "Rooftop Slink": [
+        "coco"
+      ],
+      "Royal Templar": [
+        "coco"
+      ],
+      "Rumbling Volcamel": [
+        "coco"
+      ],
+      "Rumormonger": [
+        "coco"
+      ],
+      "Runerock Automaton": [
+        "coco"
+      ],
+      "Sacrament Tactician": [
+        "coco"
+      ],
+      "Sanctified Attendant": [
+        "coco"
+      ],
+      "Sarsupei All-Seer": [
+        "coco"
+      ],
+      "Sarsupei Houndmaster": [
+        "coco"
+      ],
+      "Scintillation Scion": [
+        "coco"
+      ],
+      "Sculptor's Replica": [
+        "coco"
+      ],
+      "Segmentation_Fault": [
+        "coco"
+      ],
+      "Senate Filibuster": [
+        "coco"
+      ],
+      "Sentinel of Dawnbloom Grove": [
+        "coco"
+      ],
+      "Sacrificial Mentor": [
+        "coco"
+      ],
+      "Scions of War": [
+        "coco"
+      ],
+      "Shadow Caster": [
+        "coco"
+      ],
+      "Shigane Cyclone": [
+        "coco"
+      ],
+      "Shigane Elder": [
+        "coco"
+      ],
+      "Shiori, the Trickster": [
+        "coco"
+      ],
+      "Sillaman Ambassador": [
+        "coco"
+      ],
+      "Silverbone Chromate": [
+        "coco"
+      ],
+      "Sire of Greatness": [
+        "coco"
+      ],
+      "Skytide Piercer": [
+        "coco"
+      ],
+      "Slayer of Numachi": [
+        "coco"
+      ],
+      "Slumberzoa": [
+        "coco"
+      ],
+      "Smog Hound": [
+        "coco"
+      ],
+      "Sola, Contraband Playboy": [
+        "coco"
+      ],
+      "Soothing Singer": [
+        "coco"
+      ],
+      "Soulflame Mystic": [
+        "coco"
+      ],
+      "Speculative Stockbroker": [
+        "coco"
+      ],
+      "Spiteful Griefer": [
+        "coco"
+      ],
+      "Stack Strike Leader": [
+        "coco"
+      ],
+      "Star-Touched Oracle": [
+        "coco"
+      ],
+      "Star-Touched Stalwart": [
+        "coco"
+      ],
+      "Stardust Behemoth": [
+        "coco"
+      ],
+      "Stehlian Reverend": [
+        "coco"
+      ],
+      "Stonework Titan": [
+        "coco"
+      ],
+      "Student of Immortality": [
+        "coco"
+      ],
+      "Sunsoaker": [
+        "coco"
+      ],
+      "Sunsower": [
+        "coco"
+      ],
+      "Sunvrath Exemplar": [
+        "coco"
+      ],
+      "Suppressing-Fist Pupil": [
+        "coco"
+      ],
+      "Sworn Loyalist": [
+        "coco"
+      ],
+      "Teetering Panda": [
+        "coco"
+      ],
+      "The Berry Master": [
+        "coco"
+      ],
+      "Thousand Depths Cutthroat": [
+        "coco"
+      ],
+      "Threadripper": [
+        "coco"
+      ],
+      "Threadweaver Shinobi": [
+        "coco"
+      ],
+      "Tiril Ambassador": [
+        "coco"
+      ],
+      "Toki, Celebrity Soldier": [
+        "coco"
+      ],
+      "Tough Nut": [
+        "coco"
+      ],
+      "Towering Moonrazer": [
+        "coco"
+      ],
+      "Twilight Agent": [
+        "coco"
+      ],
+      "Twilight Legion": [
+        "coco"
+      ],
+      "Uiki Initiate": [
+        "coco"
+      ],
+      "Ukina, Aethersong Basker": [
+        "coco"
+      ],
+      "Underflow_Error": [
+        "coco"
+      ],
+      "Unfettered Spirit": [
+        "coco"
+      ],
+      "Unnerving Moth": [
+        "coco"
+      ],
+      "Unspeaking Titan": [
+        "coco"
+      ],
+      "Unyielding Titan": [
+        "coco"
+      ],
+      "Up-and-Comer": [
+        "coco"
+      ],
+      "Torpid Colossus": [
+        "coco"
+      ],
+      "Twilight Vagabond": [
+        "coco"
+      ],
+      "Unflinching Titan": [
+        "coco"
+      ],
+      "Uptime Contestant": [
+        "coco"
+      ],
+      "Veiled Branchstalker": [
+        "coco"
+      ],
+      "Venture Capitalist": [
+        "coco"
+      ],
+      "Verdant Winder": [
+        "coco"
+      ],
+      "Vishanki Ambassador": [
+        "coco"
+      ],
+      "Void Prelate": [
+        "coco"
+      ],
+      "Volatile Sergeant": [
+        "coco"
+      ],
+      "Wayward Drek": [
+        "coco"
+      ],
+      "Weaver of Fates": [
+        "coco"
+      ],
+      "Whispering Runt": [
+        "coco"
+      ],
+      "Wicked Manifestation": [
+        "coco"
+      ],
+      "Willing Acolyte": [
+        "coco"
+      ],
+      "Withered Survivor": [
+        "coco"
+      ],
+      "Workshop Helper": [
+        "coco"
+      ],
+      "Zealforged Pathfinder": [
+        "coco"
+      ],
+      "Zymith Windreader": [
+        "coco"
+      ],
+      "Ancestor's Guidance": [
+        "coco"
+      ],
+      "Aoushun's Presence": [
+        "coco"
+      ],
+      "Black-Tie Gala": [
+        "coco"
+      ],
+      "Blur Strike": [
+        "coco"
+      ],
+      "Cartographer's Skill": [
+        "coco"
+      ],
+      "Chronicle Calamity": [
+        "coco"
+      ],
+      "Creative Commission": [
+        "coco"
+      ],
+      "Crumbling Tower": [
+        "coco"
+      ],
+      "Disestablishmentarianism": [
+        "coco"
+      ],
+      "Dragon's Court": [
+        "coco"
+      ],
+      "Flags on High": [
+        "coco"
+      ],
+      "Gereishin's Presence": [
+        "coco"
+      ],
+      "Held in Contempt": [
+        "coco"
+      ],
+      "Ikurimoko's Presence": [
+        "coco"
+      ],
+      "Imperial Production": [
+        "coco"
+      ],
+      "Inner Fortitude": [
+        "coco"
+      ],
+      "Inner Inferno": [
+        "coco"
+      ],
+      "Keuya's Presence": [
+        "coco"
+      ],
+      "Leystone of Being": [
+        "coco"
+      ],
+      "Leystone of Depths": [
+        "coco"
+      ],
+      "Leystone of Growth": [
+        "coco"
+      ],
+      "Leystone of Ruin": [
+        "coco"
+      ],
+      "Leystone of Storms": [
+        "coco"
+      ],
+      "Magma Flow": [
+        "coco"
+      ],
+      "Mapper's Wanderings": [
+        "coco"
+      ],
+      "Ominous Seas": [
+        "coco"
+      ],
+      "Perils of Eternity": [
+        "coco"
+      ],
+      "Rebirth through Seasons": [
+        "coco"
+      ],
+      "RECV()": [
+        "coco"
+      ],
+      "Scrapweight": [
+        "coco"
+      ],
+      "Seal Shoals": [
+        "coco"
+      ],
+      "Sealing Strike": [
+        "coco"
+      ],
+      "Seed of the Golden Sun": [
+        "coco"
+      ],
+      "Severin's Masterwork": [
+        "coco"
+      ],
+      "Sifting Through Soot": [
+        "coco"
+      ],
+      "SYSCALL()": [
+        "coco"
+      ],
+      "The God-Tree Chimes": [
+        "coco"
+      ],
+      "The Quindral Accords": [
+        "coco"
+      ],
+      "Sigil of the Last Light": [
+        "coco"
+      ],
+      "Verity Circle": [
+        "coco"
+      ],
+      "Yingjun's Presence": [
+        "coco"
+      ],
+      "Altar of Chrome": [
+        "coco"
+      ],
+      "Aqua Crew Flagship": [
+        "coco"
+      ],
+      "Archaic Obelisk": [
+        "coco"
+      ],
+      "Archival Storage": [
+        "coco"
+      ],
+      "Artisan's Studio": [
+        "coco"
+      ],
+      "Atomic Core": [
+        "coco"
+      ],
+      "Auto Sifter": [
+        "coco"
+      ],
+      "Capital Maglev": [
+        "coco"
+      ],
+      "Claw Fossil": [
+        "coco"
+      ],
+      "Cosmic Lotus": [
+        "coco"
+      ],
+      "Cosmolith": [
+        "coco"
+      ],
+      "Creature Catalog": [
+        "coco"
+      ],
+      "Cryptolabe": [
+        "coco"
+      ],
+      "Data Staff": [
+        "coco"
+      ],
+      "Dynasty Pendant": [
+        "coco"
+      ],
+      "Elixir of Divine Hunger": [
+        "coco"
+      ],
+      "Elysian Turbine": [
+        "coco"
+      ],
+      "Faces of the Faceless": [
+        "coco"
+      ],
+      "Figy Berry": [
+        "coco"
+      ],
+      "Gilded Font": [
+        "coco"
+      ],
+      "Enchanted Pauldron": [
+        "coco"
+      ],
+      "Entangled Fossil": [
+        "coco"
+      ],
+      "Glassblower's Forge": [
+        "coco"
+      ],
+      "Heartfire Lantern": [
+        "coco"
+      ],
+      "Holo-Map": [
+        "coco"
+      ],
+      "Hwacha": [
+        "coco"
+      ],
+      "Leyshard": [
+        "coco"
+      ],
+      "Supercharger": [
+        "coco"
+      ],
+      "Moonlit Gateway": [
+        "coco"
+      ],
+      "Plasma Armory": [
+        "coco"
+      ],
+      "Root Fossil": [
+        "coco"
+      ],
+      "Serrated Fossil": [
+        "coco"
+      ],
+      "Concurrent Escapist": [
+        "coco"
+      ],
+      "Ethereal Blossom": [
+        "coco"
+      ],
+      "Nascent Star": [
+        "coco"
+      ],
+      "Prophetic Prism": [
+        "coco"
+      ],
+      "Ring of Promised Vows": [
+        "coco"
+      ],
+      "Waypoint Armillary": [
+        "coco"
+      ],
+      "Realmweft Implosion": [
+        "coco"
+      ],
+      "Fall Upon Your Blade": [
+        "coco"
+      ],
+      "The Ruins Awaken": [
+        "coco"
+      ],
+      "Scrapyard Mecha": [
+        "coco"
+      ],
+      "Malfunctioning Portal": [
+        "coco"
+      ],
+      "Reactor Sphere": [
+        "coco"
+      ],
+      "Sanctuary of Fragile Unity": [
+        "coco"
+      ],
+      "The Forever Heart": [
+        "coco"
+      ],
+      "The Throne of House Ravellan": [
+        "coco"
+      ],
+      "Thorn of Azurite": [
+        "coco"
+      ],
+      "Staff of Balance": [
+        "coco"
+      ],
+      "Ruiner's Procession": [
+        "coco"
+      ],
+      "Saboteur's Immolation": [
+        "coco"
+      ],
+      "Foreign Encounter": [
+        "coco"
+      ],
+      "Judgment of the Seishin": [
+        "coco"
+      ],
+      "Subsidized Market": [
+        "coco"
+      ],
+      "The Connaistone": [
+        "coco"
+      ],
+      "The Shattered Throne": [
+        "coco"
+      ],
+      "Dhante's Inferno": [
+        "coco"
+      ],
+      "Meditation": [
+        "coco"
+      ],
+      "Spiteful Liberation": [
+        "coco"
+      ],
+      "Balance of the Realms": [
+        "coco"
+      ],
+      "Fatal Flourish": [
+        "coco"
+      ],
+      "Kinscale Reckoner": [
+        "coco"
+      ],
+      "Tzuhan's Lotus": [
+        "coco"
+      ],
+      "Meteorite": [
+        "coco"
+      ],
+      "Instantaneous End": [
+        "coco"
+      ],
+      "Uplifting Melody": [
+        "coco"
+      ],
+      "Vicious Backstab": [
+        "coco"
+      ],
+      "Overflow": [
+        "coco"
+      ],
+      "Ruiner's Hijacking": [
+        "coco"
+      ],
+      "Banish into Nothingness": [
+        "coco"
+      ],
+      "Demonic Reposession": [
+        "coco"
+      ],
+      "Dynasty's Benediction": [
+        "coco"
+      ],
+      "Elope": [
+        "coco"
+      ],
+      "Breath of the Spirit Realm": [
+        "coco"
+      ],
+      "Welding Rig": [
+        "coco"
+      ],
+      "Eulogy of the Beyond": [
+        "coco"
+      ],
+      "Darkstar Harbinger": [
+        "coco"
+      ],
+      "Lavis' Hydroponicist": [
+        "coco"
+      ],
+      "Untethered Daemon": [
+        "coco"
+      ],
+      "Install Wizard": [
+        "coco"
+      ],
+      "Ruiner Battlesuit": [
+        "coco"
+      ],
+      "Gi-Gecha, Tide of Victory": [
+        "coco"
+      ],
+      "Koi Float": [
+        "coco"
+      ],
+      "Assault Engine": [
+        "coco"
+      ],
+      "Takashi, City on the Wind": [
+        "coco"
+      ]
+    },
+    "order": [
+      "coco"
+    ]
   },
   "voyager": {
     "cards": {
