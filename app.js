@@ -28,6 +28,14 @@ const STORAGE_VERSION = 14;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 const VOYAGER_STORAGE_KEY = `rev-deckbuilder-voyager-v${STORAGE_VERSION}`;
 
+// In-memory snapshot of each dataset's parsed card data, used by
+// loadDatasetData so a within-session round-trip (Voyager → Revolution →
+// Voyager) survives even when the localStorage write silently failed —
+// the parsed payload is ~10MB and reliably exceeds the 5–10MB origin quota
+// in most browsers, which would otherwise wipe a fresh "Update cards"
+// refresh on the way back. Cleared at page unload.
+const _datasetSessionCache = { revolution: null, voyager: null };
+
 // User preferences (format toggle + chosen set range). Kept separate from
 // the card-data snapshot so refreshing card data doesn't reset the format,
 // and switching format doesn't bust the card cache.
@@ -568,7 +576,9 @@ function loadPrefs() {
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
       if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
       if (obj.theme === 'light' || obj.theme === 'dark') STATE.theme = obj.theme;
-      if (typeof obj.searchPanel === 'boolean') STATE.searchPanel = obj.searchPanel;
+      // searchPanel intentionally not restored — every fresh load boots into
+      // the main pane in dropdown mode, regardless of where the prior
+      // session left off.
     }
   } catch (e) {
     console.warn('Could not read deckbuilder prefs:', e);
@@ -582,7 +592,6 @@ function savePrefs() {
       rangeStart: STATE.rangeStart,
       rangeEnd: STATE.rangeEnd,
       theme: STATE.theme,
-      searchPanel: STATE.searchPanel,
     }));
   } catch (e) {
     console.warn('Could not persist deckbuilder prefs:', e);
@@ -837,6 +846,7 @@ async function refreshFromUpstream() {
   const json = await res.json();
   const data = parseAllSetsJson(json);
   applyCardData(data);
+  _datasetSessionCache.revolution = data;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
@@ -1332,21 +1342,30 @@ function cardsForTag(tag, dataset = currentDataset()) {
 }
 
 async function loadDatasetData(dataset) {
+  if (_datasetSessionCache[dataset]) return _datasetSessionCache[dataset];
   const key = dataset === 'voyager' ? VOYAGER_STORAGE_KEY : STORAGE_KEY;
   try {
     const cached = localStorage.getItem(key);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      _datasetSessionCache[dataset] = parsed;
+      return parsed;
+    }
   } catch (e) {
     console.warn('Could not read cached card data:', e);
   }
+  let data;
   if (dataset === 'voyager') {
     const res = await fetch('voyager.xml');
     if (!res.ok) throw new Error(`failed to load voyager.xml (HTTP ${res.status})`);
-    return parseCockatriceXml(await res.text());
+    data = parseCockatriceXml(await res.text());
+  } else {
+    const res = await fetch('cards.json');
+    if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
+    data = parseAllSetsJson(await res.json());
   }
-  const res = await fetch('cards.json');
-  if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
-  return parseAllSetsJson(await res.json());
+  _datasetSessionCache[dataset] = data;
+  return data;
 }
 
 // Refresh the active dataset's upstream and update the matching cache.
@@ -1355,6 +1374,7 @@ async function refreshCurrentDataset() {
   if (currentDataset() === 'voyager') {
     const data = await fetchVoyagerData();
     applyCardData(data);
+    _datasetSessionCache.voyager = data;
     try { localStorage.setItem(VOYAGER_STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
   } else {
     await refreshFromUpstream();
@@ -2613,62 +2633,151 @@ function buildNumericPredicate(extract, op, rawValue) {
 
 function buildManaPredicate(op, rawValue) {
   const raw = stripQuotes(rawValue);
-  // mana={} → no mana cost
+  // mana={} → no mana cost (lands etc.)
   if (raw === '{}' || raw === '') {
     return (c) => !(c.rawManaCost && c.rawManaCost.length);
   }
-  // Bare integer → CMC equality shortcut (spec: mana=1 → cost is literally {1})
-  if (/^\d+$/.test(raw) && (op === '=' || op === '==')) {
-    const want = `{${raw}}`;
-    return (c) => (c.rawManaCost || '').toUpperCase() === want;
-  }
-  // Pip-pattern matching
-  const queryPips = splitPipPattern(raw);
-  const cardPipsFn = (c) => splitCostPips(c.rawManaCost);
-  // mana>=UU means "the card's cost contains at least the query pips"
-  // mana<=UU means "the card's cost is a subset of the query pips"
-  // mana:UU / mana=UU means "the card has exactly these pips (any order)"
-  if (op === '>=' || op === ':') {
-    return (c) => containsPips(cardPipsFn(c), queryPips);
-  }
-  if (op === '<=') {
-    return (c) => containsPips(queryPips, cardPipsFn(c));
-  }
-  if (op === '=' || op === '==') {
-    return (c) => samePips(cardPipsFn(c), queryPips);
-  }
-  if (op === '!=') {
-    return (c) => !samePips(cardPipsFn(c), queryPips);
+  // Unified numeric+multiset model for every other op. Digit runs in the
+  // query are summed as a generic-mana threshold; the rest become pip
+  // matchers (WUBRGIVXP, hybrid h, any-color c, anti-bind m/n/o, slash-pips
+  // like U/G). Inclusive ops permit equality; strict ops require a proper
+  // relation (at least one of generic or pip-count differs):
+  //   mana>=Q / mana:Q   → card_generic ≥ qGen AND card pips ⊇ qPips
+  //   mana>Q             → as >=, AND card != query (proper superset)
+  //   mana<=Q            → card_generic ≤ qGen AND card pips ⊆ qPips
+  //   mana<Q             → as <=, AND card != query (proper subset)
+  //   mana=Q / mana==Q   → equal (multiset equality on pips)
+  //   mana!=Q            → not equal
+  // Lands (no mana cost) trivially satisfy `<` and `<=` (they sit strictly
+  // below every specified cost) and `!=` (no cost ≠ a specified cost), but
+  // never satisfy `>` / `>=` / `:` / `=` — those are spell queries.
+  const { generic: qGen, pipMatchers: qPips } = decomposeManaQuery(raw);
+  const hasCost = (c) => !!(c.rawManaCost && c.rawManaCost.length);
+  switch (op) {
+    case '>=':
+    case ':':
+      return (c) => {
+        if (!hasCost(c)) return false;
+        const cd = decomposeCardCost(c.rawManaCost);
+        return cd.generic >= qGen && containsPips(cd.pips, qPips);
+      };
+    case '>':
+      return (c) => {
+        if (!hasCost(c)) return false;
+        const cd = decomposeCardCost(c.rawManaCost);
+        if (cd.generic < qGen) return false;
+        if (!containsPips(cd.pips, qPips)) return false;
+        return cd.generic > qGen || cd.pips.length > qPips.length;
+      };
+    case '<=':
+      return (c) => {
+        const cd = decomposeCardCost(c.rawManaCost);
+        return cd.generic <= qGen && pipsAreSubset(cd.pips, qPips);
+      };
+    case '<':
+      return (c) => {
+        if (!hasCost(c)) return true;
+        const cd = decomposeCardCost(c.rawManaCost);
+        if (cd.generic > qGen) return false;
+        if (!pipsAreSubset(cd.pips, qPips)) return false;
+        return cd.generic < qGen || cd.pips.length < qPips.length;
+      };
+    case '=':
+    case '==':
+      return (c) => {
+        if (!hasCost(c)) return false;
+        const cd = decomposeCardCost(c.rawManaCost);
+        return cd.generic === qGen
+            && cd.pips.length === qPips.length
+            && pipsAreSubset(cd.pips, qPips);
+      };
+    case '!=':
+      return (c) => {
+        if (!hasCost(c)) return true;
+        const cd = decomposeCardCost(c.rawManaCost);
+        if (cd.generic !== qGen) return true;
+        if (cd.pips.length !== qPips.length) return true;
+        return !pipsAreSubset(cd.pips, qPips);
+      };
   }
   return (_c) => false;
 }
 
-// Turn a user-typed pip pattern like "UU", "B/G", "h", "mmm", "mno" into an
-// ordered list of pip-matchers. Each matcher is one of:
-//   {kind:'exact', pip:'U'}          — a specific mana symbol
-//   {kind:'hybrid'}                  — any single hybrid pip (h)
-//   {kind:'any-color'}               — any single colored pip (c)
-//   {kind:'var', label:'m'|'n'|'o'}  — 'same color as the 'm' group', etc.
-function splitPipPattern(raw) {
-  // Split by '/' only if it's a multi-pip (UU) vs single hybrid (U/G).
-  // If the string contains '/', treat the whole thing as a single hybrid pip.
-  const v = raw.toUpperCase();
-  if (v.includes('/')) {
-    return [{ kind: 'exact', pip: v.replace(/[{}]/g, '') }];
+// Split a card's mana cost into a numeric generic total + the remaining
+// non-numeric pips (colored, hybrid, X, P, etc.). Used by the `>` / `<`
+// mana operators where digits represent a numeric threshold rather than a
+// literal {N} pip.
+function decomposeCardCost(rawManaCost) {
+  const pips = splitCostPips(rawManaCost);
+  let generic = 0;
+  const others = [];
+  for (const p of pips) {
+    if (/^\d+$/.test(p)) generic += parseInt(p, 10);
+    else others.push(p);
   }
-  const pips = [];
-  for (const ch of v) {
-    if (ch === 'H') pips.push({ kind: 'hybrid' });
-    else if ('MNO'.includes(ch)) pips.push({ kind: 'var', label: ch });
-    else if (ch === 'C') pips.push({ kind: 'any-color' });
-    // V is Voyager's Vertex resource — not a color, but it appears in
-    // braced pips (`{V}`, `{V/G}`, …) so mana-cost search has to accept it
-    // as an exact-pip letter. `c:V` still returns nothing because no card
-    // carries V in its colors string.
-    else if ('WUBRGIVXP'.includes(ch)) pips.push({ kind: 'exact', pip: ch });
-    else if (/\d/.test(ch)) pips.push({ kind: 'exact', pip: ch });
+  return { generic, pips: others };
+}
+
+// Parse a mana query for buildManaPredicate. Digit runs collapse into a
+// single generic threshold (so `10` is ten, not two pips); other characters
+// become pip matchers — exact (WUBRGIVXP, single digit), hybrid (h),
+// any-color (c), anti-bind variables (m/n/o), or a literal slash-pip (U/G,
+// 2/W) when the value contains '/'. V is Voyager's Vertex resource — not a
+// color, but it appears in braced pips so mana-cost search accepts it as
+// an exact-pip letter. `c:V` still returns nothing because no card carries
+// V in its colors string.
+function decomposeManaQuery(raw) {
+  const v = raw.toUpperCase().replace(/[{}]/g, '');
+  if (v.includes('/')) return { generic: 0, pipMatchers: [{ kind: 'exact', pip: v }] };
+  let generic = 0;
+  const pipMatchers = [];
+  let i = 0;
+  while (i < v.length) {
+    const ch = v[i];
+    // Revolution's prismatic pip is the 2-char symbol `Vp` (uppercased to
+    // "VP" in card-cost form by splitCostPips). Detect it before the single-
+    // char branch so `mana:Vp` parses as one matcher, not [V, P].
+    if (ch === 'V' && v[i + 1] === 'P') {
+      pipMatchers.push({ kind: 'exact', pip: 'VP' });
+      i += 2;
+      continue;
+    }
+    if (/\d/.test(ch)) {
+      let j = i;
+      while (j < v.length && /\d/.test(v[j])) j++;
+      generic += parseInt(v.slice(i, j), 10);
+      i = j;
+    } else if (ch === 'H') { pipMatchers.push({ kind: 'hybrid' }); i++; }
+    else if ('MNO'.includes(ch)) { pipMatchers.push({ kind: 'var', label: ch }); i++; }
+    else if (ch === 'C') { pipMatchers.push({ kind: 'any-color' }); i++; }
+    else if ('WUBRGIVXP'.includes(ch)) { pipMatchers.push({ kind: 'exact', pip: ch }); i++; }
+    else { i++; }
   }
-  return pips;
+  return { generic, pipMatchers };
+}
+
+// Multiset-subset check for the `mana<` op: every card pip must consume one
+// distinct query matcher. Mirrors containsPips's matcher-driven loop, but
+// runs the loop over the card's pips (strings) so each one finds a query
+// matcher rather than the other way round.
+function pipsAreSubset(cardPips, queryMatchers) {
+  const used = new Array(queryMatchers.length).fill(false);
+  const bindings = {};
+  for (const cp of cardPips) {
+    let matched = false;
+    for (let qi = 0; qi < queryMatchers.length; qi++) {
+      if (used[qi]) continue;
+      const savedM = bindings.m, savedN = bindings.n, savedO = bindings.o;
+      if (pipMatches(queryMatchers[qi], cp, bindings)) {
+        used[qi] = true;
+        matched = true;
+        break;
+      }
+      bindings.m = savedM; bindings.n = savedN; bindings.o = savedO;
+    }
+    if (!matched) return false;
+  }
+  return true;
 }
 
 function pipMatches(matcher, cardPip, varBindings) {
@@ -2732,14 +2841,6 @@ function tryMatchAll(queryPips, qi, cardPips, used, bindings) {
     bindings.m = savedM; bindings.n = savedN; bindings.o = savedO;
   }
   return false;
-}
-
-// "Same pips" for mana=XYZ: same total pip count AND every query matcher
-// consumes a card pip (same greedy match as containsPips). That's the
-// intuitive reading — mana=WU hits {W}{U} but not {W}{U}{2}.
-function samePips(cardPips, queryPips) {
-  if (cardPips.length !== queryPips.length) return false;
-  return containsPips(cardPips, queryPips);
 }
 
 function buildRarityPredicate(op, rawValue) {
@@ -2961,7 +3062,8 @@ function wireSearch() {
 
   input.addEventListener('focus', () => {
     if (STATE.searchPanel) return;
-    if (STATE.search.results.length > 0) results.classList.remove('hidden');
+    const n = STATE.search.results.length;
+    if (n > 0 && n <= SEARCH_RESULT_CAP) results.classList.remove('hidden');
   });
 
   document.addEventListener('click', (ev) => {
@@ -2989,9 +3091,11 @@ function wireSearch() {
   }
 }
 
-// Cap on how many result rows the dropdown renders. Not a "top N by
-// relevance" cut — the list is scrollable, this just keeps the DOM small for
-// broad queries like `t:creature`.
+// Threshold above which the dropdown stays hidden. Broad queries
+// (`t:creature` etc.) are meant to be browsed in panel mode, which renders
+// every match. STATE.search.results stores the full uncapped list — counts
+// and panel mode reflect it; only the dropdown is suppressed past this
+// many matches.
 const SEARCH_RESULT_CAP = 300;
 
 function runSearch(q) {
@@ -3057,7 +3161,7 @@ function runSearch(q) {
     });
   }
   sortSearchItems(items, parsed.sort);
-  STATE.search.results = items.slice(0, SEARCH_RESULT_CAP);
+  STATE.search.results = items;
   STATE.search.selectedIdx = 0;
   renderSearchResults();
 }
@@ -3174,7 +3278,10 @@ function renderSearchResults() {
     return;
   }
   const r = STATE.search.results;
-  if (r.length === 0) {
+  if (r.length === 0 || r.length > SEARCH_RESULT_CAP) {
+    // Empty or too-broad query: don't render the dropdown at all. Broad
+    // queries are meant to be browsed in panel mode, where every match is
+    // shown and the count reflects the full set.
     results.classList.add('hidden');
     results.innerHTML = '';
     return;
@@ -6517,7 +6624,11 @@ function wireSavedDecks() {
   const listEl = document.getElementById('decks-list');
 
   let filterText = '';
-  const collapsedFolders = new Set();
+  // Folders default to closed (empty set = all collapsed); each user
+  // expansion sticks for the lifetime of the page so reopening the Decks
+  // dropdown preserves whichever folders they had open. Reload starts
+  // fresh with everything closed again.
+  const expandedFolders = new Set();
   let saveDialogTags = [];
 
   function closeAllDropdowns() {
@@ -6832,7 +6943,7 @@ function wireSavedDecks() {
   }
   function renderFolderGroup(folderName, groupDecks) {
     const displayKey = folderName || '__unfiled__';
-    const isCollapsed = collapsedFolders.has(displayKey);
+    const isCollapsed = !expandedFolders.has(displayKey);
     const header = document.createElement('div');
     header.className = 'deck-folder-header' + (isCollapsed ? ' collapsed' : '');
     const caret = document.createElement('span');
@@ -6849,8 +6960,8 @@ function wireSavedDecks() {
     header.appendChild(ct);
     header.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      if (collapsedFolders.has(displayKey)) collapsedFolders.delete(displayKey);
-      else collapsedFolders.add(displayKey);
+      if (expandedFolders.has(displayKey)) expandedFolders.delete(displayKey);
+      else expandedFolders.add(displayKey);
       renderDecksList();
     });
     listEl.appendChild(header);
