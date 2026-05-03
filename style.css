@@ -2116,21 +2116,12 @@ html:has(body.league-page.detail-active) {
   font-style: italic;
 }
 
-/* List view */
+/* List view.
+   The list is the grid container; each row uses subgrid so columns line up
+   across rows. Without subgrid each row's grid was independent and column
+   widths drifted from row to row — visually there were no columns. */
 .league-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 1500px;
-  margin: 0 auto;
-}
-.league-deck-row {
   display: grid;
-  /* Each content column is sized to its content (capped via fit-content for
-     the long-text columns so very long names still truncate with the
-     existing ellipsis rules). The trailing 1fr is a spacer so leftover row
-     width sits to the right of the last column instead of being divided
-     across columns — that's what "left-justified columns" means here. */
   grid-template-columns:
     fit-content(220px)   /* author */
     fit-content(360px)   /* deck name */
@@ -2138,8 +2129,15 @@ html:has(body.league-page.detail-active) {
     auto                 /* color pips */
     fit-content(380px)   /* identifying cards */
     auto                 /* copy button */
-    1fr;                 /* spacer */
-  gap: 12px;
+    1fr;                 /* spacer — soaks up leftover row width on the right */
+  gap: 4px 12px;          /* row-gap column-gap */
+  max-width: 1500px;
+  margin: 0 auto;
+}
+.league-deck-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
   padding: 4px 12px;
   background: var(--bg-2);
@@ -2219,6 +2217,7 @@ html:has(body.league-page.detail-active) {
   padding: 32px 12px;
   text-align: center;
   color: var(--text-muted);
+  grid-column: 1 / -1;
 }
 
 /* Identifying-card badges: two card *names* per row (not images — they're
@@ -2436,8 +2435,14 @@ html:has(body.league-page.detail-active) {
   .league-search-wrap { grid-column: 1 / -1; }
   .league-search-wrap input { width: 100%; max-width: none; }
   .league-toolbar { grid-column: 2 / -1; justify-content: flex-end; }
+  /* On narrow viewports we hide the id-cards and pips columns to fit, so
+     the shared list grid + subgrid stops being a fit. Fall back to a
+     non-grid list and per-row layout so rows can size independently and
+     wrap their own content cleanly. */
+  .league-list { display: flex; flex-direction: column; }
   .league-deck-row {
     grid-template-columns: minmax(80px, 1fr) minmax(120px, 2fr) auto auto;
+    grid-column: auto;
     gap: 8px;
   }
   .league-deck-row .league-id-cards,
