@@ -806,6 +806,24 @@ function isLandType(typeStr) {
   return /\bLand\b/.test(typeStr || '');
 }
 
+// Names of canonical basic lands (and snow variants). Hardcoded so the
+// first identifying-card pass — which runs before cards.json arrives — can
+// still filter the common cases. After cards.json loads we re-run the pass
+// using `supertypes` from the richer card data, which catches anything
+// outside this set (future basics, alt-named basics, etc.).
+const BASIC_LAND_NAMES = new Set([
+  'Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes',
+  'Snow-Covered Plains', 'Snow-Covered Island', 'Snow-Covered Swamp',
+  'Snow-Covered Mountain', 'Snow-Covered Forest',
+]);
+
+function isBasicLand(deckCard) {
+  if (!deckCard) return false;
+  const mtg = lookupCard(deckCard);
+  if (mtg && Array.isArray(mtg.supertypes) && mtg.supertypes.includes('Basic')) return true;
+  return BASIC_LAND_NAMES.has((deckCard.fullName || '').trim());
+}
+
 function computeIdentifyingCards(deck, usage) {
   if (!deck) return { fourOf: null, rarest: null };
   // First-tier candidate (a 4-of non-land) is the cleanest "iconic" badge
@@ -822,7 +840,12 @@ function computeIdentifyingCards(deck, usage) {
     const inDeck = main + side;
     if (inDeck === 0) continue;
     const total = usage.get(ref) || 0;
-    if (main >= 2 && main <= 4 && !isLandType(c.type)) {
+    // Basic lands are not iconic — and per-printing usage stats also make
+    // them artificially "rare" (a 1-of Mountain_CYB beats every spell). We
+    // exclude basics from BOTH passes; non-basic lands (Sanguine Palace,
+    // Temple of Origins, etc.) are kept since they identify a deck.
+    if (isBasicLand(c)) continue;
+    if (main >= 2 && main <= 4) {
       const cur = buckets.get(main);
       if (!cur || total < cur.total) buckets.set(main, { ref, total });
     }
@@ -834,7 +857,10 @@ function computeIdentifyingCards(deck, usage) {
   }
   const bestFour = buckets.get(4) || buckets.get(3) || buckets.get(2) || null;
   // Make sure the two badges don't collide. If bestRarest === bestFour,
-  // pick the next-best rarest distinct ref.
+  // pick the next-best rarest distinct ref. Must apply the same basic-land
+  // filter the main pass uses — otherwise per-printing low-usage basics
+  // (e.g. a 1-of Mountain_CYB) sneak in here when Bleed-for-the-Cause-style
+  // 4-ofs are the deck's rarest non-basic.
   if (bestFour && bestRarest && bestFour.ref === bestRarest.ref) {
     let alt = null;
     for (const [ref, c] of Object.entries(deck.cards || {})) {
@@ -842,6 +868,7 @@ function computeIdentifyingCards(deck, usage) {
       const main = c.mainCount || 0, side = c.sideCount || 0;
       const inDeck = main + side;
       if (inDeck === 0) continue;
+      if (isBasicLand(c)) continue;
       const total = usage.get(ref) || 0;
       if (!alt
           || total < alt.total
@@ -1581,6 +1608,10 @@ async function loadAll(force) {
   for (const entry of STATE.decks) {
     if (entry.parsed) entry.colors = computeDeckColors(entry.parsed);
   }
+  // Re-run id-card derivation now that cards.json is available. The first
+  // pass used the hardcoded BASIC_LAND_NAMES fallback; this pass can use
+  // each card's `supertypes`, which catches any basics not in that set.
+  rebuildAllIdentifyingCards();
   renderListIfList();
 
   const stamp = bundle && bundle.fetchedAt
