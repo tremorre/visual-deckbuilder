@@ -227,10 +227,23 @@ def main(argv: list[str]) -> int:
     ordered_decks = [curr[i] for i in ids if i in curr]
     fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
+    # Precompute league-wide card usage so the page doesn't have to walk
+    # every deck on every load. Sum of mainCount + sideCount across every
+    # deck in the bundle, keyed by refName. The page falls back to
+    # computing this itself if the field is missing, so old bundles still
+    # work.
+    card_usage: dict[str, int] = {}
+    for d in ordered_decks:
+        for ref, c in (d.get("cards") or {}).items():
+            n = (c.get("mainCount") or 0) + (c.get("sideCount") or 0)
+            if n:
+                card_usage[ref] = card_usage.get(ref, 0) + n
+
     bundle = {
         "tourney": tourney,
         "fetchedAt": fetched_at,
         "decks": ordered_decks,
+        "cardUsage": card_usage,
     }
     meta = {
         "tourney": tourney,

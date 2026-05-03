@@ -45,7 +45,7 @@ const PILE_OFFSET_Y = 30;
 // State
 
 const STATE = {
-  decks: [],              // [{ id, parsed, colors, error? }]
+  decks: [],              // [{ id, parsed, colors, author, idCards, error? }]
   byId: new Map(),        // id -> entry
   cards: null,            // card index, or null until loaded
   cardsLoading: null,     // Promise while loading
@@ -55,6 +55,14 @@ const STATE = {
   focusedZone: 'main',    // which zone the right pane shows
   filterText: '',
   uidCounter: 0,
+  // List sort: chain of methods, primary first. Most-recently-chosen
+  // primary slides previous primaries down to serve as tiebreakers, just
+  // like the deckbuilder's pile-sort chain.
+  sortChain: ['wins'],
+  // refName -> total mainCount+sideCount across all decks in the bundle.
+  // Built once after the bundle loads; the identifying-card logic looks
+  // each card up here to find the deck's "rarest" cards league-wide.
+  cardUsage: new Map(),
 };
 function newUid() { return ++STATE.uidCounter; }
 
@@ -228,6 +236,16 @@ function deckArchetype(deck) {
   return m ? m[1] : null;
 }
 
+// Lackeybot deck names follow `<player>'s <deck name>`. Pull the player out
+// so the list can give it its own column. Fallback: empty string (the row
+// still falls back to a short Discord ID for context).
+function authorAndShortName(deck) {
+  const raw = (deck.name || '').trim();
+  const m = /^(.+?)'s\s+(.+)$/.exec(raw);
+  if (m) return { author: m[1].trim(), shortName: m[2].trim() };
+  return { author: '', shortName: raw };
+}
+
 // Map lackeybot refName ("Forest_VLR", "Root Fossil//Reborn Lily_CCR") to the
 // deckbuilder's byName key ("Forest_VLR", "Root Fossil // Reborn Lily_CCR").
 function refNameToDeckbuilderName(refName) {
@@ -270,12 +288,21 @@ function el(tag, attrs, children) {
 
 function pipsRow(colors) {
   if (!colors || !colors.length) {
-    return el('span', { class: 'league-pips colorless' }, [
-      el('span', { class: 'pip pip-C', title: 'Colorless / no required colors', text: 'C' }),
-    ]);
+    return el('span', { class: 'league-pips colorless' }, [manaIcon('C')]);
   }
-  return el('span', { class: 'league-pips' },
-    colors.map(c => el('span', { class: 'pip pip-' + c, title: colorName(c), text: c })));
+  return el('span', { class: 'league-pips' }, colors.map(manaIcon));
+}
+
+// Render one MTG mana symbol via Andrew Gioia's mana-font (vendored under
+// static/vendor/mana-font/). The font already paints WUBRG with the
+// canonical disc + stylized symbol when both .ms and .ms-cost are set.
+function manaIcon(c) {
+  const lc = String(c || '').toLowerCase();
+  return el('i', {
+    class: `ms ms-${lc} ms-cost`,
+    'aria-label': colorName(c),
+    title: colorName(c),
+  });
 }
 
 function colorName(c) {
@@ -340,41 +367,95 @@ function renderList() {
       : 'Loading league index…' }));
     return;
   }
-  entries.sort((a, b) => {
-    const ar = deckRecord(a.parsed), br = deckRecord(b.parsed);
-    const aPct = ar.pct == null ? -1 : ar.pct;
-    const bPct = br.pct == null ? -1 : br.pct;
-    if (aPct !== bPct) return bPct - aPct;
-    if (ar.wins !== br.wins) return br.wins - ar.wins;
-    return (a.parsed.name || '').localeCompare(b.parsed.name || '');
-  });
+  sortListEntries(entries);
 
   for (const entry of entries) host.appendChild(buildDeckRow(entry));
+}
+
+// Compare two list entries by the active sort chain. Each chain entry is a
+// method name; ties from the primary fall through to the next, etc. The
+// final implicit tiebreaker is canonical deck name. The chain is updated by
+// pushSort() — the most-recently-chosen method moves to the front, and
+// previously-chosen methods slide down to serve as tiebreakers, mirroring
+// the deckbuilder's pile-sort chain.
+const SORT_KEYS = {
+  // Wins: more wins first.
+  wins: (e) => -((deckRecord(e.parsed).wins) || 0),
+  // Color: bucket by color combination, ordered to keep similar colors
+  // adjacent (mono first by WUBRG, then guilds, then 3+, then colorless).
+  color: (e) => colorSortKey(e.colors || []),
+  // Author: lowercase alpha. Empty author sorts last.
+  author: (e) => (e.author ? e.author.toLowerCase() : '￿'),
+};
+function sortListEntries(entries) {
+  entries.sort((a, b) => {
+    for (const method of STATE.sortChain) {
+      const fn = SORT_KEYS[method];
+      if (!fn) continue;
+      const va = fn(a), vb = fn(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+    }
+    return (a.parsed.name || '').localeCompare(b.parsed.name || '');
+  });
+}
+
+// Canonical color-combo ordering: WUBRG order for mono, then number of
+// colors ascending, then WUBRG-lex within a tier so guilds/shards land near
+// their components. Colorless ('') sorts last.
+const COLOR_ORDER_INDEX = (() => {
+  const idx = Object.create(null);
+  MANA_COLORS.forEach((c, i) => { idx[c] = i; });
+  return idx;
+})();
+function colorSortKey(colors) {
+  if (!colors.length) return '9';                     // colorless last
+  const sorted = [...colors].sort(
+    (a, b) => COLOR_ORDER_INDEX[a] - COLOR_ORDER_INDEX[b]);
+  // Single-digit count prefix (max 5) clusters monos / guilds / shards;
+  // the WUBRG-ordered suffix orders within a count tier.
+  return String(sorted.length) + sorted.join('');
 }
 
 function buildDeckRow(entry) {
   const d = entry.parsed;
   const rec = deckRecord(d);
-  const counts = totalCardCounts(d);
   const archetype = deckArchetype(d);
+  const author = entry.author || '';
+  const shortName = entry.shortName || d.name || '(untitled)';
 
   const row = el('div', {
     class: 'league-deck-row',
     onclick: () => openDetail(entry.id),
   });
-  row.appendChild(el('span', { class: 'deck-name' }, [
-    document.createTextNode(d.name || '(untitled)'),
-    archetype ? el('span', { class: 'deck-archetype', text: archetype }) : null,
-  ]));
-  const playerLabel = d.player ? '#' + String(d.player).slice(-5) : '';
-  row.appendChild(el('span', { class: 'deck-player', text: playerLabel,
-    title: d.player ? ('Player ID: ' + d.player) : '' }));
 
+  // Author column — falls back to a short Discord ID so the row never
+  // shows just blank space when the deck name doesn't fit the
+  // "<player>'s ..." convention.
+  let authorLabel = author;
+  let authorClass = 'deck-author';
+  if (!authorLabel) {
+    authorLabel = d.player ? '#' + String(d.player).slice(-5) : '(unknown)';
+    authorClass += ' unknown';
+  }
+  row.appendChild(el('span', {
+    class: authorClass,
+    text: authorLabel,
+    title: d.player ? ('Discord ID: ' + d.player) : '',
+  }));
+
+  // Deck name column (without the duplicated author prefix).
+  row.appendChild(el('span', { class: 'deck-name' }, [
+    document.createTextNode(shortName),
+    archetype && !shortName.includes(archetype) ? el('span', { class: 'deck-archetype', text: archetype }) : null,
+  ]));
+
+  // Record (wins-losses[-draws]) — no percent, no card count.
   const recBox = el('span', { class: 'league-record' });
   if (rec.played > 0) {
-    recBox.appendChild(el('span', { class: 'pct ' + pctClass(rec.pct), text: rec.pct + '%' }));
+    recBox.appendChild(el('span', { class: 'raw wins', text: String(rec.wins) }));
     recBox.appendChild(el('span', { class: 'raw',
-      text: rec.draws > 0 ? `${rec.wins}-${rec.losses}-${rec.draws}` : `${rec.wins}-${rec.losses}` }));
+      text: rec.draws > 0 ? `–${rec.losses}–${rec.draws}` : `–${rec.losses}` }));
   } else {
     recBox.appendChild(el('span', { class: 'raw', text: '—' }));
   }
@@ -382,11 +463,10 @@ function buildDeckRow(entry) {
 
   row.appendChild(pipsRow(entry.colors));
 
-  row.appendChild(el('span', {
-    class: 'league-cardcount',
-    text: counts.side ? `${counts.main}/${counts.side}` : `${counts.main}`,
-    title: 'Main' + (counts.side ? ' / Sideboard' : '') + ' card count',
-  }));
+  // Identifying-card swatches: A) least-used 4-of non-land, B) least-used
+  // overall card in the deck. See computeIdentifyingCards().
+  const ids = entry.idCards || {};
+  row.appendChild(buildIdCards(d, ids));
 
   const copyBtn = el('button', {
     class: 'league-copy-btn',
@@ -396,7 +476,208 @@ function buildDeckRow(entry) {
   });
   row.appendChild(copyBtn);
 
+  // Hover popup with the full decklist. Anchored to the row so it follows
+  // a consistent edge regardless of which child the cursor entered.
+  row.addEventListener('mouseenter', () => showDecklistPopup(entry, row));
+  row.addEventListener('mouseleave', hideDecklistPopup);
+
   return row;
+}
+
+function buildIdCards(deck, ids) {
+  const wrap = el('span', { class: 'league-id-cards' });
+  for (const ref of [ids.fourOf, ids.rarest]) {
+    if (!ref) {
+      wrap.appendChild(el('span', { class: 'id-card placeholder' }));
+      continue;
+    }
+    const dc = deck.cards[ref];
+    const url = imgUrlForDeckCard(dc);
+    const total = STATE.cardUsage.get(ref) || 0;
+    const node = el('span', {
+      class: 'id-card',
+      title: `${dc.fullName || ref} — played ${total}× across the league`,
+    });
+    if (url) node.style.backgroundImage = `url("${url}")`;
+    node.addEventListener('mouseenter', (ev) => { ev.stopPropagation(); showCardPreview(dc, ev); });
+    node.addEventListener('mousemove', moveCardPreview);
+    node.addEventListener('mouseleave', hideCardPreview);
+    wrap.appendChild(node);
+  }
+  return wrap;
+}
+
+// ---------------------------------------------------------------------------
+// Card-usage statistics and identifying-card derivation
+//
+// We compute a single map of refName -> total mainCount + sideCount summed
+// across every deck in the bundle. Each row then picks two badges:
+//
+//   A. The non-land card with mainCount === 4 in this deck whose total
+//      league usage is smallest (the deck's most distinguishing 4-of).
+//   B. The card with the smallest total league usage out of every card in
+//      the deck (main or side). Ties broken by *more copies in this deck*
+//      first — a 4-of seen in 2 decks is a louder signal than a 1-of in
+//      the same 2 decks.
+//
+// Card B always picks a different ref than card A so the two swatches don't
+// duplicate. If no 4-of non-land exists, A is omitted; B then ignores A.
+
+function buildCardUsage(decks) {
+  const usage = new Map();
+  for (const d of decks) {
+    if (!d) continue;
+    for (const [ref, c] of Object.entries(d.cards || {})) {
+      const n = (c.mainCount || 0) + (c.sideCount || 0);
+      if (n === 0) continue;
+      usage.set(ref, (usage.get(ref) || 0) + n);
+    }
+  }
+  return usage;
+}
+
+function isLandType(typeStr) {
+  return /\bLand\b/.test(typeStr || '');
+}
+
+function computeIdentifyingCards(deck, usage) {
+  if (!deck) return { fourOf: null, rarest: null };
+  let bestFour = null;        // { ref, total }
+  let bestRarest = null;      // { ref, total, copies }
+  for (const [ref, c] of Object.entries(deck.cards || {})) {
+    const main = c.mainCount || 0;
+    const side = c.sideCount || 0;
+    const inDeck = main + side;
+    if (inDeck === 0) continue;
+    const total = usage.get(ref) || 0;
+    if (main === 4 && !isLandType(c.type)) {
+      if (!bestFour || total < bestFour.total) bestFour = { ref, total };
+    }
+    if (!bestRarest
+        || total < bestRarest.total
+        || (total === bestRarest.total && inDeck > bestRarest.copies)) {
+      bestRarest = { ref, total, copies: inDeck };
+    }
+  }
+  // Make sure the two badges don't collide. If bestRarest === bestFour,
+  // pick the next-best rarest distinct ref.
+  if (bestFour && bestRarest && bestFour.ref === bestRarest.ref) {
+    let alt = null;
+    for (const [ref, c] of Object.entries(deck.cards || {})) {
+      if (ref === bestFour.ref) continue;
+      const main = c.mainCount || 0, side = c.sideCount || 0;
+      const inDeck = main + side;
+      if (inDeck === 0) continue;
+      const total = usage.get(ref) || 0;
+      if (!alt
+          || total < alt.total
+          || (total === alt.total && inDeck > alt.copies)) {
+        alt = { ref, total, copies: inDeck };
+      }
+    }
+    bestRarest = alt;
+  }
+  return {
+    fourOf: bestFour ? bestFour.ref : null,
+    rarest: bestRarest ? bestRarest.ref : null,
+  };
+}
+
+function rebuildAllIdentifyingCards() {
+  for (const e of STATE.decks) {
+    if (e.parsed) e.idCards = computeIdentifyingCards(e.parsed, STATE.cardUsage);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Decklist hover popup — shows the full main+side list when you hover a row.
+
+let popupHideTimer = null;
+function showDecklistPopup(entry, anchor) {
+  if (!entry || !entry.parsed) return;
+  if (popupHideTimer) { clearTimeout(popupHideTimer); popupHideTimer = null; }
+  const popup = document.getElementById('league-decklist-popup');
+  popup.innerHTML = '';
+  popup.appendChild(buildPopupContents(entry.parsed));
+  popup.classList.add('show');
+  positionPopup(popup, anchor);
+}
+
+function hideDecklistPopup() {
+  // Slight delay so a hover that crosses between row children doesn't
+  // flicker the popup off and back on.
+  if (popupHideTimer) clearTimeout(popupHideTimer);
+  popupHideTimer = setTimeout(() => {
+    document.getElementById('league-decklist-popup').classList.remove('show');
+    popupHideTimer = null;
+  }, 60);
+}
+
+function buildPopupContents(deck) {
+  const frag = document.createDocumentFragment();
+  for (const zone of ['main', 'side']) {
+    const rows = popupRowsFor(deck, zone);
+    if (!rows.length) continue;
+    const total = rows.reduce((n, r) => n + r.count, 0);
+    const group = el('div', { class: 'group' });
+    group.appendChild(el('div', { class: 'group-header',
+      text: (zone === 'main' ? 'Main' : 'Sideboard') + ` (${total})` }));
+    for (const r of rows) {
+      const row = el('div', { class: 'row' });
+      row.appendChild(el('span', { class: 'qty', text: String(r.count) }));
+      row.appendChild(el('span', { class: 'name', text: r.name }));
+      if (r.cost) row.appendChild(el('span', { class: 'cmc', text: r.cost }));
+      group.appendChild(row);
+    }
+    frag.appendChild(group);
+  }
+  if (!frag.childNodes.length) {
+    frag.appendChild(el('div', { class: 'group-header', text: '(empty)' }));
+  }
+  return frag;
+}
+
+function popupRowsFor(deck, zone) {
+  const out = [];
+  for (const [ref, c] of Object.entries(deck.cards || {})) {
+    const n = zone === 'main' ? (c.mainCount || 0) : (c.sideCount || 0);
+    if (n === 0) continue;
+    const mtg = lookupCard(c);
+    out.push({
+      ref,
+      count: n,
+      name: c.fullName || ref,
+      type: c.type || '',
+      cost: mtg && mtg.manaCost ? mtg.manaCost : '',
+    });
+  }
+  out.sort((a, b) => {
+    const ra = typeRank(a.type), rb = typeRank(b.type);
+    if (ra !== rb) return ra - rb;
+    return a.name.localeCompare(b.name);
+  });
+  return out;
+}
+
+function positionPopup(popup, anchor) {
+  // Anchor at the row's right edge by default. If the popup would overflow
+  // the viewport horizontally, flip to the row's left edge. Vertical: align
+  // the popup's top with the row's top, but clamp inside the viewport.
+  const margin = 8;
+  // Reset before measuring so previous size doesn't bias the calc.
+  popup.style.left = '0px';
+  popup.style.top = '0px';
+  const rect = anchor.getBoundingClientRect();
+  const pw = popup.offsetWidth || 280;
+  const ph = popup.offsetHeight || 200;
+  let x = rect.right + margin;
+  if (x + pw > window.innerWidth) x = rect.left - pw - margin;
+  if (x < 4) x = 4;
+  let y = rect.top;
+  if (y + ph > window.innerHeight - 4) y = window.innerHeight - ph - 4;
+  if (y < 4) y = 4;
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
 }
 
 // ---------------------------------------------------------------------------
@@ -890,8 +1171,24 @@ async function loadAll(force) {
     return;
   }
   const decks = Array.isArray(bundle && bundle.decks) ? bundle.decks : [];
-  STATE.decks = decks.map(d => ({ id: d.id, parsed: d, colors: [] }));
+  STATE.decks = decks.map(d => {
+    const an = authorAndShortName(d);
+    return { id: d.id, parsed: d, colors: [],
+             author: an.author, shortName: an.shortName, idCards: {} };
+  });
   STATE.byId = new Map(STATE.decks.map(e => [e.id, e]));
+
+  // Build (or load) the league-wide card usage map. The action-side
+  // bundle may embed a `cardUsage` object as a precomputed cache; we
+  // prefer that when present, otherwise compute it client-side from the
+  // same data — semantically identical.
+  if (bundle && bundle.cardUsage && typeof bundle.cardUsage === 'object') {
+    STATE.cardUsage = new Map(Object.entries(bundle.cardUsage));
+  } else {
+    STATE.cardUsage = buildCardUsage(decks);
+  }
+  rebuildAllIdentifyingCards();
+
   renderListIfList();
 
   try { await ensureCards(); }
@@ -911,6 +1208,58 @@ function renderListIfList() {
   if (STATE.view === 'list') renderList();
 }
 
+// Sort-chain UI. Mirrors the deckbuilder's pile-sort dropdown: clicking a
+// method moves it to the front of STATE.sortChain so previously-chosen
+// methods slide down to act as tiebreakers (the user-stated requirement is
+// "ties broken by most recently chosen").
+const SORT_LABELS = {
+  wins:   'Wins',
+  color:  'Color',
+  author: 'Author',
+};
+function wireSortDropdown() {
+  const btn = document.getElementById('league-sort-btn');
+  const menu = document.getElementById('league-sort-menu');
+  const updateLabel = () => {
+    const primary = STATE.sortChain[0] || 'wins';
+    btn.innerHTML = (SORT_LABELS[primary] || primary) + ' ▾';
+    menu.querySelectorAll('button[data-league-sort]').forEach(b => {
+      b.classList.toggle('active', b.dataset.leagueSort === primary);
+    });
+    const tail = STATE.sortChain.slice(1).map(m => SORT_LABELS[m] || m);
+    document.getElementById('league-sort-chain').textContent =
+      tail.length ? `(then ${tail.join(', ').toLowerCase()})` : '';
+  };
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (ev) => {
+    if (!menu.contains(ev.target) && ev.target !== btn) menu.classList.add('hidden');
+  });
+  menu.querySelectorAll('button[data-league-sort]').forEach(b => {
+    b.addEventListener('click', () => {
+      pushSort(b.dataset.leagueSort);
+      menu.classList.add('hidden');
+      updateLabel();
+      if (STATE.view === 'list') renderList();
+    });
+  });
+  updateLabel();
+}
+
+function pushSort(method) {
+  const chain = STATE.sortChain;
+  const i = chain.indexOf(method);
+  if (i >= 0) chain.splice(i, 1);
+  chain.unshift(method);
+  // Keep the chain bounded by the method count — duplicates can't grow it
+  // since we splice them out above, but defense in depth.
+  if (chain.length > Object.keys(SORT_LABELS).length) {
+    chain.length = Object.keys(SORT_LABELS).length;
+  }
+}
+
 function wireUI() {
   document.getElementById('league-tourney').textContent = '· ' + TOURNEY;
   document.title = 'League: ' + TOURNEY;
@@ -925,6 +1274,8 @@ function wireUI() {
   });
   document.getElementById('league-detail-back').addEventListener('click', closeDetail);
   document.getElementById('league-detail-copy').addEventListener('click', copyDetailToDeckbuilder);
+
+  wireSortDropdown();
 
   // Click a zone in the aside to focus it (matches the deckbuilder).
   for (const hdr of document.querySelectorAll('#lg-zones .zone > header')) {

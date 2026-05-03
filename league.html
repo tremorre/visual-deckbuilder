@@ -15,6 +15,7 @@
     }
   } catch (_) {}
 </script>
+<link rel="stylesheet" href="vendor/mana-font/css/mana.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="league-page">
@@ -36,6 +37,18 @@
 
   <!-- List view: rows of decks -->
   <section id="league-list-view">
+    <div class="league-list-controls">
+      <span>Sort:</span>
+      <div class="sort-dropdown">
+        <button id="league-sort-btn" class="sort-dropdown-btn">Wins &#x25BE;</button>
+        <div id="league-sort-menu" class="sort-dropdown-menu hidden">
+          <button data-league-sort="wins">Wins</button>
+          <button data-league-sort="color">Color</button>
+          <button data-league-sort="author">Author</button>
+        </div>
+      </div>
+      <span id="league-sort-chain" class="sort-chain"></span>
+    </div>
     <div id="league-list" class="league-list"></div>
   </section>
 
@@ -82,6 +95,7 @@
 
 <div id="league-toast" class="league-toast hidden"></div>
 <div id="league-card-preview" class="league-card-preview"><img id="league-card-preview-img" alt=""></div>
+<div id="league-decklist-popup" class="league-decklist-popup"></div>
 <script src="league.js"></script>
 </body>
 </html>

@@ -2023,22 +2023,96 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   white-space: nowrap;
 }
 .league-status.error { color: var(--danger); }
-.league-main { padding: 12px 16px 24px; }
+/* Override the global `main { display: grid; grid-template-columns: 280px 1fr }`
+   from the deckbuilder. On the league page, .league-main holds either the list
+   view (which wants the full page width) or the detail view (which sets up its
+   own 280px+1fr grid via .league-deckbuilder-clone). Without this override the
+   visible section gets pinned to the 280px grid column, leaving most of the
+   page empty. */
+main.league-main {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 24px;
+  min-height: 0;
+}
+main.league-main > section { min-width: 0; }
+
+/* List sort bar: small chip-style dropdown above the list, modeled on the
+   deckbuilder's pile-sort dropdown. The active button label rotates as the
+   user picks a primary; previously-chosen primaries fall to tiebreakers. */
+.league-list-controls {
+  max-width: 1500px;
+  margin: 0 auto 8px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.league-list-controls .sort-dropdown { position: relative; }
+.league-list-controls .sort-dropdown-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--bg-button);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.league-list-controls .sort-dropdown-btn:hover { background: var(--bg-button-hover); }
+.league-list-controls .sort-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  box-shadow: var(--shadow-dropdown-lg);
+  padding: 2px 0;
+  z-index: 20;
+  min-width: 120px;
+}
+.league-list-controls .sort-dropdown-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 5px 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.league-list-controls .sort-dropdown-menu button:hover { background: var(--bg-row-hover); }
+.league-list-controls .sort-dropdown-menu button.active {
+  color: var(--text-strong);
+  background: var(--accent-bg);
+}
+.league-list-controls .sort-dropdown-menu.hidden { display: none; }
+.league-list-controls .sort-chain {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}
 
 /* List view */
 .league-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 1100px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 .league-deck-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto auto auto;
-  gap: 10px;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(220px, 2.5fr) auto auto auto auto auto;
+  gap: 14px;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px 14px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -2049,9 +2123,21 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   background: var(--bg-row-hover);
   border-color: var(--border-strong);
 }
-.league-deck-row .deck-name {
-  font-weight: 500;
+.league-deck-row .deck-author {
   color: var(--text-strong);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.league-deck-row .deck-author.unknown {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+.league-deck-row .deck-name {
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2063,11 +2149,6 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   font-size: 12px;
   margin-left: 6px;
 }
-.league-deck-row .deck-player {
-  color: var(--text-muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
 .league-record {
   display: inline-flex;
   align-items: baseline;
@@ -2076,39 +2157,22 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   color: var(--text-secondary);
   white-space: nowrap;
 }
-.league-record .pct { font-weight: 600; }
-.league-record .pct.high { color: #7fd07f; }
-.league-record .pct.mid  { color: #d6c870; }
-.league-record .pct.low  { color: #d68a8a; }
 .league-record .raw { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.league-record .raw.wins { color: var(--text); font-weight: 600; }
 .league-pips {
   display: inline-flex;
-  gap: 2px;
+  gap: 3px;
+  align-items: center;
 }
-.league-pips.colorless .pip { opacity: 0.55; }
-.pip {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.4);
-  font-size: 10px;
-  text-align: center;
-  line-height: 14px;
-  font-weight: 700;
+.league-pips.colorless { opacity: 0.6; }
+.league-pips i.ms { font-size: 13px; line-height: 1; }
+/* `.ms-cost` already gives WUBRG icons their disc-and-symbol look from the
+   mana font itself; no extra background needed. The colorless icon doesn't
+   ship with a disc, so give it a faint one to match. */
+.league-pips i.ms-c.ms-cost {
+  background: var(--mana-c);
   color: #222;
-}
-.pip-W { background: var(--mana-w); }
-.pip-U { background: var(--mana-u); }
-.pip-B { background: var(--mana-b); color: #eee; }
-.pip-R { background: var(--mana-r); }
-.pip-G { background: var(--mana-g); }
-.pip-C { background: var(--mana-c); }
-.league-cardcount {
-  color: var(--text-dim);
-  font-size: 11px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+  border-radius: 50%;
 }
 .league-copy-btn {
   background: var(--bg-button);
@@ -2126,6 +2190,84 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   padding: 32px 12px;
   text-align: center;
   color: var(--text-muted);
+}
+
+/* Identifying-card badges: two small card-art swatches on each row that hint
+   at the deck's character. Hovering one pops the existing card-preview. */
+.league-id-cards {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.league-id-cards .id-card {
+  width: 28px;
+  height: 39px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  background-size: cover;
+  background-position: center 18%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: help;
+}
+.league-id-cards .id-card.placeholder {
+  background-image: none;
+  opacity: 0.3;
+}
+
+/* Decklist hover popup. Anchored at the row's right edge by default; the JS
+   may flip its alignment if it would clip the viewport. */
+.league-decklist-popup {
+  position: fixed;
+  z-index: 60;
+  background: var(--bg-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: var(--shadow-dropdown-lg);
+  padding: 10px 14px;
+  min-width: 240px;
+  max-width: 360px;
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  color: var(--text);
+  pointer-events: none;
+  display: none;
+}
+.league-decklist-popup.show { display: block; }
+.league-decklist-popup .group {
+  margin-bottom: 4px;
+}
+.league-decklist-popup .group-header {
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10px;
+  border-bottom: 1px dotted var(--border);
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+.league-decklist-popup .row {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.league-decklist-popup .row .qty {
+  color: var(--text-muted);
+  width: 16px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.league-decklist-popup .row .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.league-decklist-popup .row .cmc {
+  color: var(--cmc-blue);
+  font-size: 10px;
 }
 
 /* Detail view: deck-viewer pane mirrors the deckbuilder's
@@ -2261,7 +2403,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   .league-search-wrap { grid-column: 1 / -1; }
   .league-search-wrap input { width: 100%; max-width: none; }
   .league-toolbar { grid-column: 2 / -1; justify-content: flex-end; }
-  .league-deck-row { grid-template-columns: 1fr auto; }
-  .league-deck-row .league-cardcount,
-  .league-deck-row .deck-player { display: none; }
+  .league-deck-row {
+    grid-template-columns: minmax(80px, 1fr) minmax(120px, 2fr) auto auto;
+    gap: 8px;
+  }
+  .league-deck-row .league-id-cards,
+  .league-deck-row .league-pips { display: none; }
 }

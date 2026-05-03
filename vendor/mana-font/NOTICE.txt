@@ -1,0 +1,10 @@
+mana-font (https://github.com/andrewgioia/mana) by Andrew Gioia.
+Licensed under the MIT License (see package.json `"license": "MIT"`).
+
+Vendored locally:
+  - css/mana.min.css   (from npm mana-font@1.18.0/css/mana.min.css)
+                       — local edit: @font-face rewritten to reference woff2
+                         only, since that's the only font format we vendor
+  - fonts/mana.woff2   (from npm mana-font@1.18.0/fonts/mana.woff2)
+
+Used to render WUBRG mana symbols in the league deck viewer.
