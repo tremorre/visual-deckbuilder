@@ -808,16 +808,23 @@ function isLandType(typeStr) {
 
 function computeIdentifyingCards(deck, usage) {
   if (!deck) return { fourOf: null, rarest: null };
-  let bestFour = null;        // { ref, total }
-  let bestRarest = null;      // { ref, total, copies }
+  // First-tier candidate (a 4-of non-land) is the cleanest "iconic" badge
+  // because a 4-of declares the deck cares about that card. When a deck has
+  // no 4-of non-land (control decks with mostly singletons, prototype lists,
+  // etc.) we fall back to 3-ofs, then 2-ofs — keeping the same min-usage
+  // criterion. Singletons aren't iconic enough to slot into the "4-of"
+  // badge and would just duplicate the rarest-card badge, so we stop at 2.
+  const buckets = new Map();   // playsetSize → best { ref, total }
+  let bestRarest = null;       // { ref, total, copies }
   for (const [ref, c] of Object.entries(deck.cards || {})) {
     const main = c.mainCount || 0;
     const side = c.sideCount || 0;
     const inDeck = main + side;
     if (inDeck === 0) continue;
     const total = usage.get(ref) || 0;
-    if (main === 4 && !isLandType(c.type)) {
-      if (!bestFour || total < bestFour.total) bestFour = { ref, total };
+    if (main >= 2 && main <= 4 && !isLandType(c.type)) {
+      const cur = buckets.get(main);
+      if (!cur || total < cur.total) buckets.set(main, { ref, total });
     }
     if (!bestRarest
         || total < bestRarest.total
@@ -825,6 +832,7 @@ function computeIdentifyingCards(deck, usage) {
       bestRarest = { ref, total, copies: inDeck };
     }
   }
+  const bestFour = buckets.get(4) || buckets.get(3) || buckets.get(2) || null;
   // Make sure the two badges don't collide. If bestRarest === bestFour,
   // pick the next-best rarest distinct ref.
   if (bestFour && bestRarest && bestFour.ref === bestRarest.ref) {
@@ -961,39 +969,77 @@ function typeRank(typeStr) {
   return i < 0 ? TYPE_ORDER.length : i;
 }
 
-// Build the working pile state for a freshly-opened deck. lackeybot data
-// has no pile structure, so we lay out one pile per primary type — the
-// same default the deckbuilder produces when you load a deck without
-// saved pile arrangement.
+// Build the working pile state for a freshly-opened deck. Mirrors the
+// deckbuilder's import default (placeInstanceIntoZone in app.js): each
+// distinct card occupies its own pile, with a 4-of forming a "playset
+// pile" and additional copies starting a fresh pile right after it. New
+// piles slot in by primary type. The result is many short piles (one per
+// card) instead of a single giant pile per type.
 function buildInitialZones(deck) {
-  function expand(area, getCount) {
-    const groups = new Map();
-    const refs = Object.keys(deck.cards || {});
-    refs.sort((a, b) => {
-      const ea = deck.cards[a], eb = deck.cards[b];
-      const ra = typeRank(ea.type), rb = typeRank(eb.type);
-      if (ra !== rb) return ra - rb;
-      return (ea.fullName || '').localeCompare(eb.fullName || '');
-    });
-    for (const ref of refs) {
-      const e = deck.cards[ref];
-      const n = getCount(e);
-      if (!n) continue;
-      const t = primaryType(e.type || '');
-      if (!groups.has(t)) groups.set(t, []);
-      const arr = groups.get(t);
-      for (let i = 0; i < n; i++) arr.push({ uid: newUid(), ref });
-    }
+  function expand(getCount) {
     const piles = [];
-    for (const t of [...TYPE_ORDER, 'Other']) {
-      if (groups.has(t)) piles.push(groups.get(t));
+    const refs = Object.keys(deck.cards || {});
+    refs.sort((a, b) => compareRefsForPiles(a, b, deck.cards));
+    for (const ref of refs) {
+      const n = getCount(deck.cards[ref]);
+      for (let i = 0; i < n; i++) {
+        placeInstance(piles, { uid: newUid(), ref }, ref, deck.cards);
+      }
     }
     return piles;
   }
   return {
-    main: { piles: expand('main', (e) => e.mainCount || 0) },
-    side: { piles: expand('side', (e) => e.sideCount || 0) },
+    main: { piles: expand((e) => e.mainCount || 0) },
+    side: { piles: expand((e) => e.sideCount || 0) },
   };
+}
+
+// Sort comparator for the "where does a brand-new pile go?" decision.
+// Type rank first (matches the deckbuilder's default `pileSort: 'type'`),
+// then card name as a stable tiebreaker.
+function compareRefsForPiles(a, b, deckCards) {
+  const ca = deckCards[a] || {}, cb = deckCards[b] || {};
+  const ra = typeRank(ca.type), rb = typeRank(cb.type);
+  if (ra !== rb) return ra - rb;
+  return (ca.fullName || a).localeCompare(cb.fullName || b);
+}
+
+function isLeaguePlaysetPile(pile, ref) {
+  return pile.length === 4 && pile.every(x => x.ref === ref);
+}
+
+// Replicates app.js's placeInstanceIntoZone:
+//   1. existing non-playset pile already containing this card → merge in
+//   2. an existing playset pile of this card → start a new pile right after it
+//   3. otherwise → new pile, slotted by sort comparator
+function placeInstance(piles, inst, ref, deckCards) {
+  for (let i = 0; i < piles.length; i++) {
+    const p = piles[i];
+    if (p.length === 0) continue;
+    if (isLeaguePlaysetPile(p, ref)) continue;
+    if (p.some(x => x.ref === ref)) {
+      // Group same-ref copies together within a pile.
+      let lastIdx = -1;
+      for (let j = 0; j < p.length; j++) if (p[j].ref === ref) lastIdx = j;
+      p.splice(lastIdx + 1, 0, inst);
+      return;
+    }
+  }
+  for (let i = 0; i < piles.length; i++) {
+    if (isLeaguePlaysetPile(piles[i], ref)) {
+      piles.splice(i + 1, 0, [inst]);
+      return;
+    }
+  }
+  let insertIdx = piles.length;
+  for (let i = 0; i < piles.length; i++) {
+    if (piles[i].length === 0) continue;
+    if (compareRefsForPiles(ref, piles[i][0].ref, deckCards) < 0) {
+      insertIdx = i;
+      break;
+    }
+  }
+  piles.splice(insertIdx, 0, [inst]);
 }
 
 function openDetail(id) {
@@ -1028,6 +1074,15 @@ function renderDetail() {
 
   // Header
   document.getElementById('league-detail-name').textContent = d.name || '(untitled)';
+  // Source link points at the deck's lackeybot statdex URL — this is the
+  // same upstream endpoint that scripts/update_league.py fetches, so it's
+  // guaranteed to land on the deck the bundle was sourced from.
+  const src = document.getElementById('league-detail-source');
+  if (src) {
+    const url = lackeybotDeckUrl(d.id);
+    if (url) { src.href = url; src.classList.remove('hidden'); }
+    else { src.removeAttribute('href'); src.classList.add('hidden'); }
+  }
   const meta = document.getElementById('league-detail-meta');
   meta.innerHTML = '';
   const rec = deckRecord(d);
@@ -1378,6 +1433,67 @@ function copyDeckToDeckbuilder(entry) {
   }
 }
 
+// Build the deck's URL on lackeybot.com. Mirrors the path that
+// scripts/update_league.py fetches for each deck.
+function lackeybotDeckUrl(deckId) {
+  if (!deckId || typeof deckId !== 'string' || deckId.indexOf('/') < 0) return null;
+  return `https://lackeybot.com/rev/statdex/d/${TOURNEY}/${deckId}`;
+}
+
+// Plain-text decklist matching the deckbuilder's importTxt format:
+// "<count> <name>" lines, blank line between zones, main → sideboard.
+// Names are run through refNameToDeckbuilderName so DFCs come out as the
+// front face's name (the same key the deckbuilder accepts on import).
+function buildClipboardText(deck) {
+  const sections = [];
+  for (const zone of ['main', 'side']) {
+    const lines = [];
+    const refs = Object.keys(deck.cards || {})
+      .filter(r => (zone === 'main' ? deck.cards[r].mainCount : deck.cards[r].sideCount) > 0)
+      .sort((a, b) => (deck.cards[a].fullName || '').localeCompare(deck.cards[b].fullName || ''));
+    for (const ref of refs) {
+      const c = deck.cards[ref];
+      const n = zone === 'main' ? c.mainCount : c.sideCount;
+      if (!n) continue;
+      lines.push(`${n} ${refNameToDeckbuilderName(ref)}`);
+    }
+    if (lines.length) sections.push(lines.join('\n'));
+  }
+  return sections.join('\n\n') + '\n';
+}
+
+async function copyDetailTextToClipboard() {
+  if (!STATE.detailId) return;
+  const entry = STATE.byId.get(STATE.detailId);
+  if (!entry || !entry.parsed) return;
+  const text = buildClipboardText(entry.parsed);
+  const btn = document.getElementById('league-detail-copy-txt');
+  const original = btn ? btn.textContent : '';
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers / non-secure contexts: a hidden textarea
+      // + execCommand. Modern Chromium/Firefox/Safari all support the
+      // clipboard API on https or localhost, so this branch is rare.
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    if (btn) btn.textContent = 'Copied ✓';
+    toast('Decklist copied to clipboard');
+  } catch (e) {
+    if (btn) btn.textContent = 'Copy failed';
+    toast('Clipboard copy failed: ' + (e && e.message ? e.message : e));
+  }
+  if (btn) setTimeout(() => { btn.textContent = original; }, 1500);
+}
+
 function copyDetailToDeckbuilder() {
   if (!STATE.detailId) return;
   const entry = STATE.byId.get(STATE.detailId);
@@ -1543,6 +1659,7 @@ function wireUI() {
   });
   document.getElementById('league-detail-back').addEventListener('click', closeDetail);
   document.getElementById('league-detail-copy').addEventListener('click', copyDetailToDeckbuilder);
+  document.getElementById('league-detail-copy-txt').addEventListener('click', copyDetailTextToClipboard);
 
   wireSortDropdown();
 

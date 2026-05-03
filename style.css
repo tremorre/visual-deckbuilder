@@ -2126,7 +2126,19 @@ html:has(body.league-page.detail-active) {
 }
 .league-deck-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.2fr) minmax(180px, 2fr) auto auto minmax(220px, 1.6fr) auto;
+  /* Each content column is sized to its content (capped via fit-content for
+     the long-text columns so very long names still truncate with the
+     existing ellipsis rules). The trailing 1fr is a spacer so leftover row
+     width sits to the right of the last column instead of being divided
+     across columns — that's what "left-justified columns" means here. */
+  grid-template-columns:
+    fit-content(220px)   /* author */
+    fit-content(360px)   /* deck name */
+    auto                 /* record */
+    auto                 /* color pips */
+    fit-content(380px)   /* identifying cards */
+    auto                 /* copy button */
+    1fr;                 /* spacer */
   gap: 12px;
   align-items: center;
   padding: 4px 12px;
