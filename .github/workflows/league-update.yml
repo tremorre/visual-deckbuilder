@@ -1,0 +1,42 @@
+name: League update
+
+# Cron can't express true every-45-min spacing within a single hour.
+# `0,45 * * * *` fires at :00 and :45 (alternating 45 / 15 min gaps), which
+# gives a worst-case ~45-min staleness target before GitHub's own cron jitter.
+on:
+  schedule:
+    - cron: "0,45 * * * *"
+  workflow_dispatch:
+    inputs:
+      tourney:
+        description: "Tournament slug (e.g. rev_26_05)"
+        default: "rev_26_05"
+
+concurrency:
+  group: league-update
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch league decks
+        run: python scripts/update_league.py "${{ inputs.tourney || 'rev_26_05' }}"
+      - name: Commit and push
+        run: |
+          if [ -n "$(git status --porcelain league/)" ]; then
+            git config user.name  "league-bot"
+            git config user.email "league-bot@users.noreply.github.com"
+            git add league/
+            git commit -m "$(cat .commit-msg)"
+            git push
+          else
+            echo "no changes to league/ — skipping commit"
+          fi

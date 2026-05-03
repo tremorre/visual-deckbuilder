@@ -26,7 +26,8 @@
         "coco"
       ],
       "Giyama, Scion of Kage": [
-        "coco"
+        "coco",
+        "edict"
       ],
       "Illustrious Sheng Fa": [
         "coco"
@@ -35,7 +36,8 @@
         "coco"
       ],
       "Jack, Monster Mentor": [
-        "coco"
+        "coco",
+        "edict"
       ],
       "Karina, Budding Diplomat": [
         "coco"
@@ -50,7 +52,8 @@
         "coco"
       ],
       "Sanaito, Voidsinger": [
-        "coco"
+        "coco",
+        "minus-rem"
       ],
       "Severin, Sparkmind": [
         "coco"
@@ -242,7 +245,8 @@
         "coco"
       ],
       "Comazoa": [
-        "coco"
+        "coco",
+        "counterspell"
       ],
       "Combat Corporal": [
         "coco"
@@ -272,7 +276,8 @@
         "coco"
       ],
       "Cybersaurus": [
-        "coco"
+        "coco",
+        "counterspell"
       ],
       "Cyberzoologist": [
         "coco"
@@ -488,7 +493,8 @@
         "coco"
       ],
       "Inklight Dancer": [
-        "coco"
+        "coco",
+        "minus-rem"
       ],
       "Invoker's Guidebeast": [
         "coco"
@@ -848,7 +854,8 @@
         "coco"
       ],
       "Skytide Piercer": [
-        "coco"
+        "coco",
+        "counterspell"
       ],
       "Slayer of Numachi": [
         "coco"
@@ -863,7 +870,8 @@
         "coco"
       ],
       "Soothing Singer": [
-        "coco"
+        "coco",
+        "texile"
       ],
       "Soulflame Mystic": [
         "coco"
@@ -914,7 +922,8 @@
         "coco"
       ],
       "The Berry Master": [
-        "coco"
+        "coco",
+        "minus-rem"
       ],
       "Thousand Depths Cutthroat": [
         "coco"
@@ -962,7 +971,8 @@
         "coco"
       ],
       "Unyielding Titan": [
-        "coco"
+        "coco",
+        "handattack"
       ],
       "Up-and-Comer": [
         "coco"
@@ -1118,7 +1128,8 @@
         "coco"
       ],
       "Sealing Strike": [
-        "coco"
+        "coco",
+        "texile"
       ],
       "Seed of the Golden Sun": [
         "coco"
@@ -1241,7 +1252,8 @@
         "coco"
       ],
       "Serrated Fossil": [
-        "coco"
+        "coco",
+        "handattack"
       ],
       "Concurrent Escapist": [
         "coco"
@@ -1304,7 +1316,8 @@
         "coco"
       ],
       "Judgment of the Seishin": [
-        "coco"
+        "coco",
+        "fbite"
       ],
       "Subsidized Market": [
         "coco"
@@ -1550,7 +1563,8 @@
         "coco"
       ],
       "Silverflame Zealot": [
-        "coco"
+        "coco",
+        "handattack"
       ],
       "Somberwald Boar": [
         "coco"
@@ -1568,7 +1582,8 @@
         "coco"
       ],
       "Subsuming Sludge": [
-        "coco"
+        "coco",
+        "counterspell"
       ],
       "The Collabomination": [
         "coco"
@@ -1586,7 +1601,8 @@
         "coco"
       ],
       "Benevolent Visitation": [
-        "coco"
+        "coco",
+        "texile"
       ],
       "Blood Bank": [
         "coco"
@@ -1724,7 +1740,8 @@
         "coco"
       ],
       "Orliss's Edict": [
-        "coco"
+        "coco",
+        "edict"
       ],
       "Overseer's Shackles": [
         "coco"
@@ -1754,7 +1771,8 @@
         "coco"
       ],
       "Tale of Bedlam": [
-        "coco"
+        "coco",
+        "fbite"
       ],
       "Siurne, Eternal Sentinel": [
         "coco"
@@ -1772,40 +1790,875 @@
         "coco"
       ],
       "Gloomcover Steppe": [
-        "coco"
+        "coco",
+        "WBLand"
       ],
       "Heart of the Glade": [
-        "coco"
+        "coco",
+        "GWland"
       ],
       "Hopeful Soulspace": [
-        "coco"
+        "coco",
+        "GWland"
       ],
       "Lacufae Observatory": [
-        "coco"
+        "coco",
+        "WLand"
       ],
       "Lonely Soulspace": [
-        "coco"
+        "coco",
+        "WBLand"
       ],
       "Plains": [
-        "coco"
+        "coco",
+        "WLand"
       ],
       "Pool of Light": [
-        "coco"
+        "coco",
+        "WULand"
       ],
       "Soaring Soulspace": [
-        "coco"
+        "coco",
+        "WULand"
       ],
       "Spiraling Canyon": [
-        "coco"
+        "coco",
+        "RWLand"
       ],
       "Stack Conviviplex": [
-        "coco"
+        "coco",
+        "WLand"
       ],
       "Zealous Soulspace": [
-        "coco"
+        "coco",
+        "RWLand"
+      ],
+      "Silent Lakefront": [
+        "counterspell",
+        "WULand"
+      ],
+      "Asulio, the Watchful Star": [
+        "counterspell"
+      ],
+      "Deflecting Kitsune": [
+        "counterspell"
+      ],
+      "Attuned Rebuttal": [
+        "counterspell"
+      ],
+      "Omenmare": [
+        "counterspell"
+      ],
+      "Draconos Magistus": [
+        "counterspell"
+      ],
+      "Avert Disaster": [
+        "counterspell"
+      ],
+      "Brewing Storm": [
+        "counterspell"
+      ],
+      "Cidraeth Charm": [
+        "counterspell"
+      ],
+      "Cursory Glance": [
+        "counterspell"
+      ],
+      "Ensorcell": [
+        "counterspell"
+      ],
+      "Distilled Essence": [
+        "counterspell"
+      ],
+      "Destructive Ambition": [
+        "counterspell"
+      ],
+      "Denotation Failure": [
+        "counterspell"
+      ],
+      "Deft Deflection": [
+        "counterspell"
+      ],
+      "Forbidden Treasure": [
+        "counterspell"
+      ],
+      "Learn the Steps": [
+        "counterspell"
+      ],
+      "Legislative Gridlock": [
+        "counterspell"
+      ],
+      "Negate": [
+        "counterspell"
+      ],
+      "Overrule Will": [
+        "counterspell"
+      ],
+      "Pass Judgment": [
+        "counterspell"
+      ],
+      "Pickpocket": [
+        "counterspell"
+      ],
+      "Refuse to Bloom": [
+        "counterspell"
+      ],
+      "Stolen Singularity": [
+        "counterspell"
+      ],
+      "Storms over Nephalia": [
+        "counterspell"
+      ],
+      "Thistrel Charm": [
+        "counterspell"
+      ],
+      "Tireless Refutation": [
+        "counterspell"
+      ],
+      "Unravel Thoughts": [
+        "counterspell"
+      ],
+      "Unveil": [
+        "counterspell"
+      ],
+      "Veto": [
+        "counterspell"
+      ],
+      "Wasted Preparation": [
+        "counterspell"
+      ],
+      "Addled Psyche": [
+        "counterspell"
+      ],
+      "Draconos Iracus": [
+        "coco",
+        "counterspell"
+      ],
+      "Virtualized Onomastic": [
+        "counterspell"
+      ],
+      "Blossoming Sands": [
+        "GWland"
+      ],
+      "Fort Ravellan": [
+        "GWland"
+      ],
+      "Reified Borough": [
+        "GWland"
+      ],
+      "Ardent Rise": [
+        "RGLand",
+        "fbite"
+      ],
+      "Flourishing Crevasse": [
+        "RGLand"
+      ],
+      "Hall of the Gentle Light": [
+        "GWland"
+      ],
+      "Open Air Boardwalk": [
+        "GWland"
+      ],
+      "Solstice Circle": [
+        "GWland"
+      ],
+      "Thicketed Path": [
+        "GWland"
+      ],
+      "Verdant Sanctum": [
+        "GWland"
+      ],
+      "Footloose Soulspace": [
+        "RGLand"
+      ],
+      "Meandering Path": [
+        "RGLand"
+      ],
+      "Neglected Slums": [
+        "RGLand"
+      ],
+      "Rugged Highlands": [
+        "RGLand"
+      ],
+      "Urban Jungle": [
+        "RGLand"
+      ],
+      "Lonely Cabin": [
+        "RGLand"
+      ],
+      "Chimeric Soulspace": [
+        "GULand"
+      ],
+      "Clearwater Grotto": [
+        "GULand"
+      ],
+      "Controlled Ecosystem": [
+        "GULand"
+      ],
+      "Cryptic Reef": [
+        "GULand"
+      ],
+      "Lush Oasis": [
+        "GULand"
+      ],
+      "Regrowing Outlands": [
+        "GULand"
+      ],
+      "Sodden Path": [
+        "GULand"
+      ],
+      "Thornwood Falls": [
+        "GULand"
+      ],
+      "Crownfall Archive": [
+        "BGLand"
+      ],
+      "Forgotten Junkyard": [
+        "BGLand"
+      ],
+      "Forlorn Path": [
+        "BGLand"
+      ],
+      "Fungal Mire": [
+        "BGLand"
+      ],
+      "Gallowsprout Timber": [
+        "BGLand"
+      ],
+      "Jungle Hollow": [
+        "BGLand"
+      ],
+      "Looming Skyscrapers": [
+        "BGLand"
+      ],
+      "Macabre Soulspace": [
+        "BGLand"
+      ],
+      "Profane Grove": [
+        "BGLand"
+      ],
+      "Serpentine Woods": [
+        "BGLand"
+      ],
+      "Bloodfell Caves": [
+        "BRLand"
+      ],
+      "Erosive Path": [
+        "BRLand"
+      ],
+      "Executive Office": [
+        "BRLand"
+      ],
+      "Faulty Server": [
+        "BRLand"
+      ],
+      "Sanguine Palace": [
+        "BRLand"
+      ],
+      "Vindictive Soulspace": [
+        "BRLand"
+      ],
+      "Lavatorn Fields": [
+        "BRLand"
+      ],
+      "Marzela's Sanctum": [
+        "BRLand"
+      ],
+      "Desolate Path": [
+        "WBLand"
+      ],
+      "Groupthink Tank": [
+        "WBLand"
+      ],
+      "Isolated Tower": [
+        "WBLand"
+      ],
+      "Ominous Quag": [
+        "WBLand"
+      ],
+      "Scoured Barrens": [
+        "WBLand"
+      ],
+      "Stark Expanse": [
+        "WBLand"
+      ],
+      "Flooded Morass": [
+        "UBLand"
+      ],
+      "Dismal Backwater": [
+        "UBLand"
+      ],
+      "Eidetic Soulspace": [
+        "UBLand"
+      ],
+      "Enigmatic Fen": [
+        "UBLand"
+      ],
+      "Interrogation Chamber": [
+        "UBLand"
+      ],
+      "Lost and Found": [
+        "UBLand"
+      ],
+      "Murky Path": [
+        "UBLand"
+      ],
+      "Chasm of the Silent Covenant": [
+        "UBLand"
+      ],
+      "Flooded Grafyards": [
+        "UBLand"
+      ],
+      "Sanctum of Bleeding Bark": [
+        "UBLand"
+      ],
+      "Bustling Motorway": [
+        "URLand"
+      ],
+      "Frostfire Geysers": [
+        "URLand"
+      ],
+      "Glimmerveil Lake": [
+        "URLand"
+      ],
+      "Lorespire Bluff": [
+        "URLand"
+      ],
+      "Meteoric Facade": [
+        "URLand"
+      ],
+      "Misty Peak": [
+        "URLand"
+      ],
+      "Nostalgic Soulspace": [
+        "URLand"
+      ],
+      "Rousing Path": [
+        "URLand"
+      ],
+      "Stunning Cascade": [
+        "URLand"
+      ],
+      "Swiftwater Cliffs": [
+        "URLand"
+      ],
+      "Crucible of Bound Flame": [
+        "RWLand"
+      ],
+      "Fortress Arena": [
+        "RWLand"
+      ],
+      "Glittering Club": [
+        "RWLand"
+      ],
+      "Thronehall of Reckoning": [
+        "RWLand"
+      ],
+      "Torrid Path": [
+        "RWLand"
+      ],
+      "Urban Sunscape": [
+        "RWLand"
+      ],
+      "Wind-Scarred Crag": [
+        "RWLand"
+      ],
+      "Windbeaten Stones": [
+        "RWLand"
+      ],
+      "Congressional Hall": [
+        "WULand"
+      ],
+      "Distant Path": [
+        "WULand"
+      ],
+      "Lucent Basin": [
+        "WULand"
+      ],
+      "Niblis's Haunt": [
+        "WULand"
+      ],
+      "Tranquil Cove": [
+        "WULand"
+      ],
+      "Tiril District": [
+        "WUBLand"
+      ],
+      "Hazakh District": [
+        "UBRLand"
+      ],
+      "Vishanki District": [
+        "BRGLand"
+      ],
+      "Penrath District": [
+        "RGWLand"
+      ],
+      "Sillaman District": [
+        "GWUland"
+      ],
+      "Archive Telemetrary": [
+        "ULand"
+      ],
+      "Burgeoning Nebula": [
+        "GLand"
+      ],
+      "Caersol Observatory": [
+        "Rland"
+      ],
+      "Desolate Cemetery": [
+        "BLand"
+      ],
+      "Desolate Garrison": [
+        "WLand"
+      ],
+      "Buffer Reconservatory": [
+        "GLand"
+      ],
+      "Cascading Nebula": [
+        "ULand"
+      ],
+      "Desolate Harbor": [
+        "ULand"
+      ],
+      "Desolate Pinnacle": [
+        "Rland"
+      ],
+      "Desolate Thicket": [
+        "GLand"
+      ],
+      "Heap Ludicon": [
+        "BLand"
+      ],
+      "Gorion Observatory": [
+        "GLand"
+      ],
+      "Grip Festivarium": [
+        "Rland"
+      ],
+      "Qaraz Observatory": [
+        "BLand"
+      ],
+      "Resplendent Nebula": [
+        "WLand"
+      ],
+      "Starless Nebula": [
+        "BLand"
+      ],
+      "Sulphurous Nebula": [
+        "Rland"
+      ],
+      "Island": [
+        "ULand"
+      ],
+      "Zymith Observatory": [
+        "ULand"
+      ],
+      "Swamp": [
+        "BLand"
+      ],
+      "Mountain": [
+        "Rland"
+      ],
+      "Forest": [
+        "GLand"
+      ],
+      "Frigid Highlands": [
+        "URGLand"
+      ],
+      "Sunlit Ruins": [
+        "GWBLand"
+      ],
+      "Deeplife Cavern": [
+        "UBGLand"
+      ],
+      "Gleaming Hot Springs": [
+        "WURLand"
+      ],
+      "Calmed Battleground": [
+        "BRWLand"
+      ],
+      "Estrathe, Center of Civilization": [
+        "Goldland"
+      ],
+      "Evolving Wilds": [
+        "Goldland"
+      ],
+      "Forgotten Foundation": [
+        "Goldland"
+      ],
+      "Gilded Court": [
+        "Goldland"
+      ],
+      "Jubilant Docks": [
+        "Goldland"
+      ],
+      "Primal Fissure": [
+        "Goldland"
+      ],
+      "Redeveloped Cityscape": [
+        "Goldland"
+      ],
+      "Temple of Origins": [
+        "Goldland"
+      ],
+      "Terramorphic Expanse": [
+        "Goldland"
+      ],
+      "Avatar Exchange": [
+        "nopie",
+        "utilityland"
+      ],
+      "Opulent Vantage": [
+        "nopie"
+      ],
+      "Prismatic Ley-Spire": [
+        "nopie"
+      ],
+      "Secluded Courtyard": [
+        "nopie"
+      ],
+      "Weather Research Station": [
+        "nopie"
+      ],
+      "The Volwood": [
+        "nopie"
+      ],
+      "Abandoned Memorial": [
+        "utilityland"
+      ],
+      "Budding Mire": [
+        "utilityland"
+      ],
+      "Crumbling Ruin": [
+        "utilityland"
+      ],
+      "Drowned Homestead": [
+        "utilityland"
+      ],
+      "Gate to Fujinobe": [
+        "utilityland"
+      ],
+      "Humming Furnace": [
+        "utilityland"
+      ],
+      "Illicit Marketplace": [
+        "utilityland"
+      ],
+      "Mirage Island": [
+        "utilityland"
+      ],
+      "Prickly Dunes": [
+        "utilityland"
+      ],
+      "Protean Boughs": [
+        "utilityland"
+      ],
+      "Royal Balcony": [
+        "Goldland"
+      ],
+      "Rumbling Door": [
+        "utilityland"
+      ],
+      "Sky Pillar": [
+        "utilityland"
+      ],
+      "Tomb of the Founder": [
+        "utilityland"
+      ],
+      "The Shrouded Seas": [
+        "utilityland"
+      ],
+      "Withered Waygate": [
+        "utilityland"
+      ],
+      "Desperate Exorcism": [
+        "counterspell"
+      ],
+      "Quid Pro Quo": [
+        "counterspell"
+      ],
+      "Preemption Daemon": [
+        "counterspell"
+      ],
+      "Sorin's Interrogation": [
+        "handattack"
+      ],
+      "Pluck the Soul": [
+        "handattack"
+      ],
+      "Hostage Situation": [
+        "handattack"
+      ],
+      "Abandon the Code": [
+        "handattack"
+      ],
+      "Advance of the Umbral Bargain": [
+        "handattack"
+      ],
+      "Exorcist of Errors": [
+        "handattack"
+      ],
+      "Listen In": [
+        "handattack"
+      ],
+      "Duress": [
+        "handattack"
+      ],
+      "Absentia": [
+        "handattack"
+      ],
+      "Futurist Ideal": [
+        "handattack"
+      ],
+      "Search and Seizure": [
+        "handattack"
+      ],
+      "Blackout": [
+        "handattack"
+      ],
+      "Eyes Gone Dark": [
+        "handattack"
+      ],
+      "Phemeros Ley-Pillar": [
+        "handattack"
+      ],
+      "Kimja Jailer": [
+        "texile"
+      ],
+      "Moonsilver Archangel": [
+        "texile"
+      ],
+      "Advance of the Quiet Moon": [
+        "texile"
+      ],
+      "Casus Belli": [
+        "texile"
+      ],
+      "Cosmic Pilgrimage": [
+        "texile"
+      ],
+      "Gone Pickin'": [
+        "texile"
+      ],
+      "Moonrapture": [
+        "texile"
+      ],
+      "Welkin Eviction": [
+        "texile"
+      ],
+      "Sanctum of Repression": [
+        "texile"
+      ],
+      "Orbital Vacuum": [
+        "texile"
+      ],
+      "Placeholder_Asset": [
+        "texile"
+      ],
+      "Reconnaissance Agent": [
+        "texile"
+      ],
+      "Lupensi Purseus": [
+        "fbite"
+      ],
+      "Unending Unrest": [
+        "fbite"
+      ],
+      "Blinding Ambush": [
+        "fbite"
+      ],
+      "Rabid Mauling": [
+        "fbite"
+      ],
+      "Ram Through": [
+        "fbite"
+      ],
+      "Split the Loot": [
+        "fbite"
+      ],
+      "Blustering Storm": [
+        "fbite"
+      ],
+      "Crushed Under Conviction": [
+        "fbite"
+      ],
+      "Dream Big": [
+        "fbite"
+      ],
+      "End the Chase": [
+        "fbite"
+      ],
+      "Momentous Strike": [
+        "fbite"
+      ],
+      "Rend the Bonds": [
+        "fbite"
+      ],
+      "The Goremoon Unleashed": [
+        "fbite"
+      ],
+      "Main Street Hooligang": [
+        "fbite"
+      ],
+      "Parental Pair": [
+        "fbite"
+      ],
+      "Schematic Archer": [
+        "fbite"
+      ],
+      "Scourge of Capitalism": [
+        "fbite"
+      ],
+      "Flowing Form": [
+        "fbite"
+      ],
+      "Charity Match": [
+        "fbite"
+      ],
+      "Defend the Groves": [
+        "fbite"
+      ],
+      "Griffin's Blessing": [
+        "fbite"
+      ],
+      "Oathbreaker's Challenge": [
+        "fbite"
+      ],
+      "Stockpile": [
+        "fbite"
+      ],
+      "Out With a Bang": [
+        "fbite"
+      ],
+      "Legacy Denied": [
+        "fbite"
+      ],
+      "Alwanor's Mark": [
+        "fbite"
+      ],
+      "Storm the Senate": [
+        "fbite"
+      ],
+      "Tovolar's Ire": [
+        "fbite"
+      ],
+      "Muddy Water": [
+        "minus-rem"
+      ],
+      "Go for the Gut": [
+        "minus-rem"
+      ],
+      "Anje's Thirst": [
+        "minus-rem"
+      ],
+      "Affliction of Undeath": [
+        "minus-rem"
+      ],
+      "Thirsty Work": [
+        "minus-rem"
+      ],
+      "Empty Shell": [
+        "minus-rem"
+      ],
+      "Downlink Overload": [
+        "minus-rem"
+      ],
+      "Shadow Sky": [
+        "minus-rem"
+      ],
+      "Sunset Warrior": [
+        "minus-rem"
+      ],
+      "NotFound_1": [
+        "minus-rem"
+      ],
+      "Aspus Venefir": [
+        "minus-rem"
+      ],
+      "0xdeadbeef": [
+        "edict"
+      ],
+      "Annick, Oathbound": [
+        "edict"
+      ],
+      "Bogspawn Witness": [
+        "edict"
+      ],
+      "Iri Sentinel": [
+        "edict"
+      ],
+      "Nuillae Exidus": [
+        "edict"
+      ],
+      "Patient Executioner": [
+        "edict"
+      ],
+      "Merciless Ruiner": [
+        "edict"
+      ],
+      "Matauros Tyrannos": [
+        "edict"
+      ],
+      "Mantle of Dusk": [
+        "edict"
+      ],
+      "Die as Thou Wilt": [
+        "edict"
+      ],
+      "Tug of the Void": [
+        "edict"
+      ],
+      "Ruiner's Execution": [
+        "edict"
+      ],
+      "Tragic Accident": [
+        "edict"
+      ],
+      "Cornered by the Dead": [
+        "edict"
+      ],
+      "Rank and Defile": [
+        "edict"
+      ],
+      "Horrific Stitching": [
+        "edict"
       ]
     },
     "order": [
+      "edict",
+      "minus-rem",
+      "fbite",
+      "texile",
+      "handattack",
+      "counterspell",
+      "utilityland",
+      "Goldland",
+      "nopie",
+      "BRWLand",
+      "WURLand",
+      "UBGLand",
+      "GWBLand",
+      "URGLand",
+      "GLand",
+      "Rland",
+      "BLand",
+      "ULand",
+      "WLand",
+      "GWUland",
+      "RGWLand",
+      "BRGLand",
+      "UBRLand",
+      "WUBLand",
+      "WULand",
+      "RWLand",
+      "URLand",
+      "UBLand",
+      "WBLand",
+      "BRLand",
+      "BGLand",
+      "GULand",
+      "RGLand",
+      "GWland",
       "coco"
     ]
   },

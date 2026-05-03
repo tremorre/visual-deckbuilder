@@ -2026,6 +2026,7 @@ const FIELD_ALIASES = {
   legal: 'legal', banned: 'banned', restricted: 'restricted',
   is: 'is',
   has: 'has',
+  manabase: 'manabase',
   ft: 'flavor', flavor: 'flavor',
   in: 'in',
   layout: 'layout',
@@ -2450,6 +2451,7 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
                        return buildFormatPredicate('restricted', rawValue);
     case 'is':         return buildIsPredicate(rawValue);
     case 'has':        return buildHasPredicate(rawValue);
+    case 'manabase':   return buildManabasePredicate(rawValue);
     case 'flavor':     return buildFlavorPredicate(op, rawValue);
     case 'in':         return buildInPredicate(op, rawValue);
     case 'layout':     return buildLayoutPredicate(op, rawValue);
@@ -2957,6 +2959,65 @@ function buildIsPredicate(rawValue) {
   }
 }
 
+// Tag-name shape recognised by `manabase:`. Also used by the tagger
+// sidebar to hide these (there are a lot of them, and the tagger sidebar
+// is the wrong place to scan them — `manabase:<colors>` is). Matches
+// goldland, utilityland, and any `<colors>land` name where colors is a
+// non-empty subset of WUBRG, case-insensitive.
+function isLandManabaseTag(name) {
+  const low = String(name || '').toLowerCase();
+  if (low === 'goldland' || low === 'utilityland') return true;
+  return /^[wubrg]+land$/.test(low);
+}
+
+// `manabase:<colors>` (or `manabase<=<colors>`) — shorthand for "lands that
+// fit a deck of this color identity". Walks the dataset's existing tags
+// and keeps the ones whose name is `<colors>land` (any subset of WUBRG,
+// any ordering, any case) where the colors fit within the input — so a
+// 1-, 2-, 3- (and beyond) color land tag is included as long as none of
+// its colors is outside the input. Always includes `utilityland`, and
+// `goldland` when the input is multicolor (a mono-color deck doesn't
+// want gold lands cluttering its manabase view). Operator is ignored:
+// `:` and `<=` mean the same thing here, since both express "fits
+// within this color set".
+function buildManabasePredicate(rawValue) {
+  const allowed = new Set();
+  for (const ch of stripQuotes(rawValue).toLowerCase()) {
+    if ('wubrg'.includes(ch)) allowed.add(ch);
+  }
+  const includeGold = allowed.size >= 2;
+  const ds = currentDataset();
+  const slot = STATE.tags[ds];
+  const wanted = new Set();
+  if (slot) {
+    for (const t of slot.order) {
+      const low = String(t).toLowerCase();
+      if (low === 'utilityland') { wanted.add(low); continue; }
+      if (low === 'goldland') {
+        if (includeGold) wanted.add(low);
+        continue;
+      }
+      const m = low.match(/^([wubrg]+)land$/);
+      if (!m) continue;
+      let fits = true;
+      for (const ch of m[1]) {
+        if (!allowed.has(ch)) { fits = false; break; }
+      }
+      if (fits) wanted.add(low);
+    }
+  }
+  return (c) => {
+    const sl = STATE.tags[ds];
+    if (!sl) return false;
+    const arr = sl.cards[c.canonical] || sl.cards[c.name];
+    if (!arr) return false;
+    for (const t of arr) {
+      if (wanted.has(String(t).toLowerCase())) return true;
+    }
+    return false;
+  };
+}
+
 function buildHasPredicate(rawValue) {
   const v = stripQuotes(rawValue).toLowerCase();
   if (v === 'flavor' || v === 'flavour') {
@@ -3063,7 +3124,7 @@ function wireSearch() {
   input.addEventListener('focus', () => {
     if (STATE.searchPanel) return;
     const n = STATE.search.results.length;
-    if (n > 0 && n <= SEARCH_RESULT_CAP) results.classList.remove('hidden');
+    if (n > 0) results.classList.remove('hidden');
   });
 
   document.addEventListener('click', (ev) => {
@@ -3278,12 +3339,21 @@ function renderSearchResults() {
     return;
   }
   const r = STATE.search.results;
-  if (r.length === 0 || r.length > SEARCH_RESULT_CAP) {
-    // Empty or too-broad query: don't render the dropdown at all. Broad
-    // queries are meant to be browsed in panel mode, where every match is
-    // shown and the count reflects the full set.
+  if (r.length === 0) {
     results.classList.add('hidden');
     results.innerHTML = '';
+    return;
+  }
+  if (r.length > SEARCH_RESULT_CAP) {
+    // Broad queries are meant to be browsed in panel mode. Surface the count
+    // and point the user at the grid view (or to refine) instead of silently
+    // hiding the dropdown.
+    results.classList.remove('hidden');
+    results.innerHTML = '';
+    const notice = document.createElement('div');
+    notice.className = 'result-overflow';
+    notice.textContent = `${r.length} results, use grid view or restrict more`;
+    results.appendChild(notice);
     return;
   }
   results.classList.remove('hidden');
@@ -4705,6 +4775,12 @@ function makeSearchSlot(card, item) {
         renderSearchPanel();
       });
     }));
+  }
+  // In tag mode, overlay the card's full tag list as chips so the user can
+  // see (and click-× to remove) every tag without having to focus the tag
+  // section first. Same widget the focused-tag panel uses.
+  if (STATE.tagMode && card.canonical) {
+    slot.appendChild(makeCardTagChips(card.canonical));
   }
   return slot;
 }
@@ -7454,8 +7530,11 @@ function renderTagSidebar() {
   // acted-on tag, matching the spec. No prepended "all/card pool" entry:
   // clicking a focused section a second time unfocuses it (falls back to
   // the search results), and typing in the search box already auto-flips
-  // focus back to 'search' via wireSearch's input handler.
+  // focus back to 'search' via wireSearch's input handler. Land-manabase
+  // tags are filtered out — there are too many of them (every WUBRG
+  // subset × land), and `manabase:<colors>` is the intended UI for them.
   for (const tag of slot.order) {
+    if (isLandManabaseTag(tag)) continue;
     const low = tag.toLowerCase();
     let count = 0;
     for (const canon of Object.keys(slot.cards)) {
@@ -7549,7 +7628,15 @@ function canonicalsFromDrag(ev) {
 function renderTagMemberPanel() {
   const tag = STATE.focusedTag;
   const ds = currentDataset();
-  const canonicals = tag ? cardsForTag(tag, ds) : [];
+  const allCanonicals = tag ? cardsForTag(tag, ds) : [];
+  // Respect the current format selector — clicking a tag while Standard
+  // is active should only surface standard-legal cards; Eternal widens
+  // to every rev card; Voyager passes through (isLegal is always true).
+  const canonicals = allCanonicals.filter(canon => {
+    const printings = STATE.byCanonical.get(canon) || [];
+    if (printings.length === 0) return false;
+    return isLegal(printings[printings.length - 1]);
+  });
   document.getElementById('pile-title').textContent =
     tag ? `${tag} (${canonicals.length})` : 'Tag';
   const container = document.getElementById('piles');
@@ -7577,10 +7664,6 @@ function renderTagMemberPanel() {
     pile.className = 'pile';
     pile.style.height = CARD_HEIGHT + 'px';
     const slot = makeSearchSlot(picked, item);
-    // Overlay the current tags on the member tile as chips so the user
-    // can see (and click-× to remove) every tag on the card without
-    // leaving the panel.
-    slot.appendChild(makeCardTagChips(canon));
     pile.appendChild(slot);
     wrapper.appendChild(pile);
     container.appendChild(wrapper);

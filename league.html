@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Revolution League Decks</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/webp" href="favicon.webp">
+<script>
+  // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
+  try {
+    var raw = localStorage.getItem('rev-deckbuilder-prefs-v1');
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && p.theme === 'light') document.documentElement.dataset.theme = 'light';
+    }
+  } catch (_) {}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="league-page">
+
+<!-- Header for the list view -->
+<header class="league-header">
+  <a class="league-back" href="index.html" data-title="Back to the deckbuilder">&larr; Deckbuilder</a>
+  <h1 class="league-title">League Decks <span id="league-tourney" class="league-tourney"></span></h1>
+  <div class="league-search-wrap">
+    <input id="league-search" type="text" placeholder="Search by name, color, player, archetype…" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="league-toolbar">
+    <span id="league-status" class="league-status"></span>
+    <button id="league-refresh" data-title="Re-fetch the league bundle (bypasses browser cache)">Refresh</button>
+  </div>
+</header>
+
+<main class="league-main">
+
+  <!-- List view: rows of decks -->
+  <section id="league-list-view">
+    <div id="league-list" class="league-list"></div>
+  </section>
+
+  <!-- Detail view: one deck. Mirrors the deckbuilder's pane layout
+       (zones aside + piles pane) so the visual is the same one users
+       know from the deckbuilder. Drag is within-zone only. -->
+  <section id="league-detail-view" class="hidden">
+    <header class="league-detail-header">
+      <button id="league-detail-back" class="league-detail-button" data-title="Back to the deck list">&larr; All decks</button>
+      <div class="league-detail-title">
+        <span id="league-detail-name" class="league-detail-name"></span>
+        <span id="league-detail-meta" class="league-detail-meta"></span>
+      </div>
+      <button id="league-detail-copy" class="league-detail-button primary" data-title="Save a copy of this deck to local storage so you can edit it in the deckbuilder">Copy to deckbuilder</button>
+    </header>
+    <div class="league-deckbuilder-clone">
+      <aside class="zones" id="lg-zones">
+        <section class="zone focused" data-zone="main">
+          <header data-zone-target="main">
+            <span class="zone-title">Main</span>
+            <span class="zone-count" id="lg-count-main">0</span>
+          </header>
+          <div class="zone-list" id="lg-list-main"></div>
+        </section>
+        <section class="zone" data-zone="side">
+          <header data-zone-target="side">
+            <span class="zone-title">Sideboard</span>
+            <span class="zone-count" id="lg-count-side">0</span>
+          </header>
+          <div class="zone-list" id="lg-list-side"></div>
+        </section>
+      </aside>
+      <section class="piles-pane">
+        <div class="piles-header">
+          <h2 id="lg-pile-title">Main</h2>
+          <span class="league-detail-hint">Drag cards within a zone to rearrange piles. Changes are not saved.</span>
+        </div>
+        <div id="lg-piles" class="piles"></div>
+      </section>
+    </div>
+  </section>
+
+</main>
+
+<div id="league-toast" class="league-toast hidden"></div>
+<div id="league-card-preview" class="league-card-preview"><img id="league-card-preview-img" alt=""></div>
+<script src="league.js"></script>
+</body>
+</html>

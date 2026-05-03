@@ -291,6 +291,13 @@ header {
   cursor: pointer;
   border-bottom: 1px solid var(--border-subtle);
 }
+#search-results .result-overflow {
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: italic;
+  text-align: center;
+}
 #search-results .result:last-child { border-bottom: none; }
 #search-results .result.selected {
   background: var(--accent-bg);
@@ -1153,6 +1160,16 @@ button.primary:hover { background: var(--accent-bg-hover); }
   max-height: 420px;
   overflow-y: auto;
 }
+.decks-league-link {
+  display: block;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-strong);
+  text-decoration: none;
+  background: var(--bg-2);
+}
+.decks-league-link:hover { color: var(--text-secondary); background: var(--bg-row-hover-strong); }
 
 /* Folder headers */
 .deck-folder-header {
@@ -1887,8 +1904,11 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   padding: 0 3px;
 }
 
-/* Chip strip overlaid on each tag-member tile. Clicking a chip removes that
- * tag from the card. */
+/* Chip strip overlaid on each tag-mode tile. Clicking a chip removes that
+ * tag from the card. Hidden by default on hover-capable devices (matches
+ * .slot-buttons / .version-btn) so the card text stays readable while
+ * scanning the grid; the strip fades in on tile hover, and the floating
+ * card preview shows the unobstructed art at the same time. */
 .card-tag-chips {
   position: absolute;
   left: 4px;
@@ -1899,6 +1919,11 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   gap: 3px;
   pointer-events: none;
   z-index: 4;
+  transition: opacity 0.12s;
+}
+@media (hover: hover) {
+  .card-tag-chips { opacity: 0; }
+  .pile .card-slot:hover .card-tag-chips { opacity: 1; }
 }
 .card-tag-chip {
   pointer-events: auto;
@@ -1924,4 +1949,319 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
 .card-tag-chip:hover {
   background: var(--danger, #e04040);
   border-color: var(--danger, #e04040);
+}
+
+/* ---------------------------------------------------------------------------
+   League decks page (league.html)
+   --------------------------------------------------------------------------- */
+.league-page {
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+.league-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.league-back {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-button);
+  white-space: nowrap;
+}
+.league-back:hover { background: var(--bg-button-hover); }
+.league-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.league-tourney {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-left: 6px;
+}
+.league-search-wrap { min-width: 240px; }
+.league-search-wrap input {
+  width: 320px;
+  max-width: 40vw;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.league-search-wrap input:focus { outline: none; border-color: var(--accent); }
+.league-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.league-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.league-status.error { color: var(--danger); }
+.league-main { padding: 12px 16px 24px; }
+
+/* List view */
+.league-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.league-deck-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s;
+}
+.league-deck-row:hover {
+  background: var(--bg-row-hover);
+  border-color: var(--border-strong);
+}
+.league-deck-row .deck-name {
+  font-weight: 500;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.league-deck-row .deck-name .deck-archetype {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 6px;
+}
+.league-deck-row .deck-player {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.league-record {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.league-record .pct { font-weight: 600; }
+.league-record .pct.high { color: #7fd07f; }
+.league-record .pct.mid  { color: #d6c870; }
+.league-record .pct.low  { color: #d68a8a; }
+.league-record .raw { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.league-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+.league-pips.colorless .pip { opacity: 0.55; }
+.pip {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.4);
+  font-size: 10px;
+  text-align: center;
+  line-height: 14px;
+  font-weight: 700;
+  color: #222;
+}
+.pip-W { background: var(--mana-w); }
+.pip-U { background: var(--mana-u); }
+.pip-B { background: var(--mana-b); color: #eee; }
+.pip-R { background: var(--mana-r); }
+.pip-G { background: var(--mana-g); }
+.pip-C { background: var(--mana-c); }
+.league-cardcount {
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.league-copy-btn {
+  background: var(--bg-button);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 4px 9px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+}
+.league-copy-btn:hover { background: var(--bg-button-hover); color: var(--text-strong); }
+.league-copy-btn:disabled { opacity: 0.6; cursor: default; }
+.league-empty {
+  padding: 32px 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* Detail view: deck-viewer pane mirrors the deckbuilder's
+   .zones + .piles-pane layout, so the deck-shaped UI users know from
+   the editor renders the same way here. The page-level detail header
+   sits above it (back / deck title / meta / copy). */
+.league-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.league-detail-button {
+  background: var(--bg-button);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.league-detail-button:hover { background: var(--bg-button-hover); }
+.league-detail-button.primary {
+  background: var(--accent-bg);
+  color: var(--text-on-accent);
+  border-color: var(--accent-chip-border);
+}
+.league-detail-button.primary:hover { background: var(--accent-bg-hover); }
+.league-detail-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.league-detail-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.league-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.league-detail-meta .league-record { color: var(--text-secondary); }
+.league-detail-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+/* The deckbuilder-clone wrapper recreates the deckbuilder's main grid
+   (280px aside + 1fr pane) so the league deck viewer inherits the same
+   .zones / .piles-pane / .pile / .card-slot styling. The body/main
+   layout for the league page is column-flex, not the deckbuilder's full
+   grid, so we have to set this up explicitly here. */
+.league-deckbuilder-clone {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - 56px /* page header */ - 50px /* detail header */);
+  overflow: hidden;
+}
+#league-detail-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.league-deckbuilder-clone .zone > header {
+  /* The clone has no sort-bar above zones, so the zone header doesn't need
+     to leave 28px of room for one. Override the deckbuilder default. */
+  top: 0;
+}
+.league-deckbuilder-clone .zones { padding-top: 0; }
+.league-page .pile.no-drop {
+  /* Faint hint that you can't drop a card from another zone here */
+  cursor: not-allowed;
+}
+
+/* Hover preview for piles in the league viewer. Reuses the deckbuilder's
+   --shadow-preview but is its own DOM node since the deckbuilder's #card-preview
+   isn't on this page. */
+.league-card-preview {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  display: none;
+}
+.league-card-preview.show { display: block; }
+.league-card-preview img {
+  width: 240px;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: var(--shadow-preview);
+  display: block;
+}
+
+.league-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  padding: 8px 14px;
+  font-size: 13px;
+  box-shadow: var(--shadow-dropdown-lg);
+  z-index: 100;
+  transition: opacity 0.2s;
+}
+.league-toast.hidden { display: none; }
+.league-toast.fade-out { opacity: 0; }
+
+@media (max-width: 720px) {
+  .league-header {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+  .league-search-wrap { grid-column: 1 / -1; }
+  .league-search-wrap input { width: 100%; max-width: none; }
+  .league-toolbar { grid-column: 2 / -1; justify-content: flex-end; }
+  .league-deck-row { grid-template-columns: 1fr auto; }
+  .league-deck-row .league-cardcount,
+  .league-deck-row .deck-player { display: none; }
 }
