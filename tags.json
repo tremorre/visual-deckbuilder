@@ -1827,7 +1827,8 @@
       ],
       "Stack Conviviplex": [
         "coco",
-        "WLand"
+        "WLand",
+        "creatureland"
       ],
       "Zealous Soulspace": [
         "coco",
@@ -1941,7 +1942,8 @@
         "GWland"
       ],
       "Fort Ravellan": [
-        "GWland"
+        "GWland",
+        "creatureland"
       ],
       "Reified Borough": [
         "GWland"
@@ -2023,7 +2025,8 @@
         "BGLand"
       ],
       "Gallowsprout Timber": [
-        "BGLand"
+        "BGLand",
+        "creatureland"
       ],
       "Jungle Hollow": [
         "BGLand"
@@ -2104,7 +2107,8 @@
         "UBLand"
       ],
       "Chasm of the Silent Covenant": [
-        "UBLand"
+        "UBLand",
+        "creatureland"
       ],
       "Flooded Grafyards": [
         "UBLand"
@@ -2119,7 +2123,8 @@
         "URLand"
       ],
       "Glimmerveil Lake": [
-        "URLand"
+        "URLand",
+        "creatureland"
       ],
       "Lorespire Bluff": [
         "URLand"
@@ -2143,7 +2148,8 @@
         "URLand"
       ],
       "Crucible of Bound Flame": [
-        "RWLand"
+        "RWLand",
+        "creatureland"
       ],
       "Fortress Arena": [
         "RWLand"
@@ -2197,7 +2203,8 @@
         "GWUland"
       ],
       "Archive Telemetrary": [
-        "ULand"
+        "ULand",
+        "creatureland"
       ],
       "Burgeoning Nebula": [
         "GLand"
@@ -2212,7 +2219,8 @@
         "WLand"
       ],
       "Buffer Reconservatory": [
-        "GLand"
+        "GLand",
+        "creatureland"
       ],
       "Cascading Nebula": [
         "ULand"
@@ -2227,13 +2235,15 @@
         "GLand"
       ],
       "Heap Ludicon": [
-        "BLand"
+        "BLand",
+        "creatureland"
       ],
       "Gorion Observatory": [
         "GLand"
       ],
       "Grip Festivarium": [
-        "Rland"
+        "Rland",
+        "creatureland"
       ],
       "Qaraz Observatory": [
         "BLand"
@@ -2306,13 +2316,15 @@
       ],
       "Avatar Exchange": [
         "nopie",
-        "utilityland"
+        "utilityland",
+        "creatureland"
       ],
       "Opulent Vantage": [
         "nopie"
       ],
       "Prismatic Ley-Spire": [
-        "nopie"
+        "nopie",
+        "creatureland"
       ],
       "Secluded Courtyard": [
         "nopie"
@@ -2357,7 +2369,8 @@
         "Goldland"
       ],
       "Rumbling Door": [
-        "utilityland"
+        "utilityland",
+        "creatureland"
       ],
       "Sky Pillar": [
         "utilityland"
@@ -2625,6 +2638,7 @@
       ]
     },
     "order": [
+      "creatureland",
       "edict",
       "minus-rem",
       "fbite",

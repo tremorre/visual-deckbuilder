@@ -819,23 +819,25 @@ function computeIdentifyingCards(deck, usage) {
   let bestRarest = null;       // { ref, total, copies }
   for (const [ref, c] of Object.entries(deck.cards || {})) {
     const main = c.mainCount || 0;
-    const side = c.sideCount || 0;
-    const inDeck = main + side;
-    if (inDeck === 0) continue;
-    const total = usage.get(ref) || 0;
+    // Sideboard-only cards aren't iconic — the badges should reflect the
+    // 60-card deck the pilot is leading with, not their tech against
+    // specific matchups. (A sideboard-only 1-of of an obscure card would
+    // otherwise dominate the rarest-card calculation.)
+    if (main === 0) continue;
     // Lands are not iconic — basics get artificially "rare" via per-printing
     // usage stats (a 1-of Mountain_CYB beats every spell), and non-basics
     // mostly identify the colors, which the pip strip already shows. The
     // playset-bucket and rarest-card badges should both come from spells.
     if (isLandType(c.type)) continue;
+    const total = usage.get(ref) || 0;
     if (main >= 2 && main <= 4) {
       const cur = buckets.get(main);
       if (!cur || total < cur.total) buckets.set(main, { ref, total });
     }
     if (!bestRarest
         || total < bestRarest.total
-        || (total === bestRarest.total && inDeck > bestRarest.copies)) {
-      bestRarest = { ref, total, copies: inDeck };
+        || (total === bestRarest.total && main > bestRarest.copies)) {
+      bestRarest = { ref, total, copies: main };
     }
   }
   const bestFour = buckets.get(4) || buckets.get(3) || buckets.get(2) || null;
@@ -847,15 +849,14 @@ function computeIdentifyingCards(deck, usage) {
     let alt = null;
     for (const [ref, c] of Object.entries(deck.cards || {})) {
       if (ref === bestFour.ref) continue;
-      const main = c.mainCount || 0, side = c.sideCount || 0;
-      const inDeck = main + side;
-      if (inDeck === 0) continue;
+      const main = c.mainCount || 0;
+      if (main === 0) continue;
       if (isLandType(c.type)) continue;
       const total = usage.get(ref) || 0;
       if (!alt
           || total < alt.total
-          || (total === alt.total && inDeck > alt.copies)) {
-        alt = { ref, total, copies: inDeck };
+          || (total === alt.total && main > alt.copies)) {
+        alt = { ref, total, copies: main };
       }
     }
     bestRarest = alt;
