@@ -246,11 +246,28 @@ function authorAndShortName(deck) {
   return { author: '', shortName: raw };
 }
 
-// Map lackeybot refName ("Forest_VLR", "Root Fossil//Reborn Lily_CCR") to the
-// deckbuilder's byName key ("Forest_VLR", "Root Fossil // Reborn Lily_CCR").
+// Map lackeybot refName to the deckbuilder's byName key.
+//
+// Single-faced: "Forest_VLR" → "Forest_VLR" (passthrough).
+// Double-faced: "Root Fossil//Reborn Lily_CCR" → "Root Fossil_CCR".
+//
+// Why: parseAllSetsJson keys DFCs in byName under the FRONT face's name
+// only (it slices `rawName` at " // " and discards the back), so the
+// composite "Front // Back_SET" we used to emit never matched, and even the
+// canonical fallback failed because card.canonical is just "Root Fossil"
+// while canonicalName("Root Fossil // Reborn Lily_CCR") strips only the
+// trailing "_CCR" and stops at the still-present " // ". Result: every DFC
+// vanished from a copied deck. Reattaching the set suffix to the front
+// face restores both the byName hit (when it has the suffixed form) and
+// the canonical fallback (which strips it cleanly).
 function refNameToDeckbuilderName(refName) {
   if (!refName) return refName;
-  return refName.replace(/\s*\/\/\s*/, ' // ');
+  const slash = refName.indexOf('//');
+  if (slash < 0) return refName;
+  const front = refName.slice(0, slash).replace(/\s+$/, '');
+  const back  = refName.slice(slash + 2).replace(/^\s+/, '');
+  const m = /_([A-Za-z0-9]+)$/.exec(back);
+  return m ? `${front}_${m[1]}` : front;
 }
 
 function imgUrlForDeckCard(deckCard) {
@@ -337,30 +354,265 @@ function toast(msg) {
 // ---------------------------------------------------------------------------
 // List view
 
-function entryMatchesFilter(entry, filter) {
-  if (!filter) return true;
-  const d = entry.parsed;
-  if (!d) return false;
-  const haystack = [
-    d.name || '',
-    d.player || '',
-    deckArchetype(d) || '',
-    (entry.colors || []).join(''),
-    (entry.colors || []).map(colorName).join(' '),
-  ].join(' ').toLowerCase();
-  for (const term of filter.toLowerCase().split(/\s+/).filter(Boolean)) {
-    if (!haystack.includes(term)) return false;
+// ---------------------------------------------------------------------------
+// Structured query language
+//
+// Modeled on the deckbuilder's parseQuery (app.js) but tailored to the
+// fields a league row exposes:
+//   name:foo          — substring of deck name (case-insensitive)
+//   author:foo, p:foo — substring of author OR Discord ID
+//   color:WU, c:wu    — color comparison (operators below)
+//   has:CardName      — deck contains a card whose fullName contains the term
+//
+// Color comparisons accept :, =, !=, <, <=, >, >=. The RHS is a string of
+// color letters in any order ("uw" == "wu") or `c`/`0` for colorless.
+//   color=WU    deck colors == {W, U}
+//   color>=WU   deck colors ⊇ {W, U}      (default for bare terms — see below)
+//   color<=WU   deck colors ⊆ {W, U}      (alias of color:)
+//   color<WU    strict subset
+//   color>WU    strict superset
+//
+// Boolean operators: AND (implicit between atoms), OR, NOT. Leading `-`
+// before an atom is a negation. Parentheses group.
+//
+// A bare term (no field:) matches if ANY of (color>=term, name:term,
+// author:term) holds — so "wu jund kayiu" each independently extend in
+// whichever direction is plausible. All bare/atomic predicates AND together.
+
+function parseLeagueQuery(q) {
+  const trimmed = (q || '').trim();
+  if (!trimmed) return { predicate: () => true, error: null };
+  const tokens = tokenizeQ(trimmed);
+  const cur = { i: 0, tokens };
+  try {
+    const pred = parseOr(cur);
+    if (cur.i < tokens.length) throw new Error('unexpected ' + JSON.stringify(tokens[cur.i]));
+    return { predicate: pred, error: null };
+  } catch (e) {
+    // Fail-soft: a malformed query matches everything so the user can keep
+    // typing instead of seeing the list disappear mid-keystroke.
+    return { predicate: () => true, error: e.message };
   }
+}
+
+function tokenizeQ(q) {
+  const out = [];
+  let i = 0;
+  const n = q.length;
+  while (i < n) {
+    const ch = q[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (ch === '(') { out.push({ type: 'lparen' }); i++; continue; }
+    if (ch === ')') { out.push({ type: 'rparen' }); i++; continue; }
+    // Leading-minus NOT, only at the start or after whitespace/(.
+    if (ch === '-') {
+      const prev = i === 0 ? null : q[i - 1];
+      const next = i + 1 < n ? q[i + 1] : null;
+      if ((prev === null || /\s|\(/.test(prev)) && next !== null && !/\s|\)/.test(next)) {
+        out.push({ type: 'not' });
+        i++;
+        continue;
+      }
+    }
+    // Atom: read until whitespace/paren, honoring quoted spans.
+    let atom = '';
+    let inQ = null;
+    while (i < n) {
+      const c = q[i];
+      if (inQ) {
+        if (c === '\\' && i + 1 < n) { atom += q[i + 1]; i += 2; continue; }
+        if (c === inQ) { inQ = null; i++; continue; }
+        atom += c; i++; continue;
+      }
+      if (/\s/.test(c) || c === '(' || c === ')') break;
+      if (c === '"' || c === "'") { inQ = c; i++; continue; }
+      atom += c; i++;
+    }
+    const up = atom.toUpperCase();
+    if (up === 'AND') out.push({ type: 'and' });
+    else if (up === 'OR') out.push({ type: 'or' });
+    else if (up === 'NOT') out.push({ type: 'not' });
+    else out.push({ type: 'atom', value: atom });
+  }
+  return out;
+}
+
+function parseOr(cur) {
+  let left = parseAnd(cur);
+  while (cur.i < cur.tokens.length && cur.tokens[cur.i].type === 'or') {
+    cur.i++;
+    const right = parseAnd(cur);
+    const a = left, b = right;
+    left = (entry) => a(entry) || b(entry);
+  }
+  return left;
+}
+function parseAnd(cur) {
+  let left = parseNot(cur);
+  while (cur.i < cur.tokens.length) {
+    const t = cur.tokens[cur.i];
+    if (t.type === 'or' || t.type === 'rparen') break;
+    if (t.type === 'and') { cur.i++; }            // explicit AND is just a no-op separator
+    const right = parseNot(cur);
+    const a = left, b = right;
+    left = (entry) => a(entry) && b(entry);
+  }
+  return left;
+}
+function parseNot(cur) {
+  if (cur.i < cur.tokens.length && cur.tokens[cur.i].type === 'not') {
+    cur.i++;
+    const inner = parseNot(cur);
+    return (entry) => !inner(entry);
+  }
+  return parseAtom(cur);
+}
+function parseAtom(cur) {
+  const t = cur.tokens[cur.i];
+  if (!t) throw new Error('unexpected end of query');
+  if (t.type === 'lparen') {
+    cur.i++;
+    const inner = parseOr(cur);
+    if (cur.tokens[cur.i] && cur.tokens[cur.i].type === 'rparen') cur.i++;
+    else throw new Error('missing )');
+    return inner;
+  }
+  if (t.type !== 'atom') throw new Error('unexpected token ' + t.type);
+  cur.i++;
+  return atomPredicate(t.value);
+}
+
+// Map an atom string to a predicate. Recognizes "field<op>value"; otherwise
+// treats the atom as a bare term (the OR-of-three default).
+const FIELD_ALIASES_LEAGUE = {
+  name: 'name', n: 'name',
+  author: 'author', a: 'author', player: 'author', p: 'author',
+  color: 'color', c: 'color', colors: 'color',
+  has: 'has',
+};
+function atomPredicate(atom) {
+  const m = /^([A-Za-z]+)(>=|<=|!=|=|>|<|:)(.*)$/.exec(atom);
+  if (m) {
+    const field = FIELD_ALIASES_LEAGUE[m[1].toLowerCase()];
+    const op = m[2];
+    const val = m[3];
+    if (field) return fieldPredicate(field, op, val);
+  }
+  return barePredicate(atom);
+}
+
+function fieldPredicate(field, op, valRaw) {
+  const val = valRaw.toLowerCase();
+  switch (field) {
+    case 'name':   return predFromString((e) => (e.parsed.name || '').toLowerCase(), op, val);
+    case 'author': return predFromString((e) => authorHaystack(e), op, val);
+    case 'has':    return (e) => deckHasCard(e, val);
+    case 'color':  return predColor(op, parseColorRHS(val));
+    default:       return () => true;
+  }
+}
+
+function authorHaystack(e) {
+  return [(e.author || ''), (e.parsed && e.parsed.player) || ''].join(' ').toLowerCase();
+}
+
+function deckHasCard(e, lowerName) {
+  if (!e.parsed) return false;
+  for (const c of Object.values(e.parsed.cards || {})) {
+    const inDeck = (c.mainCount || 0) + (c.sideCount || 0);
+    if (!inDeck) continue;
+    if ((c.fullName || '').toLowerCase().includes(lowerName)) return true;
+  }
+  return false;
+}
+
+// String comparator. `:` and `=` accept substring; `=` is also exact (we
+// treat both as substring for the user-friendly behavior). `!=` is the
+// negation of substring. Inequalities compare lexicographically — useful
+// for prefix-style queries on author names.
+function predFromString(getter, op, val) {
+  switch (op) {
+    case ':': case '=':
+      return (e) => getter(e).includes(val);
+    case '!=':
+      return (e) => !getter(e).includes(val);
+    case '<':  return (e) => getter(e) <  val;
+    case '<=': return (e) => getter(e) <= val;
+    case '>':  return (e) => getter(e) >  val;
+    case '>=': return (e) => getter(e) >= val;
+    default:   return () => false;
+  }
+}
+
+function parseColorRHS(s) {
+  const set = new Set();
+  for (const ch of s.toUpperCase()) {
+    if ('WUBRG'.includes(ch)) set.add(ch);
+    // 'C' or '0' alone keeps the set empty, which is the colorless rep.
+  }
+  return set;
+}
+
+function predColor(op, target) {
+  return (e) => {
+    const deckSet = new Set(e.colors || []);
+    switch (op) {
+      case '=':  return setEq(deckSet, target);
+      case '!=': return !setEq(deckSet, target);
+      case ':': case '<=':
+        return isSubset(deckSet, target);
+      case '<':
+        return isSubset(deckSet, target) && !setEq(deckSet, target);
+      case '>=':
+        return isSubset(target, deckSet);
+      case '>':
+        return isSubset(target, deckSet) && !setEq(deckSet, target);
+      default: return false;
+    }
+  };
+}
+function setEq(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
   return true;
+}
+function isSubset(small, big) {
+  for (const x of small) if (!big.has(x)) return false;
+  return true;
+}
+
+// Bare term: matches if any of (color superset, name substring, author
+// substring) holds. The color branch is only attempted when the term is
+// recognizable as a color string (only WUBRG/C letters), so names that
+// happen to start with "rg" don't get hijacked.
+function barePredicate(atom) {
+  const lower = atom.toLowerCase();
+  const colorsForBare = isColorWord(atom) ? parseColorRHS(atom) : null;
+  return (e) => {
+    if (colorsForBare && colorsForBare.size && isSubset(colorsForBare, new Set(e.colors || []))) return true;
+    if ((e.parsed.name || '').toLowerCase().includes(lower)) return true;
+    if (authorHaystack(e).includes(lower)) return true;
+    return false;
+  };
+}
+function isColorWord(s) {
+  if (!s) return false;
+  return /^[wubrgcWUBRGC]+$/.test(s);
+}
+
+function entryMatchesFilter(entry, parsed) {
+  if (!entry || !entry.parsed) return false;
+  return parsed.predicate(entry);
 }
 
 function renderList() {
   const host = document.getElementById('league-list');
   host.innerHTML = '';
-  const filter = STATE.filterText.trim();
+  const parsed = parseLeagueQuery(STATE.filterText);
+  setSearchError(parsed.error);
   const entries = STATE.decks
     .filter(e => e.parsed)
-    .filter(e => entryMatchesFilter(e, filter));
+    .filter(e => entryMatchesFilter(e, parsed));
   if (!entries.length) {
     host.appendChild(el('div', { class: 'league-empty', text: STATE.decks.length
       ? 'No decks match.'
@@ -370,6 +622,18 @@ function renderList() {
   sortListEntries(entries);
 
   for (const entry of entries) host.appendChild(buildDeckRow(entry));
+}
+
+function setSearchError(msg) {
+  const input = document.getElementById('league-search');
+  if (!input) return;
+  if (msg) {
+    input.title = 'Query parse error: ' + msg;
+    input.classList.add('error');
+  } else {
+    input.title = '';
+    input.classList.remove('error');
+  }
 }
 
 // Compare two list entries by the active sort chain. Each chain entry is a
@@ -486,24 +750,26 @@ function buildDeckRow(entry) {
 
 function buildIdCards(deck, ids) {
   const wrap = el('span', { class: 'league-id-cards' });
-  for (const ref of [ids.fourOf, ids.rarest]) {
+  const labels = ['4-of', 'rarest'];                  // for placeholders + a11y
+  [ids.fourOf, ids.rarest].forEach((ref, idx) => {
     if (!ref) {
-      wrap.appendChild(el('span', { class: 'id-card placeholder' }));
-      continue;
+      wrap.appendChild(el('span', { class: 'id-card placeholder', text: '—' }));
+      return;
     }
     const dc = deck.cards[ref];
-    const url = imgUrlForDeckCard(dc);
     const total = STATE.cardUsage.get(ref) || 0;
     const node = el('span', {
       class: 'id-card',
-      title: `${dc.fullName || ref} — played ${total}× across the league`,
+      text: dc.fullName || ref,
+      title: `${labels[idx]} — played ${total}× across the league. Hover for the card image.`,
     });
-    if (url) node.style.backgroundImage = `url("${url}")`;
+    // Hover preview reuses the existing #league-card-preview overlay so the
+    // visual is the same one the deck-list piles use.
     node.addEventListener('mouseenter', (ev) => { ev.stopPropagation(); showCardPreview(dc, ev); });
     node.addEventListener('mousemove', moveCardPreview);
     node.addEventListener('mouseleave', hideCardPreview);
     wrap.appendChild(node);
-  }
+  });
   return wrap;
 }
 
@@ -740,6 +1006,8 @@ function openDetail(id) {
 
   document.getElementById('league-list-view').classList.add('hidden');
   document.getElementById('league-detail-view').classList.remove('hidden');
+  // Detail view uses internal pane scrolling — clamp html/body back to 100vh.
+  document.body.classList.add('detail-active');
   renderDetail();
   window.scrollTo(0, 0);
 }
@@ -750,6 +1018,7 @@ function closeDetail() {
   STATE.detailZones = null;
   document.getElementById('league-list-view').classList.remove('hidden');
   document.getElementById('league-detail-view').classList.add('hidden');
+  document.body.classList.remove('detail-active');
 }
 
 function renderDetail() {

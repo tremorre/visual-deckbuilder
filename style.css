@@ -2012,6 +2012,7 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   font-family: inherit;
 }
 .league-search-wrap input:focus { outline: none; border-color: var(--accent); }
+.league-search-wrap input.error { border-color: var(--danger); }
 .league-toolbar {
   display: flex;
   align-items: center;
@@ -2036,6 +2037,22 @@ main.league-main {
   min-height: 0;
 }
 main.league-main > section { min-width: 0; }
+/* The deckbuilder pins html/body to 100vh with overflow:hidden because each
+   pane scrolls internally. The league list page wants the document itself
+   to scroll when the list overflows the viewport. */
+html:has(body.league-page),
+body.league-page {
+  height: auto;
+  min-height: 100vh;
+  overflow: auto;
+}
+/* Detail view restores the deckbuilder's "no document scroll" model — its
+   inner panes do the scrolling. body.league-page-detail toggles this. */
+body.league-page.detail-active,
+html:has(body.league-page.detail-active) {
+  height: 100vh;
+  overflow: hidden;
+}
 
 /* List sort bar: small chip-style dropdown above the list, modeled on the
    deckbuilder's pile-sort dropdown. The active button label rotates as the
@@ -2109,10 +2126,10 @@ main.league-main > section { min-width: 0; }
 }
 .league-deck-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.2fr) minmax(220px, 2.5fr) auto auto auto auto auto;
-  gap: 14px;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(180px, 2fr) auto auto minmax(220px, 1.6fr) auto;
+  gap: 12px;
   align-items: center;
-  padding: 8px 14px;
+  padding: 4px 12px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -2192,27 +2209,31 @@ main.league-main > section { min-width: 0; }
   color: var(--text-muted);
 }
 
-/* Identifying-card badges: two small card-art swatches on each row that hint
-   at the deck's character. Hovering one pops the existing card-preview. */
+/* Identifying-card badges: two card *names* per row (not images — they're
+   not readable at row scale). Hovering one pops the existing card-preview
+   so the user still gets the visual. */
 .league-id-cards {
   display: inline-flex;
-  gap: 4px;
-  align-items: center;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
 }
 .league-id-cards .id-card {
-  width: 28px;
-  height: 39px;
-  border-radius: 3px;
-  background: var(--bg-3);
-  background-size: cover;
-  background-position: center 18%;
-  border: 1px solid var(--border);
-  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: help;
+  border-bottom: 1px dotted var(--text-faint);
 }
+.league-id-cards .id-card:hover { color: var(--text-strong); border-bottom-color: var(--accent); }
 .league-id-cards .id-card.placeholder {
-  background-image: none;
-  opacity: 0.3;
+  color: var(--text-faint);
+  font-style: italic;
+  border-bottom: none;
+  cursor: default;
 }
 
 /* Decklist hover popup. Anchored at the row's right edge by default; the JS
