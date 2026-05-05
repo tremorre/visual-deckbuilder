@@ -1491,6 +1491,191 @@
     },
     {
       "cards": {
+        "Advance of the Quiet Moon_TWI": {
+          "cardID": "1",
+          "fullName": "Advance of the Quiet Moon",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Beyond the Shroud_VLR": {
+          "cardID": "78",
+          "fullName": "Beyond the Shroud",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Bloodletting_VLR": {
+          "cardID": "79",
+          "fullName": "Bloodletting",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Deadly Dispute_CNY": {
+          "cardID": "74",
+          "fullName": "Deadly Dispute",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Desolate Cemetery_IWH": {
+          "cardID": "294",
+          "fullName": "Desolate Cemetery",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Desolate Garrison_IWH": {
+          "cardID": "295",
+          "fullName": "Desolate Garrison",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Exultant Shepherd_VLR": {
+          "cardID": "87",
+          "fullName": "Exultant Shepherd",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fledgling Sycophant_VLR": {
+          "cardID": "231",
+          "fullName": "Fledgling Sycophant",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Helia Ley-Spire_SOL": {
+          "cardID": "13",
+          "fullName": "Helia Ley-Spire",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Hollowhenge Martyr_IWH": {
+          "cardID": "25",
+          "fullName": "Hollowhenge Martyr",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Inklight Dancer//Stroke of Light_KDT": {
+          "cardID": "72",
+          "fullName": "Inklight Dancer // Stroke of Light",
+          "setID": "KDT",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Lacufae Observatory_SOL": {
+          "cardID": "304",
+          "fullName": "Lacufae Observatory",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Malicious Throng_VLR": {
+          "cardID": "197",
+          "fullName": "Malicious Throng",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Memorial to the First Shaper_VLR": {
+          "cardID": "249",
+          "fullName": "Memorial to the First Shaper",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Oblivion's Escort_SOL": {
+          "cardID": "23",
+          "fullName": "Oblivion's Escort",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Plains_Sunvrath_TWI": {
+          "cardID": "305",
+          "fullName": "Plains",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Primal Fissure_CCR": {
+          "cardID": "274",
+          "fullName": "Primal Fissure",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Siurne, Eternal Sentinel//Siurne, Covetous Creation_VLR": {
+          "cardID": "32",
+          "fullName": "Siurne, Eternal Sentinel // Siurne, Covetous Creation",
+          "setID": "VLR",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Sorin's Interrogation_IWH": {
+          "cardID": "139",
+          "fullName": "Sorin's Interrogation",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Stark Expanse_KUT": {
+          "cardID": "265",
+          "fullName": "Stark Expanse",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Swamp_Dolcairn_TWI": {
+          "cardID": "309",
+          "fullName": "Swamp",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Temple of Origins_CCR": {
+          "cardID": "281",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Tinua, of Whispered Pains_IWH": {
+          "cardID": "279",
+          "fullName": "Tinua, of Whispered Pains",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Westvale Adherent_IWH": {
+          "cardID": "284",
+          "fullName": "Westvale Adherent",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        }
+      },
+      "id": "171487324193030145/6",
+      "matches": [
+        96
+      ],
+      "name": "AllWhoWander's Dying for Fun and profit",
+      "player": "171487324193030145",
+      "run": "6",
+      "scores": [
+        0,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Ash-Addled Pyromaniac_IWH": {
           "cardID": "146",
           "fullName": "Ash-Addled Pyromaniac",
@@ -15569,6 +15754,275 @@
     },
     {
       "cards": {
+        "Architect of Resolve_TWI": {
+          "cardID": "169",
+          "fullName": "Architect of Resolve",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Crucible of the Burning Sun_TWI": {
+          "cardID": "276",
+          "fullName": "Crucible of the Burning Sun",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Cryptology_CNY": {
+          "cardID": "73",
+          "fullName": "Cryptology",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Culling Ritual_TWI": {
+          "cardID": "249",
+          "fullName": "Culling Ritual",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Cyra, Blade of Memory_TWI": {
+          "cardID": "221",
+          "fullName": "Cyra, Blade of Memory",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Desolate Cemetery_IWH": {
+          "cardID": "294",
+          "fullName": "Desolate Cemetery",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Desolate Thicket_IWH": {
+          "cardID": "298",
+          "fullName": "Desolate Thicket",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Exorcist of Errors_ERR": {
+          "cardID": "95",
+          "fullName": "Exorcist of Errors",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fateful Ascent_SOL": {
+          "cardID": "10",
+          "fullName": "Fateful Ascent",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Feasting Predator_CCR": {
+          "cardID": "203",
+          "fullName": "Feasting Predator",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Forest_GQC": {
+          "cardID": "254",
+          "fullName": "Forest",
+          "setID": "GQC",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Forgotten Junkyard_ERR": {
+          "cardID": "251",
+          "fullName": "Forgotten Junkyard",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Forlorn Path_KDT": {
+          "cardID": "284",
+          "fullName": "Forlorn Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Generous Farmer_CCR": {
+          "cardID": "17",
+          "fullName": "Generous Farmer",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Hang_ERR": {
+          "cardID": "101",
+          "fullName": "Hang",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Hungry Blob_CCR": {
+          "cardID": "173",
+          "fullName": "Hungry Blob",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Huskforger Acolyte_TWI": {
+          "cardID": "186",
+          "fullName": "Huskforger Acolyte",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Isolated Tower_ERR": {
+          "cardID": "256",
+          "fullName": "Isolated Tower",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Lifehacker_ERR": {
+          "cardID": "106",
+          "fullName": "Lifehacker",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Meteor Hellion_SOL": {
+          "cardID": "226",
+          "fullName": "Meteor Hellion",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Nether Ponderings_SOL": {
+          "cardID": "96",
+          "fullName": "Nether Ponderings",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Nightfall_SOL": {
+          "cardID": "97",
+          "fullName": "Nightfall",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Pact Beyond Death_TWI": {
+          "cardID": "104",
+          "fullName": "Pact Beyond Death",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Phemeros Redeemer_SOL": {
+          "cardID": "103",
+          "fullName": "Phemeros Redeemer",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Plains_GQC": {
+          "cardID": "250",
+          "fullName": "Plains",
+          "setID": "GQC",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Primal Fissure_CCR": {
+          "cardID": "274",
+          "fullName": "Primal Fissure",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Profane Grove_KUT": {
+          "cardID": "261",
+          "fullName": "Profane Grove",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Rozen, Clad in Guilt_TWI": {
+          "cardID": "229",
+          "fullName": "Rozen, Clad in Guilt",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Siurne, Eternal Sentinel//Siurne, Covetous Creation_VLR": {
+          "cardID": "32",
+          "fullName": "Siurne, Eternal Sentinel // Siurne, Covetous Creation",
+          "setID": "VLR",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Smiling Sludge_CCR": {
+          "cardID": "107",
+          "fullName": "Smiling Sludge",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Stark Expanse_KUT": {
+          "cardID": "265",
+          "fullName": "Stark Expanse",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Survivors of the New World_CNY": {
+          "cardID": "220",
+          "fullName": "Survivors of the New World",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Swamp_GQC": {
+          "cardID": "252",
+          "fullName": "Swamp",
+          "setID": "GQC",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Thicketed Path_KDT": {
+          "cardID": "294",
+          "fullName": "Thicketed Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Twilight Ambush_BLR": {
+          "cardID": "125",
+          "fullName": "Twilight Ambush",
+          "setID": "BLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Verdant Sanctum_ERR": {
+          "cardID": "273",
+          "fullName": "Verdant Sanctum",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        }
+      },
+      "id": "158758095604940800/7",
+      "matches": [
+        100
+      ],
+      "name": "tremor's Abzan",
+      "player": "158758095604940800",
+      "run": "7",
+      "scores": [
+        1,
+        0,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "A Journey Begins_MON": {
           "cardID": "182",
           "fullName": "A Journey Begins",
@@ -16543,6 +16997,6 @@
       "tournName": "Revolution League (May 2026)"
     }
   ],
-  "fetchedAt": "2026-05-05T20:14:18Z",
+  "fetchedAt": "2026-05-05T21:43:27Z",
   "tourney": "rev_26_05"
 }
