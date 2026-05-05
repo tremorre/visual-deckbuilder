@@ -1121,6 +1121,191 @@
     },
     {
       "cards": {
+        "Advance of the Quiet Moon_TWI": {
+          "cardID": "1",
+          "fullName": "Advance of the Quiet Moon",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Beyond the Shroud_VLR": {
+          "cardID": "78",
+          "fullName": "Beyond the Shroud",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Chromatic Rift_CNY": {
+          "cardID": "6",
+          "fullName": "Chromatic Rift",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Deadly Dispute_CNY": {
+          "cardID": "74",
+          "fullName": "Deadly Dispute",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Desolate Cemetery_IWH": {
+          "cardID": "294",
+          "fullName": "Desolate Cemetery",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Desolate Garrison_IWH": {
+          "cardID": "295",
+          "fullName": "Desolate Garrison",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Exultant Shepherd_VLR": {
+          "cardID": "87",
+          "fullName": "Exultant Shepherd",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fledgling Sycophant_VLR": {
+          "cardID": "231",
+          "fullName": "Fledgling Sycophant",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Helia Ley-Spire_SOL": {
+          "cardID": "13",
+          "fullName": "Helia Ley-Spire",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Hollowhenge Martyr_IWH": {
+          "cardID": "25",
+          "fullName": "Hollowhenge Martyr",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Inklight Dancer//Stroke of Light_KDT": {
+          "cardID": "72",
+          "fullName": "Inklight Dancer // Stroke of Light",
+          "setID": "KDT",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Lacufae Observatory_SOL": {
+          "cardID": "304",
+          "fullName": "Lacufae Observatory",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Malicious Pactmaker_VLR": {
+          "cardID": "101",
+          "fullName": "Malicious Pactmaker",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Memorial to the First Shaper_VLR": {
+          "cardID": "249",
+          "fullName": "Memorial to the First Shaper",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Oblivion's Escort_SOL": {
+          "cardID": "23",
+          "fullName": "Oblivion's Escort",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Patient Executioner_VLR": {
+          "cardID": "103",
+          "fullName": "Patient Executioner",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Plains_Sunvrath_TWI": {
+          "cardID": "305",
+          "fullName": "Plains",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Primal Fissure_CCR": {
+          "cardID": "274",
+          "fullName": "Primal Fissure",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Siurne, Eternal Sentinel//Siurne, Covetous Creation_VLR": {
+          "cardID": "32",
+          "fullName": "Siurne, Eternal Sentinel // Siurne, Covetous Creation",
+          "setID": "VLR",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Sorin's Interrogation_IWH": {
+          "cardID": "139",
+          "fullName": "Sorin's Interrogation",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Stark Expanse_KUT": {
+          "cardID": "265",
+          "fullName": "Stark Expanse",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Swamp_Dolcairn_TWI": {
+          "cardID": "309",
+          "fullName": "Swamp",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Temple of Origins_CCR": {
+          "cardID": "281",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Westvale Adherent_IWH": {
+          "cardID": "284",
+          "fullName": "Westvale Adherent",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        }
+      },
+      "id": "171487324193030145/4",
+      "matches": [
+        88
+      ],
+      "name": "AllWhoWander's Dying for Fun and Profit",
+      "player": "171487324193030145",
+      "run": "4",
+      "scores": [
+        0,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Ash-Addled Pyromaniac_IWH": {
           "cardID": "146",
           "fullName": "Ash-Addled Pyromaniac",
@@ -15320,6 +15505,6 @@
       "tournName": "Revolution League (May 2026)"
     }
   ],
-  "fetchedAt": "2026-05-05T11:06:49Z",
+  "fetchedAt": "2026-05-05T12:57:11Z",
   "tourney": "rev_26_05"
 }
