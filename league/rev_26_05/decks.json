@@ -1306,6 +1306,191 @@
     },
     {
       "cards": {
+        "Advance of the Quiet Moon_TWI": {
+          "cardID": "1",
+          "fullName": "Advance of the Quiet Moon",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Beyond the Shroud_VLR": {
+          "cardID": "78",
+          "fullName": "Beyond the Shroud",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Bloodletting_VLR": {
+          "cardID": "79",
+          "fullName": "Bloodletting",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Deadly Dispute_CNY": {
+          "cardID": "74",
+          "fullName": "Deadly Dispute",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Desolate Cemetery_IWH": {
+          "cardID": "294",
+          "fullName": "Desolate Cemetery",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Desolate Garrison_IWH": {
+          "cardID": "295",
+          "fullName": "Desolate Garrison",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Exultant Shepherd_VLR": {
+          "cardID": "87",
+          "fullName": "Exultant Shepherd",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fledgling Sycophant_VLR": {
+          "cardID": "231",
+          "fullName": "Fledgling Sycophant",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Helia Ley-Spire_SOL": {
+          "cardID": "13",
+          "fullName": "Helia Ley-Spire",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Hollowhenge Martyr_IWH": {
+          "cardID": "25",
+          "fullName": "Hollowhenge Martyr",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Inklight Dancer//Stroke of Light_KDT": {
+          "cardID": "72",
+          "fullName": "Inklight Dancer // Stroke of Light",
+          "setID": "KDT",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Lacufae Observatory_SOL": {
+          "cardID": "304",
+          "fullName": "Lacufae Observatory",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Malicious Pactmaker_VLR": {
+          "cardID": "101",
+          "fullName": "Malicious Pactmaker",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Memorial to the First Shaper_VLR": {
+          "cardID": "249",
+          "fullName": "Memorial to the First Shaper",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Oblivion's Escort_SOL": {
+          "cardID": "23",
+          "fullName": "Oblivion's Escort",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Patient Executioner_VLR": {
+          "cardID": "103",
+          "fullName": "Patient Executioner",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Plains_Sunvrath_TWI": {
+          "cardID": "305",
+          "fullName": "Plains",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Primal Fissure_CCR": {
+          "cardID": "274",
+          "fullName": "Primal Fissure",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Siurne, Eternal Sentinel//Siurne, Covetous Creation_VLR": {
+          "cardID": "32",
+          "fullName": "Siurne, Eternal Sentinel // Siurne, Covetous Creation",
+          "setID": "VLR",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Sorin's Interrogation_IWH": {
+          "cardID": "139",
+          "fullName": "Sorin's Interrogation",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Stark Expanse_KUT": {
+          "cardID": "265",
+          "fullName": "Stark Expanse",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Swamp_Dolcairn_TWI": {
+          "cardID": "309",
+          "fullName": "Swamp",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Temple of Origins_CCR": {
+          "cardID": "281",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Westvale Adherent_IWH": {
+          "cardID": "284",
+          "fullName": "Westvale Adherent",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        }
+      },
+      "id": "171487324193030145/5",
+      "matches": [
+        92
+      ],
+      "name": "AllWhoWander's Dying for Fun and Profit",
+      "player": "171487324193030145",
+      "run": "5",
+      "scores": [
+        0,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Ash-Addled Pyromaniac_IWH": {
           "cardID": "146",
           "fullName": "Ash-Addled Pyromaniac",
@@ -4493,6 +4678,202 @@
     },
     {
       "cards": {
+        "Aldegar of Path Unwoven_TWI": {
+          "cardID": "233",
+          "fullName": "Aldegar of Path Unwoven",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Planeswalker"
+        },
+        "Beyond Comprehension_IWH": {
+          "cardID": "5",
+          "fullName": "Beyond Comprehension",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Cosmic Lotus_SOL": {
+          "cardID": "278",
+          "fullName": "Cosmic Lotus",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Dark Horse Victory_CCR": {
+          "cardID": "13",
+          "fullName": "Dark Horse Victory",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Deafening Clarion_TWI": {
+          "cardID": "262",
+          "fullName": "Deafening Clarion",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Fateful Ascent_SOL": {
+          "cardID": "10",
+          "fullName": "Fateful Ascent",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Frostfire Geysers_DOV": {
+          "cardID": "279",
+          "fullName": "Frostfire Geysers",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Helia Ley-Spire_SOL": {
+          "cardID": "13",
+          "fullName": "Helia Ley-Spire",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Island_VST": {
+          "cardID": "253",
+          "fullName": "Island",
+          "setID": "VST",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Misty Peak_KUT": {
+          "cardID": "256",
+          "fullName": "Misty Peak",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Mountain_VST": {
+          "cardID": "255",
+          "fullName": "Mountain",
+          "setID": "VST",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Negate_SVG": {
+          "cardID": "43",
+          "fullName": "Negate",
+          "setID": "SVG",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Offset Daemon_ERR": {
+          "cardID": "288",
+          "fullName": "Offset Daemon",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Overrule Will_TWI": {
+          "cardID": "63",
+          "fullName": "Overrule Will",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Plains_VST": {
+          "cardID": "252",
+          "fullName": "Plains",
+          "setID": "VST",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Pool of Light_DOV": {
+          "cardID": "291",
+          "fullName": "Pool of Light",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Primal Fissure_CCR": {
+          "cardID": "274",
+          "fullName": "Primal Fissure",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "SYSCALL()_ERR": {
+          "cardID": "73",
+          "fullName": "SYSCALL()",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Shigane Manor Burns_KDT": {
+          "cardID": "122",
+          "fullName": "Shigane Manor Burns",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Silent Lakefront_ERR": {
+          "cardID": "268",
+          "fullName": "Silent Lakefront",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Spiraling Canyon_DOV": {
+          "cardID": "293",
+          "fullName": "Spiraling Canyon",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Stargazing_TWI": {
+          "cardID": "74",
+          "fullName": "Stargazing",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Sylvia, the Rewoven Oath_TWI": {
+          "cardID": "232",
+          "fullName": "Sylvia, the Rewoven Oath",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Planeswalker"
+        },
+        "Tesh, Fragmented Founder_VLR": {
+          "cardID": "1",
+          "fullName": "Tesh, Fragmented Founder",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Planeswalker"
+        },
+        "Unstable Experimentation_IWH": {
+          "cardID": "282",
+          "fullName": "Unstable Experimentation",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Sorcery"
+        }
+      },
+      "id": "1114027293405351936/1",
+      "matches": [
+        88,
+        89,
+        90,
+        93,
+        95
+      ],
+      "name": "Cool Beens's dark horse",
+      "player": "1114027293405351936",
+      "run": "1",
+      "scores": [
+        4,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Coffers Altar_VLR": {
           "cardID": "80",
           "fullName": "Coffers Altar",
@@ -7191,6 +7572,240 @@
       "name": "silverparabellum's A Grave Situation",
       "player": "438020248453644288",
       "run": "10",
+      "scores": [
+        0,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
+        "Ashiok, Your Worst Fear_IWH": {
+          "cardID": "50",
+          "fullName": "Ashiok, Your Worst Fear",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Planeswalker"
+        },
+        "Aspus Venefir//Path of Virulence_SOL": {
+          "cardID": "79",
+          "fullName": "Aspus Venefir // Path of Virulence",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Beckon the Beyond_IWH": {
+          "cardID": "102",
+          "fullName": "Beckon the Beyond",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Chasm of the Silent Covenant_TWI": {
+          "cardID": "287",
+          "fullName": "Chasm of the Silent Covenant",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Defect_CNY": {
+          "cardID": "172",
+          "fullName": "Defect",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Draconos Magistus//Path of Prudence_SOL": {
+          "cardID": "51",
+          "fullName": "Draconos Magistus // Path of Prudence",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Enigmatic Fen_ERR": {
+          "cardID": "248",
+          "fullName": "Enigmatic Fen",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Explore Wreckage_CCR": {
+          "cardID": "49",
+          "fullName": "Explore Wreckage",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Flooded Morass_DOV": {
+          "cardID": "275",
+          "fullName": "Flooded Morass",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Forgotten Foundation_VLR": {
+          "cardID": "258",
+          "fullName": "Forgotten Foundation",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Island_CNY": {
+          "cardID": "52",
+          "fullName": "Island",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Kazimierz, Bound in Flesh//He Who Shed His Death_TWI": {
+          "cardID": "214",
+          "fullName": "Kazimierz, Bound in Flesh // He Who Shed His Death",
+          "setID": "TWI",
+          "shape": "doubleface",
+          "type": "Planeswalker"
+        },
+        "Lutra Inquisos//Path of Curiosity_SOL": {
+          "cardID": "223",
+          "fullName": "Lutra Inquisos // Path of Curiosity",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Memoriam_VLR": {
+          "cardID": "199",
+          "fullName": "Memoriam",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Murky Path_KDT": {
+          "cardID": "288",
+          "fullName": "Murky Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Nether Invocation_SOL": {
+          "cardID": "228",
+          "fullName": "Nether Invocation",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Nightfall_REV": {
+          "cardID": "102",
+          "fullName": "Nightfall",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Overrule Will_TWI": {
+          "cardID": "63",
+          "fullName": "Overrule Will",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Pact Beyond Death_REV": {
+          "cardID": "100",
+          "fullName": "Pact Beyond Death",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "SYSCALL()_ERR": {
+          "cardID": "73",
+          "fullName": "SYSCALL()",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Shadow Sky_CCR": {
+          "cardID": "104",
+          "fullName": "Shadow Sky",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Sovereign's Execution_TWI": {
+          "cardID": "114",
+          "fullName": "Sovereign's Execution",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Stag of the Broken Crown_TWI": {
+          "cardID": "218",
+          "fullName": "Stag of the Broken Crown",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Stargazing_TWI": {
+          "cardID": "74",
+          "fullName": "Stargazing",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Swamp_DOV": {
+          "cardID": "294",
+          "fullName": "Swamp",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Swift-Step Robber_VLR": {
+          "cardID": "71",
+          "fullName": "Swift-Step Robber",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Temple of Origins_PRO_CCR": {
+          "cardID": "289",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Thing from the Depths_IWH": {
+          "cardID": "91",
+          "fullName": "Thing from the Depths",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Twilight Ambush_PRO_BLR": {
+          "cardID": "303",
+          "fullName": "Twilight Ambush",
+          "setID": "BLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Warden of Depths ★_CCR": {
+          "cardID": "1237",
+          "fullName": "Warden of Depths",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Zymith Observatory_SOL": {
+          "cardID": "320",
+          "fullName": "Zymith Observatory",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Land"
+        }
+      },
+      "id": "438020248453644288/11",
+      "matches": [
+        95
+      ],
+      "name": "silverparabellum's A Grave Situation",
+      "player": "438020248453644288",
+      "run": "11",
       "scores": [
         0,
         1,
@@ -15505,6 +16120,6 @@
       "tournName": "Revolution League (May 2026)"
     }
   ],
-  "fetchedAt": "2026-05-05T12:57:11Z",
+  "fetchedAt": "2026-05-05T17:08:49Z",
   "tourney": "rev_26_05"
 }
