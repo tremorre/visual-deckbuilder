@@ -1,8 +1,8 @@
 {
-  "attempted": 77,
+  "attempted": 80,
   "failed": 0,
-  "fetchedAt": "2026-05-05T07:06:43Z",
+  "fetchedAt": "2026-05-05T09:32:19Z",
   "keptStale": 0,
-  "succeeded": 77,
+  "succeeded": 80,
   "tourney": "rev_26_05"
 }

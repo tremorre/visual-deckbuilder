@@ -6573,6 +6573,448 @@
     },
     {
       "cards": {
+        "Clearwater Grotto_KUT": {
+          "cardID": "249",
+          "fullName": "Clearwater Grotto",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Crumbling Tower_REV": {
+          "cardID": "95",
+          "fullName": "Crumbling Tower",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "End of Mutations_CCR": {
+          "cardID": "129",
+          "fullName": "End of Mutations",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fabricated Anomaly_PRO_ERR": {
+          "cardID": "310",
+          "fullName": "Fabricated Anomaly",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Foreign Encounter_REV": {
+          "cardID": "88",
+          "fullName": "Foreign Encounter",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Forest_PRO_KDT": {
+          "cardID": "329",
+          "fullName": "Forest",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Hope's Trail Ranger_IWH": {
+          "cardID": "218",
+          "fullName": "Hope's Trail Ranger",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Huskforger Acolyte_TWI": {
+          "cardID": "186",
+          "fullName": "Huskforger Acolyte",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Island_CNY": {
+          "cardID": "52",
+          "fullName": "Island",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Lidern, the Goreblossom_IWH": {
+          "cardID": "265",
+          "fullName": "Lidern, the Goreblossom",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Meandering Path_KDT": {
+          "cardID": "287",
+          "fullName": "Meandering Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Misty Peak_KUT": {
+          "cardID": "256",
+          "fullName": "Misty Peak",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Mountain_Thistrel_TWI": {
+          "cardID": "311",
+          "fullName": "Mountain",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Nocturne, Monstrous Krasis_CCR": {
+          "cardID": "216",
+          "fullName": "Nocturne, Monstrous Krasis",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Pass Judgment_KDT": {
+          "cardID": "54",
+          "fullName": "Pass Judgment",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Primal Fissure_REV": {
+          "cardID": "89",
+          "fullName": "Primal Fissure",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Rousing Path_KDT": {
+          "cardID": "291",
+          "fullName": "Rousing Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Shiori, the Trickster_PRO_KDT": {
+          "cardID": "313",
+          "fullName": "Shiori, the Trickster",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Shroudpiercer_VLR": {
+          "cardID": "174",
+          "fullName": "Shroudpiercer",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Sillaman Regrafter_CNY": {
+          "cardID": "150",
+          "fullName": "Sillaman Regrafter",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Sodden Path_KDT": {
+          "cardID": "293",
+          "fullName": "Sodden Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Spiteful Banditry_KDT": {
+          "cardID": "124",
+          "fullName": "Spiteful Banditry",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Strangle_VLR": {
+          "cardID": "137",
+          "fullName": "Strangle",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Swift-Step Robber_VLR": {
+          "cardID": "71",
+          "fullName": "Swift-Step Robber",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "The Setral Shaper//Juni, Shaper Unbound_VLR": {
+          "cardID": "172",
+          "fullName": "The Setral Shaper // Juni, Shaper Unbound",
+          "setID": "VLR",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Urban Jungle_ERR": {
+          "cardID": "272",
+          "fullName": "Urban Jungle",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Voice of the Old Grove_VLR": {
+          "cardID": "220",
+          "fullName": "Voice of the Old Grove",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Xeia, Record Chaser_ERR": {
+          "cardID": "217",
+          "fullName": "Xeia, Record Chaser",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        }
+      },
+      "id": "438020248453644288/9",
+      "matches": [
+        77,
+        79,
+        81
+      ],
+      "name": "silverparabellum's Guess I'm doing counters this month",
+      "player": "438020248453644288",
+      "run": "9",
+      "scores": [
+        1,
+        2,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
+        "Ashiok, Your Worst Fear_IWH": {
+          "cardID": "50",
+          "fullName": "Ashiok, Your Worst Fear",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Planeswalker"
+        },
+        "Aspus Venefir//Path of Virulence_SOL": {
+          "cardID": "79",
+          "fullName": "Aspus Venefir // Path of Virulence",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Atomic Core_SOL": {
+          "cardID": "276",
+          "fullName": "Atomic Core",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Artifact"
+        },
+        "Beckon the Beyond_IWH": {
+          "cardID": "102",
+          "fullName": "Beckon the Beyond",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Chasm of the Silent Covenant_TWI": {
+          "cardID": "287",
+          "fullName": "Chasm of the Silent Covenant",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Defect_CNY": {
+          "cardID": "172",
+          "fullName": "Defect",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Draconos Magistus//Path of Prudence_SOL": {
+          "cardID": "51",
+          "fullName": "Draconos Magistus // Path of Prudence",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Duress_REV": {
+          "cardID": "103",
+          "fullName": "Duress",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Enigmatic Fen_ERR": {
+          "cardID": "248",
+          "fullName": "Enigmatic Fen",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Explore Wreckage_CCR": {
+          "cardID": "49",
+          "fullName": "Explore Wreckage",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Flooded Morass_DOV": {
+          "cardID": "275",
+          "fullName": "Flooded Morass",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Forgotten Foundation_VLR": {
+          "cardID": "258",
+          "fullName": "Forgotten Foundation",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Island_CNY": {
+          "cardID": "52",
+          "fullName": "Island",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Kazimierz, Bound in Flesh//He Who Shed His Death_TWI": {
+          "cardID": "214",
+          "fullName": "Kazimierz, Bound in Flesh // He Who Shed His Death",
+          "setID": "TWI",
+          "shape": "doubleface",
+          "type": "Planeswalker"
+        },
+        "Lutra Inquisos//Path of Curiosity_SOL": {
+          "cardID": "223",
+          "fullName": "Lutra Inquisos // Path of Curiosity",
+          "setID": "SOL",
+          "shape": "adventure",
+          "type": "Creature"
+        },
+        "Memoriam_VLR": {
+          "cardID": "199",
+          "fullName": "Memoriam",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Murky Path_KDT": {
+          "cardID": "288",
+          "fullName": "Murky Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Nightfall_REV": {
+          "cardID": "102",
+          "fullName": "Nightfall",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Overrule Will_TWI": {
+          "cardID": "63",
+          "fullName": "Overrule Will",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Pact Beyond Death_REV": {
+          "cardID": "100",
+          "fullName": "Pact Beyond Death",
+          "setID": "REV",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "SYSCALL()_ERR": {
+          "cardID": "73",
+          "fullName": "SYSCALL()",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Sovereign's Execution_TWI": {
+          "cardID": "114",
+          "fullName": "Sovereign's Execution",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Stag of the Broken Crown_TWI": {
+          "cardID": "218",
+          "fullName": "Stag of the Broken Crown",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Stargazing_TWI": {
+          "cardID": "74",
+          "fullName": "Stargazing",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Sorcery"
+        },
+        "Swamp_DOV": {
+          "cardID": "294",
+          "fullName": "Swamp",
+          "setID": "DOV",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Temple of Origins_PRO_CCR": {
+          "cardID": "289",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Thing from the Depths_IWH": {
+          "cardID": "91",
+          "fullName": "Thing from the Depths",
+          "setID": "IWH",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Twilight Ambush_PRO_BLR": {
+          "cardID": "303",
+          "fullName": "Twilight Ambush",
+          "setID": "BLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Warden of Depths ★_CCR": {
+          "cardID": "1237",
+          "fullName": "Warden of Depths",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Zymith Observatory_SOL": {
+          "cardID": "320",
+          "fullName": "Zymith Observatory",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Land"
+        }
+      },
+      "id": "438020248453644288/10",
+      "matches": [
+        91
+      ],
+      "name": "silverparabellum's A Grave Situation",
+      "player": "438020248453644288",
+      "run": "10",
+      "scores": [
+        0,
+        1,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Angler of the Crushing Sea_PRO_TWI": {
           "cardID": "314",
           "fullName": "Angler of the Crushing Sea",
@@ -11048,6 +11490,160 @@
     },
     {
       "cards": {
+        "Advance of Fire and Faith_TWI": {
+          "cardID": "124",
+          "fullName": "Advance of Fire and Faith",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Advance of Rune and Whisper_TWI": {
+          "cardID": "43",
+          "fullName": "Advance of Rune and Whisper",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Battle"
+        },
+        "Blade Flourish_VLR": {
+          "cardID": "113",
+          "fullName": "Blade Flourish",
+          "setID": "VLR",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Bleeding Out_KDT": {
+          "cardID": "96",
+          "fullName": "Bleeding Out",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Instant"
+        },
+        "Cache Thrasher_PRO_ERR": {
+          "cardID": "294",
+          "fullName": "Cache Thrasher",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Emblazoned Prophet_SOL": {
+          "cardID": "130",
+          "fullName": "Emblazoned Prophet",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fabricated Anomaly_PRO_ERR": {
+          "cardID": "310",
+          "fullName": "Fabricated Anomaly",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Fang of the Pale Thorn_TWI": {
+          "cardID": "144",
+          "fullName": "Fang of the Pale Thorn",
+          "setID": "TWI",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Flaw in the System_CNY": {
+          "cardID": "104",
+          "fullName": "Flaw in the System",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Grip Festivarium_PRO_ERR": {
+          "cardID": "318",
+          "fullName": "Grip Festivarium",
+          "setID": "ERR",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Ignited Soul_CNY": {
+          "cardID": "236",
+          "fullName": "Ignited Soul",
+          "setID": "CNY",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Magma Flow_CCR": {
+          "cardID": "137",
+          "fullName": "Magma Flow",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Enchantment"
+        },
+        "Misty Peak_KUT": {
+          "cardID": "256",
+          "fullName": "Misty Peak",
+          "setID": "KUT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Mountain_KDT": {
+          "cardID": "299",
+          "fullName": "Mountain",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Precursor to Calamity_SOL": {
+          "cardID": "263",
+          "fullName": "Precursor to Calamity",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Profane Invoker//Mondronen Bloodcaster_IWH": {
+          "cardID": "183",
+          "fullName": "Profane Invoker // Mondronen Bloodcaster",
+          "setID": "IWH",
+          "shape": "doubleface",
+          "type": "Creature"
+        },
+        "Roseaun Firebrand_SOL": {
+          "cardID": "146",
+          "fullName": "Roseaun Firebrand",
+          "setID": "SOL",
+          "shape": "normal",
+          "type": "Creature"
+        },
+        "Rousing Path_KDT": {
+          "cardID": "291",
+          "fullName": "Rousing Path",
+          "setID": "KDT",
+          "shape": "normal",
+          "type": "Land"
+        },
+        "Temple of Origins_CCR": {
+          "cardID": "281",
+          "fullName": "Temple of Origins",
+          "setID": "CCR",
+          "shape": "normal",
+          "type": "Land"
+        }
+      },
+      "id": "445937939852034058/9",
+      "matches": [
+        75,
+        76,
+        78,
+        84,
+        91
+      ],
+      "name": "kumrac's Mono Red V2",
+      "player": "445937939852034058",
+      "run": "9",
+      "scores": [
+        5,
+        0,
+        0
+      ],
+      "tournName": "Revolution League (May 2026)"
+    },
+    {
+      "cards": {
         "Awoken Heir_IWH": {
           "cardID": "149",
           "fullName": "Awoken Heir",
@@ -14724,6 +15320,6 @@
       "tournName": "Revolution League (May 2026)"
     }
   ],
-  "fetchedAt": "2026-05-05T07:06:43Z",
+  "fetchedAt": "2026-05-05T09:32:19Z",
   "tourney": "rev_26_05"
 }
