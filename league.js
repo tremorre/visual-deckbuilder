@@ -9,9 +9,16 @@
  *     itself is read-only (no add/remove). Pile rearrangements within a
  *     zone are temporary view state.
  *
- * Data source: a same-origin static `league/<TOURNEY>/decks.json` bundle
- * mirrored by .github/workflows/league-update.yml every ~45 min. The page
- * never talks to lackeybot.com directly — see scripts/update_league.py.
+ * Data source: lackeybot.com's statDex API directly (POST /statdex/api,
+ * with `Access-Control-Allow-Origin: *` so the browser can call it). Two
+ * data_types are used: `viewable` to enumerate `<pKey>/<run>` slugs for
+ * the tourney, and `decklist` (with `deckviewer: true`) to fetch each
+ * deck's full slim shape — counts plus the per-card metadata
+ * (setID/cardID/fullName/type/shape) the renderer needs.
+ *
+ * The assembled bundle is cached in localStorage with a short TTL so
+ * repeat visits are instant and a typical visit only hits lackeybot once.
+ * The Refresh button bypasses the cache.
  */
 
 (() => {
@@ -29,9 +36,22 @@ function getTourney() {
 }
 const TOURNEY = getTourney();
 
-// Same-origin bundle written by scripts/update_league.py; refreshed on a
-// ~45-min cron in .github/workflows/league-update.yml.
-const BUNDLE_PATH = `league/${TOURNEY}/decks.json`;
+// lackeybot.com's statDex API. `Access-Control-Allow-Origin: *` is set,
+// so the browser can POST to it directly. The same endpoint serves the
+// viewable index (data_type: "viewable") and individual deck bodies
+// (data_type: "decklist"); see fetchBundle.
+const API_URL = 'https://lackeybot.com/statdex/api';
+
+// localStorage cache. Key is per-tourney so multiple leagues don't fight.
+// TTL is short enough that "I want fresh data" is rarely more than one
+// click on Refresh away, but long enough that opening a deck and bouncing
+// back to the list doesn't re-fetch 80 decks.
+const CACHE_KEY = 'rev-deckbuilder-league-cache:' + TOURNEY;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+// How many deck POSTs to run in parallel during a fresh fetch. Browsers
+// already cap per-host concurrency at ~6, so anything higher is wasted.
+const FETCH_CONCURRENCY = 6;
 
 const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
 
@@ -363,7 +383,12 @@ function toast(msg) {
 //   author:foo, p:foo — substring of author OR Discord ID
 //   color:WU, c:wu    — color comparison (operators below)
 //   has:CardName      — deck contains a card whose fullName contains the term
+//   wins:N, w:N       — numeric comparison on match wins
+//   losses:N, l:N     — numeric comparison on match losses
+//   winrate:X, wr:X   — wins / (wins + losses); X<=1 is a fraction, X>1 is
+//                       a percent. Decks with no decided games never match.
 //
+// Numeric fields accept :, =, !=, <, <=, >, >=. `:` and `=` are equality.
 // Color comparisons accept :, =, !=, <, <=, >, >=. The RHS is a string of
 // color letters in any order ("uw" == "wu") or `c`/`0` for colorless.
 //   color=WU    deck colors == {W, U}
@@ -489,6 +514,9 @@ const FIELD_ALIASES_LEAGUE = {
   author: 'author', a: 'author', player: 'author', p: 'author',
   color: 'color', c: 'color', colors: 'color',
   has: 'has',
+  wins: 'wins', w: 'wins',
+  losses: 'losses', l: 'losses',
+  winrate: 'winrate', wr: 'winrate',
 };
 function atomPredicate(atom) {
   const m = /^([A-Za-z]+)(>=|<=|!=|=|>|<|:)(.*)$/.exec(atom);
@@ -508,6 +536,19 @@ function fieldPredicate(field, op, valRaw) {
     case 'author': return predFromString((e) => authorHaystack(e), op, val);
     case 'has':    return (e) => deckHasCard(e, val);
     case 'color':  return predColor(op, parseColorRHS(val));
+    case 'wins':   return predFromNumber((e) => deckRecord(e.parsed).wins, op, parseFloat(valRaw));
+    case 'losses': return predFromNumber((e) => deckRecord(e.parsed).losses, op, parseFloat(valRaw));
+    case 'winrate': {
+      const n = parseFloat(valRaw);
+      // n in [0, 1] — fraction; n > 1 — percent. Either way, threshold
+      // is stored as a fraction so the getter returns a fraction too.
+      const threshold = Number.isNaN(n) ? NaN : (n <= 1 ? n : n / 100);
+      return predFromNumber((e) => {
+        const r = deckRecord(e.parsed);
+        const decided = r.wins + r.losses;
+        return decided > 0 ? r.wins / decided : null;
+      }, op, threshold);
+    }
     default:       return () => true;
   }
 }
@@ -542,6 +583,26 @@ function predFromString(getter, op, val) {
     case '>=': return (e) => getter(e) >= val;
     default:   return () => false;
   }
+}
+
+// Numeric comparator. Getter returning null/NaN means "no value" — those
+// entries never match (so wr<X doesn't sweep up decks with no decided
+// games). NaN threshold (unparseable RHS) likewise matches nothing.
+function predFromNumber(getter, op, val) {
+  if (Number.isNaN(val)) return () => false;
+  return (e) => {
+    const v = getter(e);
+    if (v == null || Number.isNaN(v)) return false;
+    switch (op) {
+      case ':': case '=': return v === val;
+      case '!=': return v !== val;
+      case '<':  return v <  val;
+      case '<=': return v <= val;
+      case '>':  return v >  val;
+      case '>=': return v >= val;
+      default:   return false;
+    }
+  };
 }
 
 function parseColorRHS(s) {
@@ -1084,9 +1145,10 @@ function renderDetail() {
 
   // Header
   document.getElementById('league-detail-name').textContent = d.name || '(untitled)';
-  // Source link points at the deck's lackeybot statdex URL — this is the
-  // same upstream endpoint that scripts/update_league.py fetches, so it's
-  // guaranteed to land on the deck the bundle was sourced from.
+  // Source link points at the deck's lackeybot statdex page (the
+  // human-readable HTML view). The slim shape we render here comes from
+  // the JSON API, but the HTML page is the canonical permalink users
+  // expect to see when they click "view source".
   const src = document.getElementById('league-detail-source');
   if (src) {
     const url = lackeybotDeckUrl(d.id);
@@ -1443,8 +1505,9 @@ function copyDeckToDeckbuilder(entry) {
   }
 }
 
-// Build the deck's URL on lackeybot.com. Mirrors the path that
-// scripts/update_league.py fetches for each deck.
+// Build the deck's permalink on lackeybot.com (the human-readable HTML
+// page, not the JSON API endpoint). Used by the "view source" link in
+// the detail view.
 function lackeybotDeckUrl(deckId) {
   if (!deckId || typeof deckId !== 'string' || deckId.indexOf('/') < 0) return null;
   return `https://lackeybot.com/rev/statdex/d/${TOURNEY}/${deckId}`;
@@ -1554,38 +1617,33 @@ function makeUniqueDeckbuilderName(base) {
 
 async function loadAll(force) {
   setStatus('Loading league…');
-  let bundle;
-  try {
-    const url = BUNDLE_PATH + (force ? `?v=${Date.now()}` : '');
-    const r = await fetch(url, { cache: force ? 'no-cache' : 'default' });
-    if (!r.ok) throw new Error(`bundle fetch ${r.status}`);
-    bundle = await r.json();
-  } catch (e) {
-    setStatus('League bundle fetch failed: ' + e.message
-      + ' — has the league-update workflow run yet?', true);
-    return;
+
+  // Cache hit short-circuits the lackeybot round-trip. We still re-run
+  // color analysis on every load (cheap, depends on cards.json which can
+  // outlive any single cache entry).
+  let bundle = null;
+  if (!force) {
+    bundle = readCache();
   }
-  const decks = Array.isArray(bundle && bundle.decks) ? bundle.decks : [];
-  STATE.decks = decks.map(d => {
-    const an = authorAndShortName(d);
-    return { id: d.id, parsed: d, colors: [],
-             author: an.author, shortName: an.shortName, idCards: {} };
-  });
-  STATE.byId = new Map(STATE.decks.map(e => [e.id, e]));
 
-  // Build (or load) the league-wide card usage map. The action-side
-  // bundle may embed a `cardUsage` object as a precomputed cache; we
-  // prefer that when present, otherwise compute it client-side from the
-  // same data — semantically identical.
-  if (bundle && bundle.cardUsage && typeof bundle.cardUsage === 'object') {
-    STATE.cardUsage = new Map(Object.entries(bundle.cardUsage));
-  } else {
-    STATE.cardUsage = buildCardUsage(decks);
+  if (!bundle) {
+    try {
+      bundle = await fetchBundle((done, total) => {
+        setStatus(`Loading league… ${done}/${total}`);
+      });
+    } catch (e) {
+      setStatus('League fetch failed: ' + e.message, true);
+      return;
+    }
+    writeCache(bundle);
   }
-  rebuildAllIdentifyingCards();
 
-  renderListIfList();
+  hydrateFromBundle(bundle);
 
+  // Cards.json drives color analysis (it has each card's text + manaCost,
+  // which the statDex API doesn't return). The deckviewer payload already
+  // gives us setID/cardID/type/fullName/shape, so no per-card enrichment
+  // pass is needed.
   try { await ensureCards(); }
   catch (_) { /* color analysis is skipped if cards.json fails */ }
   for (const entry of STATE.decks) {
@@ -1593,10 +1651,159 @@ async function loadAll(force) {
   }
   renderListIfList();
 
-  const stamp = bundle && bundle.fetchedAt
+  const stamp = bundle.fetchedAt
     ? ' · synced ' + new Date(bundle.fetchedAt).toLocaleString()
     : '';
-  setStatus(`${decks.length} deck${decks.length === 1 ? '' : 's'} loaded${stamp}`);
+  setStatus(`${bundle.decks.length} deck${bundle.decks.length === 1 ? '' : 's'} loaded${stamp}`);
+}
+
+// Pulls the viewable index, fans out one POST per deck, and assembles the
+// slim bundle. `onProgress(done, total)` fires after every fetch attempt
+// so the page can show "Loading league… 23/80". Throws on index failure;
+// per-deck failures are logged and skipped so one bad deck can't mask the
+// other 79.
+async function fetchBundle(onProgress) {
+  const ids = await fetchViewable();
+
+  if (onProgress) onProgress(0, ids.length);
+  const out = new Array(ids.length);
+  let cursor = 0;
+  let done = 0;
+  async function worker() {
+    while (true) {
+      const i = cursor++;
+      if (i >= ids.length) return;
+      try {
+        out[i] = await fetchOneDeck(ids[i]);
+      } catch (e) {
+        console.warn('league: deck fetch failed', ids[i], e);
+        out[i] = null;
+      }
+      done += 1;
+      if (onProgress) onProgress(done, ids.length);
+    }
+  }
+  const workers = Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker);
+  await Promise.all(workers);
+  return {
+    tourney: TOURNEY,
+    fetchedAt: new Date().toISOString(),
+    decks: out.filter(d => d != null),
+  };
+}
+
+async function fetchViewable() {
+  const data = await callStatDex({
+    format: 'revolution',
+    data_type: 'viewable',
+    tKey: TOURNEY,
+  });
+  if (!data || !data.body || !Array.isArray(data.body.lists)) {
+    throw new Error('viewable: malformed response');
+  }
+  return data.body.lists.map(String);
+}
+
+async function fetchOneDeck(deckId) {
+  const slash = deckId.indexOf('/');
+  if (slash < 0) throw new Error('malformed deck id ' + deckId);
+  const pKey = deckId.slice(0, slash);
+  const rKey = deckId.slice(slash + 1);
+  // `deckviewer: true` makes the response include the per-card metadata
+  // (setID/cardID/type/fullName/shape) the renderer needs. Without it the
+  // body's cards map only has counts, and we'd have to look everything up
+  // in cards.json ourselves.
+  const data = await callStatDex({
+    format: 'revolution',
+    data_type: 'decklist',
+    tKey: TOURNEY,
+    pKey,
+    rKey,
+    deckviewer: true,
+  });
+  if (!data || !data.body) {
+    throw new Error('statdex error: ' + ((data && data.error) || 'malformed response'));
+  }
+  return apiDeckToSlim(deckId, data.body);
+}
+
+async function callStatDex(payload) {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) throw new Error(`statdex ${r.status}`);
+  return r.json();
+}
+
+// Translate the statDex API's per-deck shape into the slim shape the rest
+// of league.js consumes. With `deckviewer: true`, every field we need is
+// already on the upstream card record; we just flatten `decks: {main, side}`
+// to the legacy `mainCount`/`sideCount` keys and pass the metadata through.
+// The `opponents` array is preserved so a future detail view can surface
+// match-by-match results.
+function apiDeckToSlim(deckId, body) {
+  const cards = {};
+  for (const [ref, c] of Object.entries(body.cards || {})) {
+    const counts = (c && c.decks) || {};
+    cards[ref] = {
+      mainCount: counts.main || 0,
+      sideCount: counts.side || 0,
+      setID: c.setID || '',
+      cardID: c.cardID != null ? String(c.cardID).replace(/[a-zA-Z]+$/, '') : '',
+      fullName: c.fullName || '',
+      type: c.type || '',
+      shape: c.shape || 'normal',
+      refName: ref,
+    };
+  }
+  return {
+    id: deckId,
+    name: body.name || '',
+    tournName: body.tournName || '',
+    player: body.player || '',
+    run: body.run != null ? String(body.run) : '',
+    matches: Array.isArray(body.matches) ? body.matches : [],
+    scores: Array.isArray(body.scores) ? body.scores : [],
+    opponents: Array.isArray(body.opponents) ? body.opponents : [],
+    cards,
+  };
+}
+
+function hydrateFromBundle(bundle) {
+  const decks = Array.isArray(bundle.decks) ? bundle.decks : [];
+  STATE.decks = decks.map(d => {
+    const an = authorAndShortName(d);
+    return { id: d.id, parsed: d, colors: [],
+             author: an.author, shortName: an.shortName, idCards: {} };
+  });
+  STATE.byId = new Map(STATE.decks.map(e => [e.id, e]));
+  STATE.cardUsage = buildCardUsage(decks);
+  rebuildAllIdentifyingCards();
+  renderListIfList();
+}
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || !obj.fetchedAt || !Array.isArray(obj.decks)) return null;
+    const ageMs = Date.now() - new Date(obj.fetchedAt).getTime();
+    if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > CACHE_TTL_MS) return null;
+    return obj;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeCache(bundle) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(bundle));
+  } catch (_) {
+    /* over quota or storage disabled — cache is best-effort */
+  }
 }
 
 function renderListIfList() {

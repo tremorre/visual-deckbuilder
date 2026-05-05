@@ -5249,8 +5249,29 @@ async function cacheAllImages(progressCb) {
   }
   const list = [...urls];
   const total = list.length;
-  let done = 0, failed = 0, cancelled = false;
+
+  // Skip URLs already in the SW's image cache: a single keys() read is
+  // dramatically faster than firing N Image() loads through the SW just
+  // to learn they're hits. Same storage the SW writes to, so a tiny race
+  // window is possible (a put() in flight from a card we just viewed) —
+  // worst case we re-fetch one image.
+  let alreadyCached = new Set();
+  if ('caches' in self) {
+    try {
+      const cache = await caches.open('rev-img-v1');
+      const keys = await cache.keys();
+      alreadyCached = new Set(keys.map(req => req.url));
+    } catch (e) { /* fall through and fetch everything */ }
+  }
+  const misses = list.filter(u => !alreadyCached.has(u));
+  let done = total - misses.length;
+  let failed = 0, cancelled = false;
   let idx = 0;
+  // Surface the "already-cached" jump immediately so the button shows
+  // e.g. 2847/2900 the moment you click, not after the first miss completes.
+  if (progressCb && progressCb(done, total, failed)) {
+    return { total, done, failed, cancelled: true };
+  }
   const CONCURRENCY = 6;
   function fetchOne(url) {
     return new Promise((resolve) => {
@@ -5261,9 +5282,9 @@ async function cacheAllImages(progressCb) {
     });
   }
   async function worker() {
-    while (idx < list.length && !cancelled) {
+    while (idx < misses.length && !cancelled) {
       const myIdx = idx++;
-      const ok = await fetchOne(list[myIdx]);
+      const ok = await fetchOne(misses[myIdx]);
       if (!ok) failed++;
       done++;
       if (progressCb && progressCb(done, total, failed)) {
@@ -5272,7 +5293,7 @@ async function cacheAllImages(progressCb) {
       }
     }
   }
-  const workers = Array(Math.min(CONCURRENCY, list.length)).fill(0).map(worker);
+  const workers = Array(Math.min(CONCURRENCY, misses.length)).fill(0).map(worker);
   await Promise.all(workers);
   return { total, done, failed, cancelled };
 }
