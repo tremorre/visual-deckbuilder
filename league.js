@@ -46,7 +46,10 @@ const API_URL = 'https://lackeybot.com/statdex/api';
 // TTL is short enough that "I want fresh data" is rarely more than one
 // click on Refresh away, but long enough that opening a deck and bouncing
 // back to the list doesn't re-fetch 80 decks.
-const CACHE_KEY = 'rev-deckbuilder-league-cache:' + TOURNEY;
+// :v2 — bumped when the player-username map was added to the bundle. Old
+// :v1 entries don't carry players, so falling back to them would silently
+// reproduce the broken-author bug after we fixed it.
+const CACHE_KEY = 'rev-deckbuilder-league-cache:v2:' + TOURNEY;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 // How many deck POSTs to run in parallel during a fresh fetch. Browsers
@@ -83,6 +86,11 @@ const STATE = {
   // Built once after the bundle loads; the identifying-card logic looks
   // each card up here to find the deck's "rarest" cards league-wide.
   cardUsage: new Map(),
+  // Discord ID -> display username, populated from lackeybot's `tournament`
+  // endpoint. Empty if that fetch fails — the row falls back to the legacy
+  // "<player>'s <deck>" parse, which is correct for the subset of decks
+  // whose names follow that convention.
+  players: new Map(),
 };
 function newUid() { return ++STATE.uidCounter; }
 
@@ -256,14 +264,31 @@ function deckArchetype(deck) {
   return m ? m[1] : null;
 }
 
-// Lackeybot deck names follow `<player>'s <deck name>`. Pull the player out
-// so the list can give it its own column. Fallback: empty string (the row
-// still falls back to a short Discord ID for context).
+// Resolve a deck's author and the cleaned-up deck-name shown in the list.
+//
+// Author comes from lackeybot's `tournament` endpoint (STATE.players),
+// keyed by the deck's discord ID. The deck endpoint itself doesn't include
+// a username — only the discord ID — so the tournament map is the only
+// signal we can trust. When it's missing (tournament fetch failed, or the
+// player isn't listed) we fall through with author=''; buildDeckRow then
+// surfaces a truncated discord ID stub. We intentionally do NOT parse
+// "<x>'s <deck>" out of the deck name: many decks don't follow that
+// convention, and even when they do the prefix is just text the player
+// typed (clan tags, joke names, references to other players) — treating
+// it as authoritative produces wrong attributions.
+//
+// shortName is stripped of a `<author>'s ` prefix only when it matches the
+// resolved author exactly, for the same reason — we won't strip on a loose
+// regex match.
 function authorAndShortName(deck) {
   const raw = (deck.name || '').trim();
-  const m = /^(.+?)'s\s+(.+)$/.exec(raw);
-  if (m) return { author: m[1].trim(), shortName: m[2].trim() };
-  return { author: '', shortName: raw };
+  const username = STATE.players.get(String(deck.player || '')) || '';
+  if (!username) return { author: '', shortName: raw };
+  const stripPrefix = username.toLowerCase() + "'s ";
+  if (raw.toLowerCase().startsWith(stripPrefix)) {
+    return { author: username, shortName: raw.slice(stripPrefix.length).trim() };
+  }
+  return { author: username, shortName: raw };
 }
 
 // Map lackeybot refName to the deckbuilder's byName key.
@@ -290,12 +315,23 @@ function refNameToDeckbuilderName(refName) {
   return m ? `${front}_${m[1]}` : front;
 }
 
-function imgUrlForDeckCard(deckCard) {
+// Build the image URL for a deck card. `face` selects which side of a
+// double-faced card to show: 'front' (default) → bare number, 'back' → the
+// "<n>b.jpg" filename cajunwritescode/Revolution publishes alongside the
+// front. Single-faced cards ignore the face argument — the front URL is
+// the only thing that resolves and the back call site is gated on
+// `shape === 'doubleface'`.
+function imgUrlForDeckCard(deckCard, face) {
   if (!deckCard) return null;
   const set = deckCard.setID;
   const num = String(deckCard.cardID || '');
   if (!set || !num) return null;
-  return `${IMG_BASE}/${set}/${encodeURIComponent(num)}.jpg`;
+  const suffix = face === 'back' ? 'b' : '';
+  return `${IMG_BASE}/${set}/${encodeURIComponent(num + suffix)}.jpg`;
+}
+
+function isDoubleface(deckCard) {
+  return !!(deckCard && deckCard.shape === 'doubleface');
 }
 
 // ---------------------------------------------------------------------------
@@ -1168,8 +1204,13 @@ function renderDetail() {
     meta.appendChild(recBox);
   }
   meta.appendChild(pipsRow(entry.colors));
-  if (d.player) meta.appendChild(el('span', { text: 'Player #' + String(d.player).slice(-5),
-    title: 'Discord ID: ' + d.player }));
+  if (d.player) {
+    const username = STATE.players.get(String(d.player)) || '';
+    meta.appendChild(el('span', {
+      text: username || ('Player #' + String(d.player).slice(-5)),
+      title: 'Discord ID: ' + d.player,
+    }));
+  }
   if (d.tournName) meta.appendChild(el('span', { text: d.tournName }));
 
   // Zone sidebar
@@ -1344,7 +1385,9 @@ function makeCardSlot(inst, slotIdx) {
   slot.style.top = (slotIdx * PILE_OFFSET_Y) + 'px';
   slot.style.zIndex = String(slotIdx + 1);
 
-  const url = imgUrlForDeckCard(dc);
+  const dfc = isDoubleface(dc);
+  const face = (dfc && inst.flipped) ? 'back' : 'front';
+  const url = imgUrlForDeckCard(dc, face);
   if (url) {
     const img = document.createElement('img');
     img.alt = dc.fullName || inst.ref;
@@ -1359,6 +1402,7 @@ function makeCardSlot(inst, slotIdx) {
     slot.classList.add('no-image');
     slot.textContent = dc.fullName || inst.ref;
   }
+  if (dfc && inst.flipped) slot.classList.add('flipped');
   const titleParts = [dc.fullName || inst.ref];
   if (mtg) {
     if (mtg.manaCost) titleParts.push(mtg.manaCost);
@@ -1375,13 +1419,51 @@ function makeCardSlot(inst, slotIdx) {
     }));
     ev.dataTransfer.setData('text/league-zone', STATE.focusedZone);
     slot.classList.add('dragging');
+    // Custom card-image ghost (matches the deckbuilder). Anchor offset
+    // halfway across, 30px down — same anchor app.js uses on its piles, so
+    // the ghost feels "weighted" at the same point the user grabbed.
+    startLeagueDragGhost(ev, dc, !!inst.flipped,
+      slot.offsetWidth, slot.offsetHeight,
+      slot.offsetWidth / 2, 30);
+    // Suppress the hover preview while dragging — the ghost is the visual,
+    // and a popup hanging next to the cursor on top of it is just noise.
+    hideCardPreview();
   });
-  slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
-  slot.addEventListener('mouseenter', (ev) => showCardPreview(dc, ev));
+  slot.addEventListener('dragend', () => {
+    slot.classList.remove('dragging');
+    endLeagueDragGhost();
+  });
+  slot.addEventListener('mouseenter', (ev) => showCardPreview(dc, ev, !!inst.flipped, slot));
   slot.addEventListener('mousemove', moveCardPreview);
   slot.addEventListener('mouseleave', hideCardPreview);
 
+  // DFC flip overlay — transparent center button identical to the
+  // deckbuilder's. Toggles inst.flipped, swaps the image src, and adds the
+  // .flipped outline. Only rendered when the card actually has a back side.
+  if (dfc) slot.appendChild(makeLeagueFlipButton(inst, dc, slot));
+
   return slot;
+}
+
+function makeLeagueFlipButton(inst, deckCard, slot) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'flip-btn';
+  btn.dataset.title = 'Flip card to see other side';
+  btn.draggable = false;
+  btn.innerHTML = '<span class="flip-icon" aria-hidden="true">&#x21bb;</span>';
+  btn.setAttribute('aria-label', 'Flip card');
+  btn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    inst.flipped = !inst.flipped;
+    const face = inst.flipped ? 'back' : 'front';
+    const img = slot.querySelector('img');
+    if (img) img.src = imgUrlForDeckCard(deckCard, face);
+    slot.classList.toggle('flipped', !!inst.flipped);
+  });
+  return btn;
 }
 
 function readDragPayload(dt) {
@@ -1439,34 +1521,146 @@ function pruneEmptyPiles() {
 }
 
 // ---------------------------------------------------------------------------
-// Card image preview (hover) — its own DOM node since the deckbuilder's
-// #card-preview isn't on this page.
+// Card image preview (hover) — mirrors the deckbuilder's showPreview /
+// positionPreview / hidePreview (app.js) so hovering a card in the league
+// detail view feels identical to hovering one in the editor:
+//   - 250 ms debounce so flicking the cursor across a row doesn't flash a
+//     dozen popups
+//   - When invoked from a card slot (avoidEl set), the popup anchors to the
+//     slot's edge instead of chasing the cursor — so it never covers the
+//     card you're trying to look at
+//   - Hides while the new image is loading so the previous card never
+//     flashes for a fraction of a second under the new title
+//
+// Its own DOM node (#league-card-preview) since league.html doesn't carry
+// the deckbuilder's #card-preview, but the visual / behavior is the same.
 
 const previewEl = () => document.getElementById('league-card-preview');
 const previewImg = () => document.getElementById('league-card-preview-img');
 
-function showCardPreview(deckCard, ev) {
-  const url = imgUrlForDeckCard(deckCard);
+const PREVIEW_DELAY_MS = 250;
+let _leaguePreviewTimer = null;
+let _leaguePreviewAvoidEl = null;
+
+function showCardPreview(deckCard, ev, isFlipped, avoidEl) {
+  if (_leaguePreviewTimer) clearTimeout(_leaguePreviewTimer);
+  _leaguePreviewAvoidEl = avoidEl || null;
+  // Capture cursor position now; the timer fires later when ev is stale.
+  const startEv = { clientX: ev.clientX, clientY: ev.clientY };
+  const face = (isDoubleface(deckCard) && isFlipped) ? 'back' : 'front';
+  const url = imgUrlForDeckCard(deckCard, face);
   if (!url) return;
-  previewImg().src = url;
-  previewEl().classList.add('show');
-  moveCardPreview(ev);
+  const run = () => {
+    _leaguePreviewTimer = null;
+    const node = previewEl();
+    const img = previewImg();
+    img.alt = deckCard.fullName || '';
+    // Hide while loading so we never flash the previous card under a new
+    // hover. show() runs once the new image is in (or immediately if it's
+    // the same URL we already loaded).
+    node.classList.remove('show');
+    const show = () => {
+      node.classList.add('show');
+      positionCardPreview(startEv);
+    };
+    if (img.src === url || img.src === new URL(url, location.href).href) {
+      img.src = url;
+      show();
+    } else {
+      img.onload = () => { img.onload = null; show(); };
+      img.src = url;
+    }
+  };
+  _leaguePreviewTimer = setTimeout(run, PREVIEW_DELAY_MS);
 }
-function moveCardPreview(ev) {
+
+function positionCardPreview(ev) {
   const node = previewEl();
   if (!node.classList.contains('show')) return;
-  const margin = 16;
-  const w = 240, h = 336;
-  let x = ev.clientX + margin, y = ev.clientY + margin;
-  if (x + w > window.innerWidth) x = ev.clientX - w - margin;
-  if (y + h > window.innerHeight) y = window.innerHeight - h - margin;
-  if (y < 4) y = 4;
-  node.style.left = x + 'px';
-  node.style.top = y + 'px';
+  const w = node.offsetWidth || 240;
+  const h = node.offsetHeight || 336;
+  if (_leaguePreviewAvoidEl) {
+    // Anchor to the slot's right edge; flip to the left if it would overflow.
+    const ar = _leaguePreviewAvoidEl.getBoundingClientRect();
+    let x = ar.right + 8;
+    if (x + w > window.innerWidth) x = ar.left - w - 8;
+    let y = ar.top;
+    if (y < 8) y = 8;
+    if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+    node.style.left = x + 'px';
+    node.style.top = y + 'px';
+  } else {
+    let x = ev.clientX + 16;
+    let y = ev.clientY - h / 2;
+    if (x + w > window.innerWidth) x = ev.clientX - w - 16;
+    if (y < 8) y = 8;
+    if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+    node.style.left = x + 'px';
+    node.style.top = y + 'px';
+  }
+}
+// Kept for the cursor-tracking call sites (sidebar rows, id-card badges)
+// where the preview chases the cursor instead of anchoring to a slot.
+function moveCardPreview(ev) {
+  if (_leaguePreviewAvoidEl) return;
+  positionCardPreview(ev);
 }
 function hideCardPreview() {
+  if (_leaguePreviewTimer) { clearTimeout(_leaguePreviewTimer); _leaguePreviewTimer = null; }
   previewEl().classList.remove('show');
 }
+
+// ---------------------------------------------------------------------------
+// Custom drag ghost — replaces the browser's default semi-transparent
+// screenshot with a card-image overlay that matches the deckbuilder's drag
+// feel exactly. Same trick as app.js: a 1×1 transparent gif suppresses the
+// native ghost (setDragImage), and a fixed-position .drag-ghost div is
+// repositioned on every dragover.
+
+const LEAGUE_EMPTY_DRAG_IMG = new Image();
+LEAGUE_EMPTY_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+LEAGUE_EMPTY_DRAG_IMG.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:-1;';
+document.documentElement.appendChild(LEAGUE_EMPTY_DRAG_IMG);
+
+let _leagueDragGhost = null;  // { el, offsetX, offsetY }
+
+function startLeagueDragGhost(ev, deckCard, isFlipped, width, height, offsetX, offsetY) {
+  endLeagueDragGhost();
+  ev.dataTransfer.setDragImage(LEAGUE_EMPTY_DRAG_IMG, 0, 0);
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.style.width = width + 'px';
+  ghost.style.height = height + 'px';
+  const face = (isDoubleface(deckCard) && isFlipped) ? 'back' : 'front';
+  const src = imgUrlForDeckCard(deckCard, face);
+  if (src) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = `position:absolute;top:0;left:0;`
+                      + `width:${width}px;height:${height}px;`
+                      + `object-fit:cover;border-radius:5px;`;
+    ghost.appendChild(img);
+  }
+  ghost.style.left = (ev.clientX - offsetX) + 'px';
+  ghost.style.top = (ev.clientY - offsetY) + 'px';
+  document.body.appendChild(ghost);
+  _leagueDragGhost = { el: ghost, offsetX, offsetY };
+}
+function endLeagueDragGhost() {
+  if (_leagueDragGhost) {
+    _leagueDragGhost.el.remove();
+    _leagueDragGhost = null;
+  }
+}
+// Cursor tracking. dragover fires continuously during a drag — including
+// over the document — so a single document-level listener keeps the ghost
+// glued to the cursor regardless of which child element is under it.
+document.addEventListener('dragover', (ev) => {
+  if (_leagueDragGhost) {
+    _leagueDragGhost.el.style.left = (ev.clientX - _leagueDragGhost.offsetX) + 'px';
+    _leagueDragGhost.el.style.top = (ev.clientY - _leagueDragGhost.offsetY) + 'px';
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Copy to deckbuilder
@@ -1684,12 +1878,41 @@ async function fetchBundle(onProgress) {
     }
   }
   const workers = Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker);
+  // Tournament data is needed for the discord-id → username map. It's a
+  // single small POST and the only signal we have for player names (the
+  // per-deck endpoint omits them), so kick it off in parallel with the
+  // deck-fetch fan-out. A failure here isn't fatal — players just falls
+  // back to {} and the rows surface truncated discord ids instead.
+  const playersPromise = fetchTournamentPlayers().catch(e => {
+    console.warn('league: tournament/players fetch failed', e);
+    return {};
+  });
   await Promise.all(workers);
+  const players = await playersPromise;
   return {
     tourney: TOURNEY,
     fetchedAt: new Date().toISOString(),
     decks: out.filter(d => d != null),
+    players,
   };
+}
+
+// Fetch the tournament endpoint and pluck the {pKey: username} map. The
+// rest of the response (matches, leaderboards, etc.) we don't use yet, so
+// keep only what's needed — caching the full body would balloon the
+// localStorage entry.
+async function fetchTournamentPlayers() {
+  const data = await callStatDex({
+    format: 'revolution',
+    data_type: 'tournament',
+    tKey: TOURNEY,
+  });
+  const players = (data && data.body && data.body.players) || {};
+  const out = {};
+  for (const [pKey, p] of Object.entries(players)) {
+    if (p && typeof p.username === 'string' && p.username) out[pKey] = p.username;
+  }
+  return out;
 }
 
 async function fetchViewable() {
@@ -1772,6 +1995,11 @@ function apiDeckToSlim(deckId, body) {
 }
 
 function hydrateFromBundle(bundle) {
+  // Populate STATE.players FIRST — authorAndShortName reads it. An older
+  // cached bundle from before :v2 won't have `players`; the empty-map
+  // fallback drops every row's author back to the discord-id stub, which
+  // matches what those users would see if they refreshed.
+  STATE.players = new Map(Object.entries(bundle.players || {}));
   const decks = Array.isArray(bundle.decks) ? bundle.decks : [];
   STATE.decks = decks.map(d => {
     const an = authorAndShortName(d);
