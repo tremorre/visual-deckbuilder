@@ -2,10 +2,12 @@
   "revolution": {
     "cards": {
       "Aldegar of Path Unwoven": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Ameret, Seeker of the Sun": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Anhamei, Star Sower": [
         "coco"
@@ -14,42 +16,49 @@
         "coco"
       ],
       "Caphella, Endlight Catalyst": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Celise, Syndicate Pariah": [
         "coco"
       ],
       "Garren, Returned Prophet": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Gericho, Ageless Wanderer": [
         "coco"
       ],
       "Giyama, Scion of Kage": [
         "coco",
-        "edict"
+        "edict",
+        "removal"
       ],
       "Illustrious Sheng Fa": [
         "coco"
       ],
       "Iviana, Dragon Tamer": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Jack, Monster Mentor": [
         "coco",
-        "edict"
+        "edict",
+        "removal"
       ],
       "Karina, Budding Diplomat": [
         "coco"
       ],
       "Kazimierz, Bound in Flesh": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Marilye, Dreaming Big": [
         "coco"
       ],
       "Oberys, Ley-Pilgrim": [
-        "coco"
+        "coco",
+        "ae-rem"
       ],
       "Sanaito, Voidsinger": [
         "coco",
@@ -62,19 +71,24 @@
         "coco"
       ],
       "Sylvia, the Rewoven Oath": [
-        "coco"
+        "coco",
+        "wipe",
+        "removal"
       ],
       "Tamiyo, Sun-Seeking": [
         "coco"
       ],
       "The Dutiful Wanderer": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "The Weftheart": [
         "coco"
       ],
       "Tsubasa Shigane": [
-        "coco"
+        "coco",
+        "removal",
+        "bounce"
       ],
       "Vasilisa, Helping Hand": [
         "coco"
@@ -83,7 +97,8 @@
         "coco"
       ],
       "Zukar, Null Champion": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Abyssal Burrower": [
         "coco"
@@ -242,7 +257,9 @@
         "coco"
       ],
       "Colossal Pathrazer": [
-        "coco"
+        "coco",
+        "ae-rem",
+        "below-rate"
       ],
       "Comazoa": [
         "coco",
@@ -255,7 +272,8 @@
         "coco"
       ],
       "Competitive Hedonist": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Composer of Skylines": [
         "coco"
@@ -310,7 +328,8 @@
         "coco"
       ],
       "Draconos Tyrannos": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Dregstreet Inquisitor": [
         "coco"
@@ -346,7 +365,9 @@
         "coco"
       ],
       "Exotic Transformer": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Expendable Medic": [
         "coco"
@@ -494,7 +515,8 @@
       ],
       "Inklight Dancer": [
         "coco",
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Invoker's Guidebeast": [
         "coco"
@@ -858,7 +880,9 @@
         "counterspell"
       ],
       "Slayer of Numachi": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Slumberzoa": [
         "coco"
@@ -871,7 +895,9 @@
       ],
       "Soothing Singer": [
         "coco",
-        "texile"
+        "texile",
+        "removal",
+        "below-rate"
       ],
       "Soulflame Mystic": [
         "coco"
@@ -929,7 +955,8 @@
         "coco"
       ],
       "Threadripper": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Threadweaver Shinobi": [
         "coco"
@@ -944,7 +971,8 @@
         "coco"
       ],
       "Towering Moonrazer": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Twilight Agent": [
         "coco"
@@ -1071,7 +1099,8 @@
         "coco"
       ],
       "Held in Contempt": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Ikurimoko's Presence": [
         "coco"
@@ -1104,7 +1133,8 @@
         "coco"
       ],
       "Magma Flow": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Mapper's Wanderings": [
         "coco"
@@ -1129,7 +1159,8 @@
       ],
       "Sealing Strike": [
         "coco",
-        "texile"
+        "texile",
+        "removal"
       ],
       "Seed of the Golden Sun": [
         "coco"
@@ -1174,7 +1205,9 @@
         "coco"
       ],
       "Atomic Core": [
-        "coco"
+        "coco",
+        "wipe",
+        "removal"
       ],
       "Auto Sifter": [
         "coco"
@@ -1234,7 +1267,9 @@
         "coco"
       ],
       "Hwacha": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Leyshard": [
         "coco"
@@ -1274,10 +1309,13 @@
         "coco"
       ],
       "Realmweft Implosion": [
-        "coco"
+        "coco",
+        "ae-rem",
+        "below-rate"
       ],
       "Fall Upon Your Blade": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "The Ruins Awaken": [
         "coco"
@@ -1310,14 +1348,18 @@
         "coco"
       ],
       "Saboteur's Immolation": [
-        "coco"
+        "coco",
+        "removal",
+        "wipe"
       ],
       "Foreign Encounter": [
         "coco"
       ],
       "Judgment of the Seishin": [
         "coco",
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Subsidized Market": [
         "coco"
@@ -1329,19 +1371,23 @@
         "coco"
       ],
       "Dhante's Inferno": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Meditation": [
         "coco"
       ],
       "Spiteful Liberation": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Balance of the Realms": [
         "coco"
       ],
       "Fatal Flourish": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Kinscale Reckoner": [
         "coco"
@@ -1350,16 +1396,21 @@
         "coco"
       ],
       "Meteorite": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Instantaneous End": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Uplifting Melody": [
         "coco"
       ],
       "Vicious Backstab": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Overflow": [
         "coco"
@@ -1368,16 +1419,21 @@
         "coco"
       ],
       "Banish into Nothingness": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Demonic Reposession": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Dynasty's Benediction": [
         "coco"
       ],
       "Elope": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Breath of the Spirit Realm": [
         "coco"
@@ -1410,7 +1466,9 @@
         "coco"
       ],
       "Assault Engine": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Takashi, City on the Wind": [
         "coco"
@@ -1470,7 +1528,8 @@
         "coco"
       ],
       "Gatstaf Butcher": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Gavony Trapper": [
         "coco"
@@ -1589,7 +1648,9 @@
         "coco"
       ],
       "Thing from the Depths": [
-        "coco"
+        "coco",
+        "removal",
+        "bounce"
       ],
       "Tinua, of Whispered Pains": [
         "coco"
@@ -1602,7 +1663,9 @@
       ],
       "Benevolent Visitation": [
         "coco",
-        "texile"
+        "texile",
+        "removal",
+        "below-rate"
       ],
       "Blood Bank": [
         "coco"
@@ -1620,7 +1683,9 @@
         "coco"
       ],
       "Fleshwrithe Apparatus": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Feasting Ceremony": [
         "coco"
@@ -1635,7 +1700,9 @@
         "coco"
       ],
       "Bittersweet Parting": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Restoring Presence": [
         "coco"
@@ -1650,13 +1717,15 @@
         "coco"
       ],
       "Claret Ascendance": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Consuming Grounds": [
         "coco"
       ],
       "Tesh, Fragmented Founder": [
-        "coco"
+        "coco",
+        "removal"
       ],
       "Aspiring Shaper": [
         "coco"
@@ -1741,10 +1810,13 @@
       ],
       "Orliss's Edict": [
         "coco",
-        "edict"
+        "edict",
+        "removal"
       ],
       "Overseer's Shackles": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Reap the Rewards": [
         "coco"
@@ -1753,13 +1825,17 @@
         "coco"
       ],
       "Disposable Dagger": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "The Founder's Cage": [
         "coco"
       ],
       "Beneath the Tide": [
-        "coco"
+        "coco",
+        "removal",
+        "below-rate"
       ],
       "Herbalist's Satchel": [
         "coco"
@@ -1848,7 +1924,8 @@
         "counterspell"
       ],
       "Omenmare": [
-        "counterspell"
+        "counterspell",
+        "ae-rem"
       ],
       "Draconos Magistus": [
         "counterspell"
@@ -1857,7 +1934,9 @@
         "counterspell"
       ],
       "Brewing Storm": [
-        "counterspell"
+        "counterspell",
+        "removal",
+        "bounce"
       ],
       "Cidraeth Charm": [
         "counterspell"
@@ -1869,7 +1948,8 @@
         "counterspell"
       ],
       "Distilled Essence": [
-        "counterspell"
+        "counterspell",
+        "below-rate"
       ],
       "Destructive Ambition": [
         "counterspell"
@@ -1887,7 +1967,8 @@
         "counterspell"
       ],
       "Legislative Gridlock": [
-        "counterspell"
+        "counterspell",
+        "below-rate"
       ],
       "Negate": [
         "counterspell"
@@ -1902,22 +1983,26 @@
         "counterspell"
       ],
       "Refuse to Bloom": [
-        "counterspell"
+        "counterspell",
+        "removal"
       ],
       "Stolen Singularity": [
-        "counterspell"
+        "counterspell",
+        "below-rate"
       ],
       "Storms over Nephalia": [
         "counterspell"
       ],
       "Thistrel Charm": [
-        "counterspell"
+        "counterspell",
+        "removal"
       ],
       "Tireless Refutation": [
         "counterspell"
       ],
       "Unravel Thoughts": [
-        "counterspell"
+        "counterspell",
+        "removal"
       ],
       "Unveil": [
         "counterspell"
@@ -1926,10 +2011,12 @@
         "counterspell"
       ],
       "Wasted Preparation": [
-        "counterspell"
+        "counterspell",
+        "below-rate"
       ],
       "Addled Psyche": [
-        "counterspell"
+        "counterspell",
+        "removal"
       ],
       "Draconos Iracus": [
         "coco",
@@ -1950,7 +2037,8 @@
       ],
       "Ardent Rise": [
         "RGLand",
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Flourishing Crevasse": [
         "RGLand"
@@ -2130,7 +2218,8 @@
         "URLand"
       ],
       "Meteoric Facade": [
-        "URLand"
+        "URLand",
+        "removal"
       ],
       "Misty Peak": [
         "URLand"
@@ -2385,7 +2474,9 @@
         "utilityland"
       ],
       "Desperate Exorcism": [
-        "counterspell"
+        "counterspell",
+        "removal",
+        "bounce"
       ],
       "Quid Pro Quo": [
         "counterspell"
@@ -2403,7 +2494,9 @@
         "handattack"
       ],
       "Abandon the Code": [
-        "handattack"
+        "handattack",
+        "removal",
+        "edict"
       ],
       "Advance of the Umbral Bargain": [
         "handattack"
@@ -2436,214 +2529,1128 @@
         "handattack"
       ],
       "Kimja Jailer": [
-        "texile"
+        "texile",
+        "removal",
+        "below-rate"
       ],
       "Moonsilver Archangel": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Advance of the Quiet Moon": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Casus Belli": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Cosmic Pilgrimage": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Gone Pickin'": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Moonrapture": [
-        "texile"
+        "texile",
+        "removal",
+        "below-rate"
       ],
       "Welkin Eviction": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Sanctum of Repression": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Orbital Vacuum": [
-        "texile"
+        "texile",
+        "removal"
       ],
       "Placeholder_Asset": [
         "texile"
       ],
       "Reconnaissance Agent": [
-        "texile"
+        "texile",
+        "removal",
+        "bounce"
       ],
       "Lupensi Purseus": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Unending Unrest": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Blinding Ambush": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Rabid Mauling": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Ram Through": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Split the Loot": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Blustering Storm": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Crushed Under Conviction": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Dream Big": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "End the Chase": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Momentous Strike": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Rend the Bonds": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "The Goremoon Unleashed": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Main Street Hooligang": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Parental Pair": [
         "fbite"
       ],
       "Schematic Archer": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Scourge of Capitalism": [
         "fbite"
       ],
       "Flowing Form": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Charity Match": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Defend the Groves": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Griffin's Blessing": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Oathbreaker's Challenge": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Stockpile": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Out With a Bang": [
-        "fbite"
+        "fbite",
+        "removal"
       ],
       "Legacy Denied": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Alwanor's Mark": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Storm the Senate": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Tovolar's Ire": [
-        "fbite"
+        "fbite",
+        "removal",
+        "below-rate"
       ],
       "Muddy Water": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Go for the Gut": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Anje's Thirst": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Affliction of Undeath": [
-        "minus-rem"
+        "minus-rem",
+        "wipe",
+        "removal"
       ],
       "Thirsty Work": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Empty Shell": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Downlink Overload": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Shadow Sky": [
-        "minus-rem"
+        "minus-rem",
+        "removal"
       ],
       "Sunset Warrior": [
-        "minus-rem"
+        "minus-rem",
+        "wipe",
+        "removal",
+        "below-rate"
       ],
       "NotFound_1": [
-        "minus-rem"
+        "minus-rem",
+        "removal",
+        "below-rate"
       ],
       "Aspus Venefir": [
-        "minus-rem"
+        "minus-rem",
+        "removal",
+        "wipe"
       ],
       "0xdeadbeef": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Annick, Oathbound": [
         "edict"
       ],
       "Bogspawn Witness": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Iri Sentinel": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Nuillae Exidus": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Patient Executioner": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Merciless Ruiner": [
-        "edict"
+        "edict",
+        "removal",
+        "below-rate"
       ],
       "Matauros Tyrannos": [
-        "edict"
+        "edict",
+        "ae-rem"
       ],
       "Mantle of Dusk": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Die as Thou Wilt": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Tug of the Void": [
-        "edict"
+        "edict",
+        "removal",
+        "below-rate"
       ],
       "Ruiner's Execution": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Tragic Accident": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Cornered by the Dead": [
-        "edict"
+        "edict",
+        "removal",
+        "below-rate"
       ],
       "Rank and Defile": [
-        "edict"
+        "edict",
+        "removal"
       ],
       "Horrific Stitching": [
-        "edict"
+        "edict",
+        "removal"
+      ],
+      "Burn Up": [
+        "removal",
+        "ae-rem",
+        "below-rate"
+      ],
+      "Climactic Drop": [
+        "removal",
+        "below-rate"
+      ],
+      "Creation's Combustion": [
+        "removal"
+      ],
+      "Crofter's Charm": [
+        "removal",
+        "below-rate"
+      ],
+      "Drag into the Dark": [
+        "removal"
+      ],
+      "Fateful Ascent": [
+        "removal",
+        "ae-rem"
+      ],
+      "Hang": [
+        "removal"
+      ],
+      "Heart's Betrayal": [
+        "removal"
+      ],
+      "Liquidate": [
+        "removal"
+      ],
+      "Outlive Usefulness": [
+        "removal"
+      ],
+      "Quiet the Heart": [
+        "removal",
+        "below-rate"
+      ],
+      "Sovereign's Execution": [
+        "removal"
+      ],
+      "Territory Dispute": [
+        "removal",
+        "below-rate"
+      ],
+      "Twilight Ambush": [
+        "removal"
+      ],
+      "Crunch": [
+        "removal",
+        "below-rate"
+      ],
+      "Bone Shards": [
+        "removal"
+      ],
+      "Forced Shutdown": [
+        "removal",
+        "ae-rem"
+      ],
+      "Frag": [
+        "removal",
+        "ae-rem"
+      ],
+      "Heartbreak": [
+        "wipe",
+        "ae-rem",
+        "removal"
+      ],
+      "Killing in the Name of . . .": [
+        "removal"
+      ],
+      "Revivified Wrath": [
+        "removal",
+        "ae-rem"
+      ],
+      "Sanguine Liturgy": [
+        "removal",
+        "ae-rem"
+      ],
+      "Whirlwind Kick": [
+        "removal",
+        "below-rate"
+      ],
+      "Traumatic Recollection": [
+        "removal"
+      ],
+      "Work Safety Violation": [
+        "removal",
+        "ae-rem"
+      ],
+      "Beyond Comprehension": [
+        "wipe",
+        "removal"
+      ],
+      "Path's End": [
+        "wipe",
+        "ae-rem",
+        "removal"
+      ],
+      "Culling Ritual": [
+        "wipe",
+        "ae-rem",
+        "removal"
+      ],
+      "Chromatic Rift": [
+        "wipe",
+        "removal"
+      ],
+      "Scandalous Revelation": [
+        "wipe",
+        "ae-rem",
+        "removal"
+      ],
+      "Manticos Expurgis": [
+        "ae-rem"
+      ],
+      "Seishin of Sun's Radiance": [
+        "ae-rem"
+      ],
+      "Clash of Courage": [
+        "ae-rem"
+      ],
+      "Fond Reminiscence": [
+        "ae-rem",
+        "below-rate"
+      ],
+      "Renounce the Worldly": [
+        "ae-rem"
+      ],
+      "Shatter the Sigil": [
+        "ae-rem"
+      ],
+      "Change Allegiances": [
+        "ae-rem"
+      ],
+      "Ruinous Discovery": [
+        "ae-rem",
+        "below-rate"
+      ],
+      "Reckless Smashing": [
+        "ae-rem",
+        "below-rate"
+      ],
+      "Pest Problem": [
+        "ae-rem"
+      ],
+      "Verdant Radiance": [
+        "ae-rem"
+      ],
+      "Backroads Incursion": [
+        "ae-rem",
+        "below-rate"
+      ],
+      "Imperial Dragon": [
+        "removal",
+        "below-rate"
+      ],
+      "Eltanaan, the Silent Star": [
+        "removal",
+        "ae-rem",
+        "wipe"
+      ],
+      "Levicta Visio": [
+        "removal"
+      ],
+      "Serpens Oblis": [
+        "removal",
+        "below-rate"
+      ],
+      "Tigros Purseus": [
+        "removal"
+      ],
+      "Ayeshi Breaks the Loop": [
+        "wipe",
+        "removal",
+        "ae-rem"
+      ],
+      "Cathar's Charm": [
+        "ae-rem",
+        "removal"
+      ],
+      "Center of Attention": [
+        "removal",
+        "below-rate"
+      ],
+      "Burn to Obscurity": [
+        "removal"
+      ],
+      "Depart": [
+        "removal",
+        "below-rate"
+      ],
+      "Descent of the Mists": [
+        "removal",
+        "below-rate"
+      ],
+      "Dolcairn Charm": [
+        "removal"
+      ],
+      "Electronic Countermeasures": [
+        "removal"
+      ],
+      "Fall Forever": [
+        "removal",
+        "below-rate"
+      ],
+      "Feudrach's Hunger": [
+        "removal",
+        "below-rate"
+      ],
+      "Guardian's Charm": [
+        "removal"
+      ],
+      "Lost Connection": [
+        "removal"
+      ],
+      "Lunate Charm": [
+        "removal"
+      ],
+      "Magma Spray": [
+        "removal"
+      ],
+      "Prayer of Banishing": [
+        "removal"
+      ],
+      "Radiance Unmade": [
+        "removal"
+      ],
+      "Rigged Trial": [
+        "removal",
+        "below-rate"
+      ],
+      "Singularity": [
+        "removal"
+      ],
+      "Rite of Consuming Glory": [
+        "ae-rem"
+      ],
+      "Spatial Collapse": [
+        "removal",
+        "below-rate"
+      ],
+      "Swift Reproach": [
+        "removal"
+      ],
+      "With Impunity": [
+        "removal"
+      ],
+      "Angelic Purge": [
+        "removal",
+        "ae-rem",
+        "below-rate"
+      ],
+      "Beyond the Shroud": [
+        "removal"
+      ],
+      "Coordinated Shot": [
+        "removal"
+      ],
+      "Cloud Nine": [
+        "ae-rem"
+      ],
+      "Dissect": [
+        "removal",
+        "below-rate"
+      ],
+      "Daemonic Binding": [
+        "removal",
+        "below-rate"
+      ],
+      "Doctrine of Cleansing Flames": [
+        "ae-rem"
+      ],
+      "Drowntide Rising": [
+        "wipe",
+        "removal"
+      ],
+      "Imminent Disaster": [
+        "removal",
+        "below-rate"
+      ],
+      "Night of the Long Silence": [
+        "wipe",
+        "removal"
+      ],
+      "Spice of Life": [
+        "removal",
+        "below-rate"
+      ],
+      "Spite of the Founder": [
+        "wipe",
+        "removal"
+      ],
+      "Chief Executive Dhante": [
+        "removal"
+      ],
+      "Glitchdrinker": [
+        "removal",
+        "below-rate"
+      ],
+      "Gorion Ley-Spire": [
+        "ae-rem"
+      ],
+      "Helen's Failsafe": [
+        "removal",
+        "below-rate"
+      ],
+      "Hungry Blob": [
+        "ae-rem"
+      ],
+      "Malignant Entangler": [
+        "removal"
+      ],
+      "Meteor Golem": [
+        "removal",
+        "below-rate"
+      ],
+      "Meteor Hellion": [
+        "removal",
+        "handattack"
+      ],
+      "Overlord of Ashmouth": [
+        "removal",
+        "below-rate"
+      ],
+      "Plaguebane Hulk": [
+        "ae-rem"
+      ],
+      "Purifier of Dawnbloom Grove": [
+        "ae-rem"
+      ],
+      "Tapestry Guard": [
+        "ae-rem",
+        "below-rate"
+      ],
+      "Clash at Aureth Cross": [
+        "wipe",
+        "removal"
+      ],
+      "CLICK()": [
+        "wipe"
+      ],
+      "EXIT()": [
+        "wipe",
+        "removal"
+      ],
+      "Astral Prison": [
+        "removal"
+      ],
+      "Clash at Dawnbloom Grove": [
+        "ae-rem"
+      ],
+      "Ashmouth Intruders": [
+        "removal",
+        "below-rate"
+      ],
+      "Cordelia's Ripper": [
+        "removal"
+      ],
+      "Feudrach of Ashmouth": [
+        "removal"
+      ],
+      "General of the Damned": [
+        "removal",
+        "below-rate"
+      ],
+      "Gereishin, the Stormlord": [
+        "removal"
+      ],
+      "Goldnight Purgeblade": [
+        "removal"
+      ],
+      "Huntmaster of the Fells": [
+        "removal"
+      ],
+      "Iwai and Oda": [
+        "removal"
+      ],
+      "Lunarblind Packmaster": [
+        "removal"
+      ],
+      "Lumen Irregular": [
+        "removal",
+        "below-rate"
+      ],
+      "Niliscant Ley-Spire": [
+        "removal"
+      ],
+      "Parish Slayer": [
+        "removal"
+      ],
+      "Roseaun Ley-Pillar": [
+        "removal"
+      ],
+      "Temperamental Chick": [
+        "removal"
+      ],
+      "Token_Limit": [
+        "removal",
+        "below-rate"
+      ],
+      "Uquus Crusaris": [
+        "removal"
+      ],
+      "Advance of Fire and Faith": [
+        "removal"
+      ],
+      "Cleansing Starfire": [
+        "removal"
+      ],
+      "Instill Absolution": [
+        "removal",
+        "below-rate"
+      ],
+      "Form of the Sun": [
+        "removal"
+      ],
+      "PANIC()": [
+        "removal"
+      ],
+      "Spiteful Banditry": [
+        "wipe",
+        "removal"
+      ],
+      "Bleeding Out": [
+        "removal"
+      ],
+      "Blade Flourish": [
+        "removal"
+      ],
+      "Convergence of Fae": [
+        "removal",
+        "below-rate"
+      ],
+      "Break the Tide": [
+        "removal"
+      ],
+      "Crucible Takedown": [
+        "removal",
+        "below-rate"
+      ],
+      "Damn to Hell": [
+        "removal"
+      ],
+      "Ethereal Exodus": [
+        "removal"
+      ],
+      "Fell the Nonbeliever": [
+        "removal",
+        "below-rate"
+      ],
+      "Geistblaster's Breakthrough": [
+        "removal"
+      ],
+      "Hell's Boon": [
+        "removal"
+      ],
+      "Hired Shot": [
+        "removal"
+      ],
+      "Plasma Strike": [
+        "removal"
+      ],
+      "Penrath Agenda": [
+        "removal"
+      ],
+      "Nether Invocation": [
+        "removal"
+      ],
+      "Lunar Awe": [
+        "removal"
+      ],
+      "Poised Flame": [
+        "removal",
+        "below-rate"
+      ],
+      "Retaliatory Outburst": [
+        "removal",
+        "below-rate"
+      ],
+      "Pyrrhic Blast": [
+        "removal",
+        "below-rate"
+      ],
+      "Searing Grace": [
+        "removal"
+      ],
+      "Sunvrath Charm": [
+        "removal"
+      ],
+      "Starsquall": [
+        "removal",
+        "wipe"
+      ],
+      "Shock": [
+        "removal"
+      ],
+      "To the Last Breath": [
+        "removal",
+        "below-rate"
+      ],
+      "Vow to Conquer": [
+        "removal"
+      ],
+      "Wanton Display": [
+        "removal"
+      ],
+      "Charge Beam": [
+        "removal",
+        "below-rate"
+      ],
+      "Burn It All Down": [
+        "wipe",
+        "removal"
+      ],
+      "Boiling Storm": [
+        "wipe",
+        "removal",
+        "below-rate"
+      ],
+      "Blaze Beyond Limits": [
+        "removal",
+        "below-rate"
+      ],
+      "Aberrant Whispers": [
+        "removal",
+        "wipe",
+        "below-rate"
+      ],
+      "Deafening Clarion": [
+        "removal",
+        "wipe"
+      ],
+      "Impromptu Exit": [
+        "wipe",
+        "removal"
+      ],
+      "Error Tide": [
+        "removal",
+        "below-rate"
+      ],
+      "Horrors Wrought": [
+        "removal",
+        "wipe"
+      ],
+      "Full-Moon Assault": [
+        "removal",
+        "below-rate"
+      ],
+      "Grand Larceny": [
+        "removal"
+      ],
+      "Level Drain": [
+        "removal",
+        "below-rate"
+      ],
+      "Malignant Moonbeam": [
+        "removal",
+        "below-rate"
+      ],
+      "Olivia's Debauchery": [
+        "removal"
+      ],
+      "Skycleave": [
+        "removal"
+      ],
+      "Ruinous Portents": [
+        "removal",
+        "wipe"
+      ],
+      "Rally to Thraben": [
+        "removal"
+      ],
+      "Splintering Blast": [
+        "removal",
+        "below-rate"
+      ],
+      "Stellar Flare": [
+        "removal"
+      ],
+      "Stellar Subjugation": [
+        "removal"
+      ],
+      "Strangle": [
+        "removal"
+      ],
+      "Sunder the Cage": [
+        "removal"
+      ],
+      "Unstable Experimentation": [
+        "removal"
+      ],
+      "Tear Down": [
+        "removal",
+        "below-rate"
+      ],
+      "Collector's Item": [
+        "removal"
+      ],
+      "Defect": [
+        "removal"
+      ],
+      "Existential Eclipse": [
+        "removal",
+        "below-rate"
+      ],
+      "Gain Traction": [
+        "removal",
+        "below-rate"
+      ],
+      "Gift of Stillness": [
+        "removal"
+      ],
+      "Intangibility": [
+        "removal"
+      ],
+      "Grasp of Oblivion": [
+        "removal"
+      ],
+      "Planned Obsolescence": [
+        "removal"
+      ],
+      "Soulspace Access": [
+        "removal"
+      ],
+      "Sensory Deprivation": [
+        "removal",
+        "below-rate"
+      ],
+      "Play on Their Fears": [
+        "removal",
+        "below-rate"
+      ],
+      "Stasis Chamber": [
+        "removal",
+        "below-rate"
+      ],
+      "Tireless Pilgrimage": [
+        "removal"
+      ],
+      "Trapped in the Mirror": [
+        "removal"
+      ],
+      "Into the Grove": [
+        "removal",
+        "below-rate"
+      ],
+      "Cultist of the Drowntide": [
+        "removal",
+        "bounce"
+      ],
+      "Abduct": [
+        "removal",
+        "below-rate"
+      ],
+      "March of the Drowntide": [
+        "removal",
+        "below-rate"
+      ],
+      "Whipping Winds": [
+        "removal",
+        "below-rate"
+      ],
+      "Balaenos Cresetis": [
+        "removal",
+        "bounce"
+      ],
+      "Congressional Kraken": [
+        "removal",
+        "bounce"
+      ],
+      "Frog of Eternal Gloom": [
+        "removal",
+        "bounce"
+      ],
+      "Raven of Onyx Wing": [
+        "removal",
+        "bounce"
+      ],
+      "Vicuro Pathmaker": [
+        "removal",
+        "bounce",
+        "below-rate"
+      ],
+      "Advance of Rune and Whisper": [
+        "removal",
+        "bounce"
+      ],
+      "Sea Breeze": [
+        "removal",
+        "bounce"
+      ],
+      "Beaconstorm": [
+        "removal",
+        "bounce"
+      ],
+      "Dragon's Repose": [
+        "removal",
+        "bounce"
+      ],
+      "Erase from Existence": [
+        "removal",
+        "bounce"
+      ],
+      "Evasive Flourish": [
+        "removal",
+        "bounce"
+      ],
+      "Dream Snare": [
+        "removal",
+        "bounce"
+      ],
+      "Sabotage the Supply Lines": [
+        "removal",
+        "bounce",
+        "below-rate"
+      ],
+      "Subtle Touch": [
+        "removal",
+        "bounce"
+      ],
+      "Ashiok's Manipulation": [
+        "removal"
+      ],
+      "Geralf's Studies": [
+        "removal"
+      ],
+      "Grasp of the Elements": [
+        "removal",
+        "wipe"
+      ],
+      "On Top of the World": [
+        "wipe",
+        "removal"
+      ],
+      "Wanton Destruction": [
+        "wipe",
+        "removal"
+      ],
+      "Social Engineering": [
+        "removal"
+      ],
+      "Heavenly Descent": [
+        "wipe",
+        "removal"
+      ],
+      "Banisher Rifle": [
+        "removal"
+      ],
+      "Caress of the Stars": [
+        "removal"
+      ],
+      "Noxious Conditions": [
+        "wipe",
+        "minus-rem",
+        "removal"
+      ],
+      "Spit Venom": [
+        "removal",
+        "below-rate"
+      ],
+      "Swap to Storage": [
+        "removal",
+        "below-rate"
+      ],
+      "Bloodletting": [
+        "removal",
+        "wipe",
+        "minus-rem"
+      ],
+      "Cheat Code": [
+        "minus-rem",
+        "wipe",
+        "removal"
+      ],
+      "Corner the Prey": [
+        "removal"
+      ],
+      "Coup D'Etat": [
+        "removal",
+        "wipe",
+        "minus-rem"
+      ],
+      "Divine Liberation": [
+        "removal"
+      ],
+      "Failed Gateway": [
+        "minus-rem",
+        "wipe",
+        "removal"
+      ],
+      "Founder's Malice": [
+        "removal"
+      ],
+      "Grasping Dreams": [
+        "removal"
+      ],
+      "Nightfall": [
+        "minus-rem",
+        "removal",
+        "wipe"
+      ],
+      "Patent Pending": [
+        "removal",
+        "below-rate"
+      ],
+      "Pick Your Poison": [
+        "ae-rem"
+      ],
+      "Rain of Blight": [
+        "minus-rem",
+        "wipe",
+        "removal"
+      ],
+      "Psionic Backlash": [
+        "minus-rem",
+        "wipe",
+        "removal"
       ]
     },
     "order": [
-      "creatureland",
-      "edict",
+      "below-rate",
+      "wipe",
+      "removal",
       "minus-rem",
+      "ae-rem",
+      "bounce",
+      "handattack",
+      "edict",
+      "creatureland",
       "fbite",
       "texile",
-      "handattack",
       "counterspell",
       "utilityland",
       "Goldland",
@@ -2674,7 +3681,10 @@
       "RGLand",
       "GWland",
       "coco"
-    ]
+    ],
+    "aliases": {
+      "boardwipe": "wipe"
+    }
   },
   "voyager": {
     "cards": {
@@ -2771,6 +3781,7 @@
     },
     "order": [
       "counterspell"
-    ]
+    ],
+    "aliases": {}
   }
 }

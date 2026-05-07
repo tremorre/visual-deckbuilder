@@ -125,9 +125,14 @@ const STATE = {
   // added-to tag is first; what the tagger sidebar and `is:<tag>` searches
   // both read. Revolution and Voyager have separate maps so a tag applied
   // in one dataset never leaks into the other.
+  // `aliases` maps lowercased alternate names to the canonical display
+  // name. Cards never store aliases — when a user types or searches an
+  // alias it resolves once to the canonical, and the canonical is what
+  // gets read/written. Aliasing "kill" → "removal" makes is:kill find
+  // every removal-tagged card in the deckbuilder too.
   tags: {
-    revolution: { cards: {}, order: [] },
-    voyager:    { cards: {}, order: [] },
+    revolution: { cards: {}, order: [], aliases: {} },
+    voyager:    { cards: {}, order: [], aliases: {} },
   },
   // Tagging tool — set to true when app.js is loaded via tags.html (which
   // sets window.TAG_MODE before the script tag). Switches the sidebar to
@@ -1220,6 +1225,37 @@ async function loadTags() {
       if (Array.isArray(d.order)) {
         slot.order = d.order.filter(t => typeof t === 'string');
       }
+      slot.aliases = {};
+      if (d.aliases && typeof d.aliases === 'object' && !Array.isArray(d.aliases)) {
+        for (const k of Object.keys(d.aliases)) {
+          const v = d.aliases[k];
+          if (typeof v !== 'string') continue;
+          const lk = String(k).toLowerCase().trim();
+          const tv = v.trim();
+          if (!lk || !tv) continue;
+          if (lk === tv.toLowerCase()) continue;  // self-alias, drop
+          slot.aliases[lk] = tv;
+        }
+      }
+      // Defensive normalization: if any cards still carry an alias name
+      // (e.g. tags.json was hand-edited), rewrite those entries onto the
+      // canonical so subsequent operations see a clean state.
+      for (const canon of Object.keys(slot.cards)) {
+        const arr = slot.cards[canon];
+        const next = [];
+        const seen = new Set();
+        let dirty = false;
+        for (const t of arr) {
+          const tl = t.toLowerCase();
+          const real = slot.aliases[tl] || t;
+          const rl = real.toLowerCase();
+          if (seen.has(rl)) { dirty = true; continue; }
+          seen.add(rl);
+          if (rl !== tl) dirty = true;
+          next.push(real);
+        }
+        if (dirty) slot.cards[canon] = next;
+      }
     }
   } catch (e) {
     console.warn('could not load tags.json:', e);
@@ -1270,31 +1306,37 @@ async function doSaveTags() {
 // it — matches the spec: the sidebar's top slot is the most recently
 // ACTED-ON tag, not the most recently newly-created.
 function addTagToCards(tag, canonicals, dataset = currentDataset()) {
-  tag = String(tag || '').trim();
-  if (!tag) return null;
+  const input = String(tag || '').trim();
+  if (!input) return null;
   const slot = STATE.tags[dataset];
   if (!slot) return null;
-  const low = tag.toLowerCase();
+  // If the user typed an alias, swap in the canonical before doing anything
+  // else — cards always carry the canonical, never the alias. The toast
+  // surfaces the rewrite so the user knows what was actually saved.
+  const aliasedTo = slot.aliases ? slot.aliases[input.toLowerCase()] : null;
+  const real = aliasedTo || input;
+  const low = real.toLowerCase();
   let changed = false;
   for (const canon of canonicals) {
     if (!canon) continue;
     let arr = slot.cards[canon];
     if (!arr) { arr = []; slot.cards[canon] = arr; changed = true; }
     if (!arr.some(t => t.toLowerCase() === low)) {
-      arr.push(tag);
+      arr.push(real);
       changed = true;
     }
   }
   // Move tag to the head of `order` (MRU). Preserves the display casing
   // the user first entered it with.
   const idx = slot.order.findIndex(t => t.toLowerCase() === low);
-  let display = tag;
+  let display = real;
   if (idx >= 0) {
     display = slot.order[idx];
     slot.order.splice(idx, 1);
   }
   slot.order.unshift(display);
   STATE.lastUsedTag = display;
+  if (aliasedTo) showAliasToast(input, display);
   persistTags();
   return display;
 }
@@ -1302,7 +1344,11 @@ function addTagToCards(tag, canonicals, dataset = currentDataset()) {
 function removeTagFromCard(tag, canonical, dataset = currentDataset()) {
   const slot = STATE.tags[dataset];
   if (!slot) return;
-  const low = String(tag).toLowerCase();
+  // Resolve aliases so removing "kill" from a card actually drops the
+  // canonical "removal" entry it's stored under.
+  const inputLow = String(tag).toLowerCase();
+  const aliased = slot.aliases ? slot.aliases[inputLow] : null;
+  const low = aliased ? String(aliased).toLowerCase() : inputLow;
   const arr = slot.cards[canonical];
   if (!arr) return;
   const filtered = arr.filter(t => t.toLowerCase() !== low);
@@ -1331,13 +1377,109 @@ function tagsForCard(canonical, dataset = currentDataset()) {
 function cardsForTag(tag, dataset = currentDataset()) {
   const slot = STATE.tags[dataset];
   if (!slot) return [];
-  const low = String(tag).toLowerCase();
+  // Querying by an alias returns the canonical's cards.
+  const inputLow = String(tag).toLowerCase();
+  const aliased = slot.aliases ? slot.aliases[inputLow] : null;
+  const low = aliased ? String(aliased).toLowerCase() : inputLow;
   const out = [];
   for (const canon of Object.keys(slot.cards)) {
     if (slot.cards[canon].some(t => t.toLowerCase() === low)) {
       out.push(canon);
     }
   }
+  return out;
+}
+
+// Add an alias `aliasName` → `canonical`. Migrates any cards already tagged
+// with `aliasName` onto the canonical (so an alias added after the fact
+// doesn't leave orphaned cards), retires the alias from `order`, and
+// repoints any aliases that pointed at the alias we just absorbed (so the
+// store never holds a multi-hop chain).
+function addTagAlias(aliasName, canonical, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot) return false;
+  const aliasLow = String(aliasName || '').trim().toLowerCase();
+  const canonInput = String(canonical || '').trim();
+  const canonLowInput = canonInput.toLowerCase();
+  if (!aliasLow || !canonLowInput || aliasLow === canonLowInput) return false;
+  if (!slot.aliases) slot.aliases = {};
+  // If the user picked another alias as the canonical, walk one hop so we
+  // store the terminal name. (Aliases are flat, never chained.)
+  let canonDisplay = canonInput;
+  let canonLow = canonLowInput;
+  if (slot.aliases[canonLow]) {
+    canonDisplay = slot.aliases[canonLow];
+    canonLow = canonDisplay.toLowerCase();
+    if (canonLow === aliasLow) return false;  // would form a cycle
+  }
+  // If the canonical already exists in `order`, prefer its display casing —
+  // keeps the alias map and order from drifting when callers pass a
+  // differently-cased canonical name.
+  const orderMatchIdx = slot.order.findIndex(t => t.toLowerCase() === canonLow);
+  if (orderMatchIdx >= 0) canonDisplay = slot.order[orderMatchIdx];
+  let changed = false;
+  // Migrate cards tagged with the old alias name onto the canonical.
+  for (const c of Object.keys(slot.cards)) {
+    const arr = slot.cards[c];
+    let touched = false;
+    let hasCanon = false;
+    const next = [];
+    for (const t of arr) {
+      const tl = t.toLowerCase();
+      if (tl === aliasLow) { touched = true; continue; }
+      if (tl === canonLow) hasCanon = true;
+      next.push(t);
+    }
+    if (touched) {
+      if (!hasCanon) next.push(canonDisplay);
+      slot.cards[c] = next;
+      changed = true;
+    }
+  }
+  const aliasIdx = slot.order.findIndex(t => t.toLowerCase() === aliasLow);
+  if (aliasIdx >= 0) { slot.order.splice(aliasIdx, 1); changed = true; }
+  if (!slot.order.some(t => t.toLowerCase() === canonLow)) {
+    slot.order.unshift(canonDisplay);
+    changed = true;
+  }
+  if ((slot.aliases[aliasLow] || '') !== canonDisplay) {
+    slot.aliases[aliasLow] = canonDisplay;
+    changed = true;
+  }
+  for (const k of Object.keys(slot.aliases)) {
+    if (slot.aliases[k].toLowerCase() === aliasLow) {
+      slot.aliases[k] = canonDisplay;
+      changed = true;
+    }
+  }
+  if (STATE.focusedTag && STATE.focusedTag.toLowerCase() === aliasLow) {
+    STATE.focusedTag = canonDisplay;
+  }
+  if (changed) persistTags();
+  return changed;
+}
+
+function removeTagAlias(aliasName, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot || !slot.aliases) return false;
+  const low = String(aliasName || '').toLowerCase();
+  if (!(low in slot.aliases)) return false;
+  delete slot.aliases[low];
+  persistTags();
+  return true;
+}
+
+// Lowercased alias names that resolve to `canonical`. Used by the sidebar
+// (subtitle line + tooltip) and the alias editor to render existing chips.
+function aliasesForTag(canonical, dataset = currentDataset()) {
+  const slot = STATE.tags[dataset];
+  if (!slot || !slot.aliases) return [];
+  const low = String(canonical || '').toLowerCase();
+  const out = [];
+  for (const k of Object.keys(slot.aliases)) {
+    if (slot.aliases[k].toLowerCase() === low) out.push(k);
+  }
+  out.sort();
   return out;
 }
 
@@ -2944,14 +3086,20 @@ function buildIsPredicate(rawValue) {
       // canonical name so reprints share tags. Case-insensitive. Built-in
       // is:X values above win; a user tag named "page" or "reprint" is
       // unreachable via is:<tag> and shouldn't be created.
+      // Aliases resolve here too — `is:kill` finds every removal-tagged
+      // card the same way the tagger does. This works in the deckbuilder
+      // because tags.json (with its aliases map) is loaded in both modes.
       const ds = currentDataset();
+      const slot0 = STATE.tags[ds];
+      const aliased = slot0 && slot0.aliases ? slot0.aliases[v] : null;
+      const matchLow = aliased ? String(aliased).toLowerCase() : v;
       return (c) => {
         const slot = STATE.tags[ds];
         if (!slot) return false;
         const arr = slot.cards[c.canonical] || slot.cards[c.name];
         if (!arr) return false;
         for (const t of arr) {
-          if (String(t).toLowerCase() === v) return true;
+          if (String(t).toLowerCase() === matchLow) return true;
         }
         return false;
       };
@@ -5438,8 +5586,12 @@ function wireRegionSelect() {
     // Region-select operates on two different selection stores depending on
     // the pane contents: card-instance uids for deck zones, card ids for
     // the search pane. `mode` captures which we're in for the duration of
-    // this drag so mousemove doesn't have to re-check on every tick.
-    const mode = STATE.focusedZone === 'search' ? 'search' : 'deck';
+    // this drag so mousemove doesn't have to re-check on every tick. The
+    // tagger's focused-tag panel reuses search slots (cardId-keyed), so it
+    // needs the same store and key as the search pane.
+    const mode = (STATE.focusedZone === 'search'
+                  || (STATE.tagMode && STATE.focusedZone === 'tag'))
+                ? 'search' : 'deck';
     const selSet = (mode === 'search') ? STATE.searchSelection : STATE.selection;
     const additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
     if (!additive && selSet.size > 0) {
@@ -7509,19 +7661,27 @@ function wireTagSearchTab() {
       renderTagSidebar();
     });
   }
+  // Click anywhere on the "Tags" header (empty space, the save-status
+  // badge, the title) to toggle into the all-tags view. The button itself
+  // only covers its text, so binding on the parent makes the whole strip
+  // a hit target.
   const allTagsBtn = document.getElementById('btn-all-tags');
-  if (allTagsBtn) {
-    allTagsBtn.addEventListener('click', () => {
-      // Toggle: clicking again from the all-tags view drops back to search.
-      if (STATE.focusedZone === 'tag-list') {
-        STATE.focusedTag = null;
-        setFocusedZone('search');
-      } else {
-        STATE.focusedTag = null;
-        setFocusedZone('tag-list');
-      }
-      renderTagSidebar();
-    });
+  const sidebarHeader = document.querySelector('.tag-sidebar-header');
+  const toggleAllTags = () => {
+    if (STATE.focusedZone === 'tag-list') {
+      STATE.focusedTag = null;
+      setFocusedZone('search');
+    } else {
+      STATE.focusedTag = null;
+      setFocusedZone('tag-list');
+    }
+    renderTagSidebar();
+  };
+  if (sidebarHeader) {
+    sidebarHeader.addEventListener('click', toggleAllTags);
+    sidebarHeader.style.cursor = 'pointer';
+  } else if (allTagsBtn) {
+    allTagsBtn.addEventListener('click', toggleAllTags);
   }
   document.addEventListener('keydown', (ev) => {
     if (!STATE.tagMode) return;
@@ -7561,17 +7721,45 @@ function renderTagSidebar() {
     for (const canon of Object.keys(slot.cards)) {
       if (slot.cards[canon].some(t => t.toLowerCase() === low)) count++;
     }
+    const aliases = aliasesForTag(tag, ds);
     const sec = document.createElement('section');
     sec.className = 'zone tag-zone'
                   + (STATE.focusedTag && STATE.focusedTag.toLowerCase() === low ? ' focused' : '');
     sec.dataset.tag = tag;
+    sec.dataset.title = aliases.length
+      ? `${tag} — also: ${aliases.join(', ')}`
+      : `${tag}`;
+    const aliasLine = aliases.length
+      ? `<div class="tag-zone-aliases">${escapeHtml(aliases.join(', '))}</div>`
+      : '';
     sec.innerHTML = `
       <header>
         <span class="zone-title">${escapeHtml(tag)}</span>
+        <button type="button" class="tag-zone-edit" data-title="Manage aliases for this tag">✎</button>
         <span class="zone-count">${count}</span>
       </header>
+      ${aliasLine}
     `;
-    sec.addEventListener('click', () => {
+    const editBtn = sec.querySelector('.tag-zone-edit');
+    if (editBtn) {
+      // Stop the click propagating into the section's focus toggle. mousedown
+      // is also stopped so the section's drag affordance doesn't try to
+      // start a drag from the button.
+      editBtn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+      editBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        openAliasEditorPopover(editBtn, tag);
+      });
+    }
+    sec.addEventListener('click', (ev) => {
+      // Shift-click on the row also opens the editor (power-user shortcut),
+      // but the visible pencil button is now the discoverable affordance.
+      if (ev.shiftKey) {
+        ev.preventDefault();
+        openAliasEditorPopover(editBtn || sec, tag);
+        return;
+      }
       // Second click on the already-focused section returns to the card
       // pool (search view) — the tag list should never need a pseudo-entry
       // above the most-recent-tag section to navigate back.
@@ -7717,6 +7905,7 @@ function renderAllTagsPanel() {
   const list = document.createElement('div');
   list.className = 'tag-list-view';
   for (const tag of order) {
+    const aliases = aliasesForTag(tag, ds);
     const row = document.createElement('div');
     row.className = 'tag-list-row';
     row.dataset.tag = tag;
@@ -7727,6 +7916,12 @@ function renderAllTagsPanel() {
     count.className = 'tag-list-count';
     count.textContent = counts.get(tag.toLowerCase()) || 0;
     row.appendChild(name);
+    if (aliases.length) {
+      const ali = document.createElement('span');
+      ali.className = 'tag-list-aliases';
+      ali.textContent = aliases.join(', ');
+      row.appendChild(ali);
+    }
     row.appendChild(count);
     row.addEventListener('click', () => {
       STATE.focusedTag = tag;
@@ -7736,6 +7931,152 @@ function renderAllTagsPanel() {
     list.appendChild(row);
   }
   container.appendChild(list);
+}
+
+// Floating popover for editing a tag's aliases. Opens from either the
+// pencil button on a row in the all-tags panel or shift-click on a sidebar
+// tag section. Mutations go through addTagAlias / removeTagAlias so the
+// data model stays consistent (cards migrated, order pruned, save fired).
+function ensureAliasEditor() {
+  if (document.getElementById('alias-editor')) return;
+  const pop = document.createElement('div');
+  pop.id = 'alias-editor';
+  pop.className = 'tag-popover alias-editor hidden';
+  pop.innerHTML = `
+    <div class="alias-editor-title"></div>
+    <div class="alias-editor-chips tag-chip-editor"></div>
+    <div class="alias-editor-hint">Type an alias, press <kbd>Enter</kbd>. <kbd>×</kbd> on a chip removes it.</div>
+  `;
+  document.body.appendChild(pop);
+  // Click outside closes the editor.
+  document.addEventListener('mousedown', (ev) => {
+    const el = document.getElementById('alias-editor');
+    if (!el || el.classList.contains('hidden')) return;
+    if (el.contains(ev.target)) return;
+    closeAliasEditor();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const el = document.getElementById('alias-editor');
+    if (!el || el.classList.contains('hidden')) return;
+    closeAliasEditor();
+  });
+}
+
+let _aliasEditorTag = null;
+
+function openAliasEditorPopover(anchorEl, tag) {
+  ensureAliasEditor();
+  const pop = document.getElementById('alias-editor');
+  const titleEl = pop.querySelector('.alias-editor-title');
+  const chipsEl = pop.querySelector('.alias-editor-chips');
+  if (!pop || !titleEl || !chipsEl) return;
+  _aliasEditorTag = tag;
+  titleEl.textContent = `Aliases for "${tag}"`;
+  renderAliasEditorChips();
+  pop.classList.remove('hidden');
+  if (anchorEl && anchorEl.getBoundingClientRect) {
+    const r = anchorEl.getBoundingClientRect();
+    const popW = 260;
+    let left = r.right + 8;
+    if (left + popW > window.innerWidth - 8) left = r.left - popW - 8;
+    if (left < 8) left = 8;
+    pop.style.left = left + 'px';
+    pop.style.top = Math.max(8, r.top) + 'px';
+  } else {
+    pop.style.left = (window.innerWidth / 2 - 130) + 'px';
+    pop.style.top  = (window.innerHeight / 3) + 'px';
+  }
+  setTimeout(() => {
+    const inp = pop.querySelector('input');
+    if (inp) inp.focus();
+  }, 0);
+}
+
+function closeAliasEditor() {
+  const pop = document.getElementById('alias-editor');
+  if (!pop) return;
+  pop.classList.add('hidden');
+  _aliasEditorTag = null;
+}
+
+// Briefly surface that a typed alias was rewritten to its canonical. Used
+// only by addTagToCards when the user typed an alias — nothing if they
+// typed the canonical directly. Re-uses a single floating element so
+// rapid-fire applies don't stack.
+let _aliasToastTimer = null;
+function showAliasToast(typed, applied) {
+  let el = document.getElementById('alias-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'alias-toast';
+    el.className = 'alias-toast hidden';
+    document.body.appendChild(el);
+  }
+  el.textContent = `applied "${applied}" (alias of "${typed}")`;
+  el.classList.remove('hidden');
+  if (_aliasToastTimer) clearTimeout(_aliasToastTimer);
+  _aliasToastTimer = setTimeout(() => {
+    el.classList.add('hidden');
+    _aliasToastTimer = null;
+  }, 2200);
+}
+
+function renderAliasEditorChips() {
+  const pop = document.getElementById('alias-editor');
+  if (!pop) return;
+  const chipsEl = pop.querySelector('.alias-editor-chips');
+  if (!chipsEl || !_aliasEditorTag) return;
+  chipsEl.innerHTML = '';
+  const aliases = aliasesForTag(_aliasEditorTag);
+  for (const a of aliases) {
+    const chip = document.createElement('span');
+    chip.className = 'deck-tag-chip';
+    chip.textContent = a;
+    const x = document.createElement('span');
+    x.className = 'chip-x';
+    x.innerHTML = '&times;';
+    x.addEventListener('mousedown', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      removeTagAlias(a);
+      renderAliasEditorChips();
+      renderTagSidebar();
+      // The all-tags pane shows aliases inline too — re-render if visible.
+      if (STATE.focusedZone === 'tag-list') renderPiles();
+      const inp = chipsEl.querySelector('input');
+      if (inp) inp.focus();
+    });
+    chip.appendChild(x);
+    chipsEl.appendChild(chip);
+  }
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = aliases.length ? '' : 'add alias…';
+  input.setAttribute('list', 'tag-datalist');
+  input.addEventListener('keydown', (ev) => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter' || ev.key === ',') {
+      ev.preventDefault();
+      const val = input.value.trim().replace(/,$/, '');
+      if (!val || !_aliasEditorTag) return;
+      const ok = addTagAlias(val, _aliasEditorTag);
+      input.value = '';
+      if (ok) {
+        renderAliasEditorChips();
+        renderTagSidebar();
+        if (STATE.focusedZone === 'tag-list') renderPiles();
+      } else {
+        // Visual nudge that the alias was rejected (self-alias / cycle / empty).
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 400);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      closeAliasEditor();
+    }
+  });
+  chipsEl.appendChild(input);
 }
 
 function makeCardTagChips(canonical) {
@@ -7787,8 +8128,17 @@ function refreshTagDatalist() {
   const dl = document.getElementById('tag-datalist');
   if (!dl) return;
   const ds = currentDataset();
-  const order = (STATE.tags[ds]?.order || []).slice();
-  dl.innerHTML = order.map(t => `<option value="${escapeHtml(t)}">`).join('');
+  const slot = STATE.tags[ds];
+  const order = (slot?.order || []).slice();
+  const aliases = slot?.aliases || {};
+  // Canonicals first, then each alias (with the canonical as a hint label
+  // — datalists render `option[label]` next to the value in modern browsers).
+  const parts = order.map(t => `<option value="${escapeHtml(t)}">`);
+  for (const k of Object.keys(aliases).sort()) {
+    const target = aliases[k];
+    parts.push(`<option value="${escapeHtml(k)}" label="→ ${escapeHtml(target)}">`);
+  }
+  dl.innerHTML = parts.join('');
 }
 
 // Popover state — the canonicals the next Enter/submit applies to.

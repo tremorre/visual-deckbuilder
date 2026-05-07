@@ -206,16 +206,18 @@ function producibleColors(text) {
 }
 
 function computeDeckColors(deck) {
+  // Sideboard cards don't count — color identity reflects the maindeck only.
   const producible = new Set();
   const cardEntries = Object.values(deck.cards || {});
   for (const e of cardEntries) {
+    if ((e.mainCount || 0) === 0) continue;
     const c = lookupCard(e);
     if (!c) continue;
     for (const col of producibleColors(c.text || '')) producible.add(col);
   }
   const required = new Set();
   for (const e of cardEntries) {
-    if ((e.mainCount || 0) === 0 && (e.sideCount || 0) === 0) continue;
+    if ((e.mainCount || 0) === 0) continue;
     const c = lookupCard(e);
     if (!c) continue;
     const pips = parseManaCost(c.manaCost || '');
@@ -1848,7 +1850,19 @@ async function loadAll(force) {
   const stamp = bundle.fetchedAt
     ? ' · synced ' + new Date(bundle.fetchedAt).toLocaleString()
     : '';
-  setStatus(`${bundle.decks.length} deck${bundle.decks.length === 1 ? '' : 's'} loaded${stamp}`);
+  // missingDeckIds is the gap between what `viewable` advertised and what the
+  // per-deck `decklist` calls actually delivered. The endpoint returns HTTP
+  // 500 for these IDs and the cause is opaque from the outside — neither the
+  // docs' "active runs" hint nor any visible field on the run record (match
+  // count, duplicate name, score shape, encoded card list) cleanly separates
+  // the failing IDs from the rest. Surface the count so the list isn't
+  // silently truncated.
+  const missing = Array.isArray(bundle.missingDeckIds) ? bundle.missingDeckIds.length : 0;
+  const total = bundle.decks.length + missing;
+  const gap = missing
+    ? ` · ${missing} of ${total} could not be loaded`
+    : '';
+  setStatus(`${bundle.decks.length} deck${bundle.decks.length === 1 ? '' : 's'} loaded${gap}${stamp}`);
 }
 
 // Pulls the viewable index, fans out one POST per deck, and assembles the
@@ -1861,6 +1875,7 @@ async function fetchBundle(onProgress) {
 
   if (onProgress) onProgress(0, ids.length);
   const out = new Array(ids.length);
+  const missingDeckIds = [];
   let cursor = 0;
   let done = 0;
   async function worker() {
@@ -1872,6 +1887,7 @@ async function fetchBundle(onProgress) {
       } catch (e) {
         console.warn('league: deck fetch failed', ids[i], e);
         out[i] = null;
+        missingDeckIds.push(ids[i]);
       }
       done += 1;
       if (onProgress) onProgress(done, ids.length);
@@ -1894,6 +1910,7 @@ async function fetchBundle(onProgress) {
     fetchedAt: new Date().toISOString(),
     decks: out.filter(d => d != null),
     players,
+    missingDeckIds,
   };
 }
 

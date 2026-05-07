@@ -2448,3 +2448,100 @@ html:has(body.league-page.detail-active) {
   .league-deck-row .league-id-cards,
   .league-deck-row .league-pips { display: none; }
 }
+
+/* Tag aliases — sidebar subtitle, all-tags row, popover editor, toast.
+ * Aliases are the "alternate names that resolve to one canonical" feature;
+ * see addTagAlias / aliasesForTag in app.js. */
+.tag-zone-aliases {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 0 10px 4px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag-zone.focused .tag-zone-aliases { color: var(--text-on-accent); opacity: 0.85; }
+
+.tag-list-row .tag-list-aliases {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: 8px;
+  margin-right: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag-list-row:hover .tag-list-aliases { color: var(--text-on-accent); opacity: 0.85; }
+
+/* Per-tag pencil button on each sidebar tag section. Sits inside the
+ * section header between the title and count. Hidden until hover so it
+ * doesn't clutter the sidebar at rest, then fades in for the row the
+ * cursor is on. */
+.tag-zone > header .tag-zone-edit {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1px 4px;
+  margin-left: auto;
+  margin-right: 6px;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 80ms ease-out;
+}
+.tag-zone:hover > header .tag-zone-edit,
+.tag-zone.focused > header .tag-zone-edit { opacity: 0.7; }
+.tag-zone > header .tag-zone-edit:hover { opacity: 1; border-color: var(--border); }
+
+.alias-editor { width: 260px; }
+.alias-editor-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.alias-editor-chips { min-height: 24px; }
+.alias-editor-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.alias-editor-hint kbd {
+  font-family: inherit;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0 3px;
+}
+.alias-editor input.shake {
+  animation: alias-shake 0.35s linear;
+  border-color: var(--danger, #e04040);
+}
+@keyframes alias-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-3px); }
+  40%      { transform: translateX(3px); }
+  60%      { transform: translateX(-2px); }
+  80%      { transform: translateX(2px); }
+}
+
+.alias-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 80;
+  padding: 6px 12px;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 250ms ease-out;
+}
+.alias-toast.hidden { opacity: 0; }
