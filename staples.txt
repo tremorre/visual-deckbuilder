@@ -1,0 +1,214 @@
+# Format-codec staple list. Cards in this list go into the dense first segment
+# of the URL gap stream. Frozen at format-launch — changing it breaks all
+# previously-encoded URLs.
+#
+# Seeded by: gen_staples.py K=10
+# Source: Jan-Mar 2026 corpus, 256 decks; deck-count >= 10; legalities['revolution']=='Legal' on some printing.
+# 146 cards.
+#
+# Edit freely — one bare card name per line. Use the labeling app (static/label.html)
+# for guided review of new-set cards.
+Twilight Ambush
+Gilded Court
+Contest Coordinator
+Dark Horse Victory
+Gone Pickin'
+The Ruins Awaken
+Stratus Fledgling
+Seafloor Treasures
+Calamity Cat
+Crumbling Tower
+Magma Flow
+Hungry Blob
+A Journey Begins
+Iviana, Dragon Tamer
+Primal Fissure
+Temple of Origins
+Mellan, Defense Attorney
+Planned Obsolescence
+Research Grant
+Deadly Dispute
+Survivors of the New World
+Ignited Soul
+Vishanki District
+Negate
+Exorcist of Errors
+Failed Gateway
+Lifehacker
+RECV()
+Cache Thrasher
+Competitive Hedonist
+Frag
+PANIC()
+Shock
+Aurore, Buffer Exec
+Rejuvenation Session
+Archival Storage
+Buffer Reconservatory
+Clearwater Grotto
+Enigmatic Fen
+Heap Ludicon
+Lucent Basin
+Misty Peak
+Profane Grove
+Sanguine Palace
+Silent Lakefront
+Stack Conviviplex
+Stark Expanse
+Urban Jungle
+Verdant Sanctum
+Windbeaten Stones
+Fabricated Anomaly
+Offset Daemon
+Cursory Glance
+Beyond Comprehension
+Curse of Eerie Streets
+Thalia, the Guiding Blade
+Mysteries of the Forbidden
+Subsuming Sludge
+Beckon the Beyond
+Ash-Addled Pyromaniac
+Awoken Heir
+Cackling Igniter
+Cordelia's Ripper
+Geistblaster's Breakthrough
+Darkthicket Howler
+Hope's Trail Ranger
+Prying Eyedra
+The Ulvenvater
+Addled Psyche
+Drowntide Rising
+Elgaud Dawnrider
+Goldnight Purgeblade
+Huntmaster of the Fells
+Ominous Frogs
+Rally to Thraben
+Teeming Secrets
+Urgent Investigations
+Unmarked Headstones
+Desolate Cemetery
+Desolate Garrison
+Desolate Harbor
+Desolate Pinnacle
+Desolate Thicket
+Lonely Cabin
+Solstice Circle
+The Dutiful Wanderer
+Kitsune Matriarch
+Deft Deflection
+Pass Judgment
+Duress
+Bleeding Out
+Gereishin, the Stormlord
+Shigane Manor Burns
+Realmweft Implosion
+Ensorcell
+Scorching Gecko
+Faces of the Faceless
+Primordial Gateway
+Desolate Path
+Distant Path
+Erosive Path
+Forlorn Path
+Meandering Path
+Murky Path
+Rousing Path
+Sodden Path
+Thicketed Path
+Torrid Path
+Eltanaan, the Silent Star
+Fateful Ascent
+Helia Ley-Spire
+Oberys, Ley-Pilgrim
+Qaraz Monument
+Skyray Tender
+Asulio, the Watchful Star
+Draconos Magistus
+Grasp of Oblivion
+Nightfall
+Nuillae Exidus
+Phemeros Redeemer
+Qaraz Ley-Spire
+Rastabahl, the Enduring Star
+Rites of the Dying Sun
+Caphella, Endlight Catalyst
+Darksun Migrant
+Draconos Tyrannos
+Starsquall
+Stellar Flare
+Alwanor, the Humbled Star
+Anhamei, Star Sower
+Blightstalker
+Elorys the Pathfinder
+Eternal Struggle
+Gorion Ley-Spire
+Rex Tyrannos
+Florazoa
+Interstellar Sage
+Meteor Hellion
+Nether Invocation
+Saureus Duplixi
+Uquus Crusaris
+Astraling
+Moonbeam Artisan
+Precursor to Calamity
+Astral Displacer
+Lacufae Observatory
+Qaraz Observatory
+Casus Belli
+Clash at Aureth Cross
+Sanctum of Repression
+Clash at Mistwrit Vale
+Discern
+Flutter
+Frog of Eternal Gloom
+Overrule Will
+Stargazing
+Unravel Thoughts
+Advance of the Umbral Bargain
+Go Blank
+Night's Whisper
+Pact Beyond Death
+Sovereign's Execution
+Advance of Fire and Faith
+Faithline Marshal
+Huskforger Acolyte
+Purifier of Dawnbloom Grove
+Ring of Promised Vows
+Destructive Ambition
+Cyra, Blade of Memory
+Thistrel Charm
+Culling Ritual
+Dolcairn Charm
+Vardo Ravellan, Forever King
+Deafening Clarion
+Crucible of the Burning Sun
+Golden Bloom of the Silenced
+Chasm of the Silent Covenant
+Crucible of Bound Flame
+Gallowsprout Timber
+Call for Backup
+Chapel Crasher
+Consult the Offerings
+Ivari, Liberated Mentor
+Siurne, Eternal Sentinel
+Spite of the Founder
+Volwood Warder
+Leiowen, Escape Artist
+On Top of the World
+Exultant Shepherd
+Blade Flourish
+Burn It All Down
+Impromptu Exit
+Strangle
+Sunset Champion
+Vie, the First Hero
+Pick Your Poison
+The Setral Shaper
+Shape the Pattern
+Smooth Operation
+Turen, Untouchable
+Umber Grovetender
+Voice of the Old Grove
+Marle, Vicuro Head
+The Founder's Cage

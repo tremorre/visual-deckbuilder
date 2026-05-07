@@ -361,6 +361,11 @@ function wireDragTrash() {
   // the first user action to trigger renderAll.
   renderAll();
 
+  // If the page was loaded with `#d=<payload>`, decode it and replace the
+  // current deck. The loader handles dataset mismatches (offers to switch
+  // to Revolution) and unsaved-work guards on its own.
+  await loadDeckFromUrlFragment();
+
   // Register the image-caching service worker. Needs a secure context
   // (https or localhost) — silently a no-op on file:// or unsupported
   // browsers, which is fine: the app just falls back to the browser's
@@ -5207,7 +5212,7 @@ function wireToolbar() {
     reader.readAsText(file);
     ev.target.value = '';
   });
-  document.getElementById('btn-export-cod').addEventListener('click', exportCod);
+  wireShare();
   wirePasteImport();
   wireCopyTxt();
   wireSavedDecks();
@@ -6013,152 +6018,6 @@ async function resolveMaybeMode(exportLabel) {
   const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
   if (maybeCount === 0) return 'keep';
   return promptMaybeboardInclusion(exportLabel);
-}
-
-function buildCodXml(maybeMode) {
-  // maybeMode is 'merge' | 'keep' (default). 'merge' folds maybeboard into
-  // sideboard in the exported XML so tools that don't understand a
-  // <zone name="maybe"> still see those cards.
-  const mode  = maybeMode || 'keep';
-  const main  = aggregateZone('main');
-  const maybe = aggregateZone('maybe');
-  let side    = aggregateZone('side');
-  if (mode === 'merge') {
-    const merged = new Map();
-    for (const { count, card } of side) merged.set(card.name, { count, card });
-    for (const { count, card } of maybe) {
-      const ent = merged.get(card.name);
-      if (ent) ent.count += count;
-      else merged.set(card.name, { count, card });
-    }
-    side = Array.from(merged.values()).sort((a, b) => a.card.name.localeCompare(b.card.name));
-  }
-  // Suppress the separate <zone name="maybe"> when merging.
-  const maybeForXml = mode === 'merge' ? [] : maybe;
-
-  const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-                          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  // Find a uuid for a card by walking the uuidMap. Fall back to id.
-  const uuidByCardId = new Map();
-  for (const [uuid, info] of Object.entries(STATE.uuidMap)) {
-    if (!uuidByCardId.has(info.cardId)) uuidByCardId.set(info.cardId, uuid);
-  }
-
-  function renderZone(name, items) {
-    if (items.length === 0) return '';
-    const lines = items.map(({ count, card }) => {
-      const uuid = uuidByCardId.get(card.id) || String(card.id);
-      return `        <card number="${count}" name="${xmlEsc(card.name)}" setShortName="${xmlEsc(card.set)}" collectorNumber="${xmlEsc(card.num)}" uuid="${xmlEsc(uuid)}"/>`;
-    });
-    return `    <zone name="${name}">\n${lines.join('\n')}\n    </zone>\n`;
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<cockatrice_deck version="1">
-    <deckname></deckname>
-    <comments></comments>
-    <tags/>
-${renderZone('main', main)}${renderZone('side', side)}${renderZone('maybe', maybeForXml)}</cockatrice_deck>
-`;
-}
-
-// Build a .cod file in Voyager's own export format: tab-indented, no
-// <comments>/<tags>, minimal card attributes (number + name only), and
-// everything-not-main folded into the side zone (Voyager has no maybe
-// or sanctum concept in its .cod output). Insertion order is preserved
-// rather than sorted alphabetically so round-tripping a pasted decklist
-// keeps the user's original ordering — same as voyager-mtg.github.io.
-function buildVoyagerCodXml() {
-  const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-                          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  function collect(zoneName, into) {
-    for (const pile of STATE.zones[zoneName].piles) {
-      for (const inst of pile) {
-        const c = STATE.byId.get(inst.cardId);
-        if (!c) continue;
-        const ent = into.get(c.name);
-        if (ent) ent.count++;
-        else into.set(c.name, { count: 1, card: c });
-      }
-    }
-  }
-  const mainMap = new Map();
-  collect('main', mainMap);
-  const sideMap = new Map();
-  for (const z of ['side', 'sanctum', 'maybe']) collect(z, sideMap);
-  const renderZone = (name, map) => {
-    if (map.size === 0) return '';
-    const lines = Array.from(map.values()).map(({ count, card }) =>
-      `\t\t<card number="${count}" name="${xmlEsc(card.name)}"/>`
-    );
-    return `\t<zone name="${name}">\n${lines.join('\n')}\n\t</zone>\n`;
-  };
-  const deckname = xmlEsc(STATE.loadedDeckName || 'undefined');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n`
-       + `<cockatrice_deck version="1">\n`
-       + `\t<deckname>${deckname}</deckname>\n`
-       + renderZone('main', mainMap)
-       + renderZone('side', sideMap)
-       + `</cockatrice_deck>`;
-}
-
-// Save a Cockatrice .cod file. On browsers that support the File System
-// Access API (Chromium-family) the user gets a real "save as" dialog and
-// picks where the file goes. On other browsers (Firefox, Safari) we fall
-// back to the standard download-to-Downloads-folder behaviour.
-async function exportCod() {
-  // Voyager decks export in Voyager's own minimal format — see
-  // buildVoyagerCodXml for the byte-level shape. No maybeboard prompt:
-  // Voyager's format has no maybe/sanctum zones so we just fold both
-  // into side automatically.
-  if (currentDataset() === 'voyager') {
-    const xml = buildVoyagerCodXml();
-    const filename = (STATE.loadedDeckName || 'deck') + '.cod';
-    if (typeof window.showSaveFilePicker === 'function') {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: filename,
-          types: [{ description: 'Cockatrice deck', accept: { 'application/xml': ['.cod'] } }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(xml);
-        await writable.close();
-        return;
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-        console.warn('showSaveFilePicker failed, falling back to download:', e);
-      }
-    }
-    downloadFile(filename, xml, 'application/xml');
-    return;
-  }
-  const maybeMode = await resolveMaybeMode('.cod');
-  if (maybeMode === 'cancel') return;
-  const xml = buildCodXml(maybeMode);
-  const filename = 'deck.cod';
-  if (typeof window.showSaveFilePicker === 'function') {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: filename,
-        types: [{
-          description: 'Cockatrice deck',
-          accept: { 'application/xml': ['.cod'] },
-        }],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(xml);
-      await writable.close();
-      return;
-    } catch (e) {
-      // User cancelled the dialog — that's not an error, just bail.
-      if (e && e.name === 'AbortError') return;
-      // Anything else: log and fall through to the download fallback so
-      // the user still gets their file.
-      console.warn('showSaveFilePicker failed, falling back to download:', e);
-    }
-  }
-  downloadFile(filename, xml, 'application/xml');
 }
 
 // ---------------------------------------------------------------------------
@@ -7570,6 +7429,109 @@ function wireCopyTxt() {
     }
     setTimeout(() => { btn.textContent = original; }, 1500);
   });
+}
+
+// Share button: encode the current deck (main + side, no maybeboard) into
+// a compact base64url payload and put a "<origin><path>#d=<payload>" URL
+// on the clipboard. The encoder is Revolution-only — Voyager decks fall
+// out cleanly with a one-shot warning. See scripts/deck_url.js for the
+// stream layout.
+function wireShare() {
+  const btn = document.getElementById('btn-share');
+  btn.addEventListener('click', async () => {
+    if (currentDataset() !== 'revolution') {
+      alert('Share URL is only available for Revolution decks.');
+      return;
+    }
+    const original = btn.textContent;
+    try {
+      const byName = new Map();
+      for (const z of ['main', 'side']) {
+        for (const { count, card } of aggregateZone(z)) {
+          if (!byName.has(card.name)) byName.set(card.name, { name: card.name, main: 0, side: 0 });
+          byName.get(card.name)[z === 'main' ? 'main' : 'side'] += count;
+        }
+      }
+      const result = await window.DeckUrl.encode(Array.from(byName.values()));
+      if (result.unresolved && result.unresolved.length) {
+        console.warn('share: unresolved cards (skipped):', result.unresolved);
+      }
+      const url = location.origin + location.pathname + '#d=' + result.b64;
+      await navigator.clipboard.writeText(url);
+      btn.textContent = 'URL copied ✓';
+    } catch (e) {
+      console.error(e);
+      btn.textContent = 'Copy failed';
+      alert('Could not copy to clipboard: ' + (e && e.message ? e.message : e));
+    }
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+// If the page was loaded with `#d=<payload>` in the URL, decode it and
+// import the deck. The fragment is stripped after import so a refresh
+// doesn't re-clobber the imported state. Errors surface as alerts; the
+// existing zones are left untouched on failure.
+async function loadDeckFromUrlFragment() {
+  const hash = location.hash || '';
+  if (!hash.startsWith('#d=')) return;
+  const payload = hash.slice(3);
+  if (!payload) return;
+  const clearHash = () =>
+    history.replaceState(null, '', location.pathname + location.search);
+
+  // The encoder is keyed against Revolution's cards.json; a Voyager session
+  // can't resolve any of the names. Offer to switch.
+  if (currentDataset() !== 'revolution') {
+    const ok = confirm(
+      'This share URL is a Revolution deck. Switch to Revolution to load it?');
+    if (!ok) { clearHash(); return; }
+    try {
+      await switchDataset('revolution');
+    } catch (e) {
+      alert('Could not switch to Revolution: ' + (e && e.message ? e.message : e));
+      clearHash();
+      return;
+    }
+    STATE.format = 'standard';
+    savePrefs();
+    syncFormatUI();
+    renderAll();
+  }
+
+  // Don't silently clobber existing work. (Ctrl+Z would still recover after
+  // import, but a refresh on top of unsaved edits should ask first.)
+  if (!deckIsEmpty()) {
+    const ok = confirm('Replace the current deck with the one in this URL?');
+    if (!ok) { clearHash(); return; }
+  }
+
+  try {
+    const decoded = await window.DeckUrl.decode(payload);
+    const lines = [];
+    for (const [name, c] of Object.entries(decoded.cards)) {
+      if (c.main) lines.push(`${c.main} ${name}`);
+    }
+    for (const b of ['Plains','Island','Swamp','Mountain','Forest']) {
+      const v = decoded.basics[b];
+      if (v && v[0]) lines.push(`${v[0]} ${b}`);
+    }
+    const sideLines = [];
+    for (const [name, c] of Object.entries(decoded.cards)) {
+      if (c.side) sideLines.push(`${c.side} ${name}`);
+    }
+    for (const b of ['Plains','Island','Swamp','Mountain','Forest']) {
+      const v = decoded.basics[b];
+      if (v && v[1]) sideLines.push(`${v[1]} ${b}`);
+    }
+    const text = lines.join('\n') + (sideLines.length ? '\n\n' + sideLines.join('\n') : '') + '\n';
+    importDeck(text);
+  } catch (e) {
+    console.error('failed to load deck from URL:', e);
+    alert('Could not load deck from URL: ' + (e && e.message ? e.message : e));
+  } finally {
+    clearHash();
+  }
 }
 
 // Build the plain decklist text used by Export to clipboard:

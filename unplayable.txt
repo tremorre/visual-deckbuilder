@@ -1,0 +1,186 @@
+# Cards the format-codec should treat as 'unplayable' — they get pushed
+# out of the gap-stream pool entirely (encoded via appendix on the rare
+# deck that contains them). Same freeze policy as staples.txt: editing
+# this file invalidates previously-encoded URLs.
+#
+# Edit via the labeling app at /label.html (not by hand if avoidable).
+
+Armored Raptor
+Catch Your Breath
+Center of Attention
+Chiming Soul
+Contest Judge
+Contest Spectators
+Fight as One
+Heavy Snowfall
+Outlands Prowler
+Practicing Guru
+Restless Sloth
+Soothing Singer
+Bewitching Hagmother
+Blessings of a New Spring
+Chapel Soulguide
+Dawnsmite Cavalier
+Departed Duelist
+Gavony Trapper
+Geist-Honored Warden
+Haunted Doll
+Heronblade Vanguard
+Moonrapture
+Mournwraith
+Nearheath Disciples
+Ominous Marionette
+Practiced Occultist
+Sacred Stag
+Saint-Blessed Priest
+Sigardian Gryffknight
+Thalia's Skill
+Thraben Stalwart
+Traft's Embrace
+Geist of the Erdwal Road
+Geist Researcher
+Grasping Dreams
+Herald of Krothus
+Horrendous Experiment
+Hulking Horror
+Lingering Presence
+March of the Drowntide
+Nightfright
+Play on Their Fears
+Scions of Flesh and Spirit
+Spectral Insurgent
+Tormented Bride
+Unwelcome Host
+Wailing Apparition
+Ambitious Necrologist
+Bittersweet Parting
+Bounty of Trostad
+Cornered by the Dead
+Deranged Ravager
+Festering Rats
+Hungering Coffin
+Mortis Infusion
+Ossuary Guardian
+Overfueled Abomination
+Overlord of Ashmouth
+Profane Sustenance
+Rotjaw Predator
+Scorned Zombie
+Shambling Rotcap
+Stromkirk Vanguard
+Voldaren Magister
+Voracious Assembly
+Ashmouth Intruders
+Ashmouth Wolf
+Bloodpack Invoker
+Bloodspill Ruffian
+Devil's Breach Prowler
+Erdwal Fangseeker
+Falkenrath Executor
+Gorehowl Abomination
+Hanweir Sentries
+Moonlight Firemaker
+Ravenous Companions
+Russetpack Predator
+Silverflame Cathar
+Stain with Crimson
+Stromkirk Warlord
+Boughbreak Lumberknot
+Dawnhart Familiar
+Dawnhart Shepherd
+Foray into Stensia
+Looming Grafspider
+Rabid Mauling
+Skulking Shadowbeast
+Somberwald Boar
+Sporecyst Toad
+Tovolar's Ire
+Ulrich's Proclamation
+Waldshadow Ambusher
+Wilderhunt Companions
+Blight of Hamlets
+Lidern, the Goreblossom
+Moonlit Revelry
+Olivia, Sanguine Reveler
+Tinua, of Whispered Pains
+Fleshwrithe Apparatus
+Tarnished Swordsuit
+Wolf-Fang Talisman
+Ascendant Judge
+Ascension Ritualist
+Backalley Minstrel
+Blessed Proselytism
+Chapel Specter
+City's Memory
+Midnight Warden
+Outskirts Mentor
+Overseer's Chosen
+Overseer's Entrancer
+Overseer's Shackles
+Preacher of Singularity
+Renegade Banneret
+Sanctum Enforcer
+Semari Weaponsmith
+Aspiring Shaper
+Beneath the Tide
+Heist Lookout
+Into the Grove
+Rooftop Runner
+Setral Shoresculptor
+Survivalist Mentor
+Vicuro Pathmaker
+Crypt Caretaker
+Disciple of Surola
+Elite Aspirant
+Hand of the Overseer
+Shriek of the Shroud
+Slinking Swiftblade
+South-Street Scoundrel
+Tragic Accident
+Daring Escapees
+Furious Resolve
+Herald of Emergence
+Impatient Bandits
+Patrol Veteran
+Scatter Evidence
+Shroudwalker
+Split the Loot
+Streetwise Surveyor
+Tenacious Thief
+Corner the Prey
+Creeping Overgrowth
+Culvert Inspector
+Dockside Hawker
+Find Your Prey
+Gutter Rat
+Hired Hand
+Outskirts Steward
+Pattern's Abundance
+Reckless Smashing
+Ruthless Duo
+Setral Mender
+Shroudpiercer
+Spit Venom
+Titanic Mycoid
+Toxin Peddler
+Unerring Killer
+Volwood Sentry
+Guild Elite
+Melodious Mallard
+Rowdy Mob
+Tale of Bedlam
+Blinded Arbiter
+Concord Alchemist
+Encroaching Voidborn
+Killer-for-Hire
+Kindly Tavernkeep
+Lucrative Larcenist
+Shroud Scholar
+Thoroughfare Busker
+Bounty Wall
+Disposable Dagger
+Heart of Bedlam
+Herbalist's Satchel
+Scrounging Sensor
+Stalker's Cowl
+Wharf Patrol

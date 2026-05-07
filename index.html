@@ -45,7 +45,7 @@
     <input type="file" id="file-import" accept=".cod,.xml,.txt,.dec" hidden>
     <button id="btn-paste-import" data-title="Paste a deck list and edit before importing">Import text</button>
     <button id="btn-copy-txt" data-title="Copy the .txt deck list to clipboard">Export to clipboard</button>
-    <button id="btn-export-cod" data-title="Save a Cockatrice .cod file (chooses where on supported browsers)">Export to cod</button>
+    <button id="btn-share" data-title="Copy a shareable URL of this deck">Share</button>
     <div class="deck-btn-group">
       <button id="btn-save-deck" data-title="Save the current deck">Save deck</button>
       <button id="btn-save-as" class="hidden" data-title="Save a copy with a new name">Save as</button>
@@ -261,6 +261,7 @@
   <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
 </div>
 
+<script src="scripts/deck_url.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
