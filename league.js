@@ -50,7 +50,7 @@ const API_URL = 'https://lackeybot.com/statdex/api';
 // :v1 entries don't carry players, so falling back to them would silently
 // reproduce the broken-author bug after we fixed it.
 const CACHE_KEY = 'rev-deckbuilder-league-cache:v2:' + TOURNEY;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 30 * 60 * 1000;
 
 // How many deck POSTs to run in parallel during a fresh fetch. Browsers
 // already cap per-host concurrency at ~6, so anything higher is wasted.
@@ -318,17 +318,18 @@ function refNameToDeckbuilderName(refName) {
 }
 
 // Build the image URL for a deck card. `face` selects which side of a
-// double-faced card to show: 'front' (default) → bare number, 'back' → the
-// "<n>b.jpg" filename cajunwritescode/Revolution publishes alongside the
-// front. Single-faced cards ignore the face argument — the front URL is
-// the only thing that resolves and the back call site is gated on
-// `shape === 'doubleface'`.
+// double-faced card to show. cajunwritescode/Revolution publishes DFCs as
+// "<n>a.jpg" (front) and "<n>b.jpg" (back); the bare "<n>.jpg" is the
+// printed two-sided thumbnail, which is too cramped to use in the viewer.
+// Single-faced cards live at "<n>.jpg" with no suffix.
 function imgUrlForDeckCard(deckCard, face) {
   if (!deckCard) return null;
   const set = deckCard.setID;
   const num = String(deckCard.cardID || '');
   if (!set || !num) return null;
-  const suffix = face === 'back' ? 'b' : '';
+  let suffix = '';
+  if (isDoubleface(deckCard)) suffix = face === 'back' ? 'b' : 'a';
+  else if (face === 'back') suffix = 'b';
   return `${IMG_BASE}/${set}/${encodeURIComponent(num + suffix)}.jpg`;
 }
 
