@@ -24,7 +24,7 @@ const VOYAGER_URL = 'https://voyager-mtg.github.io/lists/cards.xml';
 // v14 bump: Voyager reprints now get `_SETCODE` suffixes so alt printings
 // survive save/load (prior cache has 17 collapsed Mountains etc.) and the
 // user's chosen art is preserved.
-const STORAGE_VERSION = 14;
+const STORAGE_VERSION = 15;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 const VOYAGER_STORAGE_KEY = `rev-deckbuilder-voyager-v${STORAGE_VERSION}`;
 
@@ -711,6 +711,7 @@ function parseAllSetsJson(json) {
         power: c.power != null ? String(c.power) : '',
         toughness: c.toughness != null ? String(c.toughness) : '',
         loyalty: c.loyalty != null ? String(c.loyalty) : '',
+        defense: c.defense != null ? String(c.defense) : extractDefenseFromText(c.text),
         artist: c.artist || '',
         flavor: c.flavor || '',
         keywords: extractKeywords(c.text || ''),
@@ -782,6 +783,7 @@ function parseAllSetsJson(json) {
         power: c.power != null ? String(c.power) : '',
         toughness: c.toughness != null ? String(c.toughness) : '',
         loyalty: c.loyalty != null ? String(c.loyalty) : '',
+        defense: c.defense != null ? String(c.defense) : extractDefenseFromText(c.text),
         artist: c.artist || '',
         flavor: c.flavor || '',
         keywords: extractKeywords(c.text || ''),
@@ -827,6 +829,7 @@ function parseAllSetsJson(json) {
           power: '',
           toughness: '',
           loyalty: '',
+          defense: '',
           artist: card.artist,
           flavor: '',
           keywords: extractKeywords(pageData.text),
@@ -1161,6 +1164,7 @@ function parseCockatriceXml(xmlText) {
         power: '',
         toughness: '',
         loyalty: '',
+        defense: '',
         artist: '',
         flavor: '',
         keywords: extractKeywords(pageData.text),
@@ -2058,6 +2062,16 @@ function cmcFromManaCost(cost) {
 // target creature gains flying" doesn't get mis-tagged with `flying` via
 // reminder text. Comma-separated keyword lists are also supported
 // ("Flying, vigilance").
+// Battle cards in the Revolution corpus carry no top-level defense field;
+// the value sits at the end of the oracle text as `Starting defense: N`.
+// We pluck it once at parse time so `defense:` / `def:` predicates can
+// compare numerically. Returns '' for cards with no Starting-defense line.
+function extractDefenseFromText(text) {
+  if (!text) return '';
+  const m = text.match(/Starting defense:\s*(\d+)/i);
+  return m ? m[1] : '';
+}
+
 function extractKeywords(text) {
   if (!text) return [];
   const cleaned = text.replace(/\*[^*]*\*/g, '').replace(/\([^)]*\)/g, '');
@@ -2166,6 +2180,7 @@ const FIELD_ALIASES = {
   def: 'defense', defense: 'defense',
   r: 'rarity', rarity: 'rarity',
   e: 'set', set: 'set', edition: 'set',
+  sets: 'sets',
   cn: 'cn', number: 'cn', num: 'cn',
   a: 'artist', art: 'artist', artist: 'artist',
   kw: 'kw', keyword: 'kw',
@@ -2190,6 +2205,8 @@ const NUMERIC_FIELDS = {
   tou: (c) => parseIntOrNaN(c.toughness),
   loyalty: (c) => parseIntOrNaN(c.loyalty),
   loy: (c) => parseIntOrNaN(c.loyalty),
+  defense: (c) => parseIntOrNaN(c.defense),
+  def: (c) => parseIntOrNaN(c.defense),
 };
 
 function parseIntOrNaN(s) {
@@ -2582,9 +2599,10 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
     case 'power':      return buildNumericPredicate((c) => parseIntOrNaN(c.power), op, rawValue);
     case 'toughness':  return buildNumericPredicate((c) => parseIntOrNaN(c.toughness), op, rawValue);
     case 'loyalty':    return buildNumericPredicate((c) => parseIntOrNaN(c.loyalty), op, rawValue);
-    case 'defense':    return (_c) => false;  // no defense data — see SEARCH_SKIPPED.md
+    case 'defense':    return buildNumericPredicate((c) => parseIntOrNaN(c.defense), op, rawValue);
     case 'rarity':     return buildRarityPredicate(op, rawValue);
     case 'set':        return buildSetPredicate(op, rawValue);
+    case 'sets':       return buildSetsRangePredicate(op, rawValue);
     case 'cn':         return buildNumericPredicate((c) => parseIntOrNaN(c.num), op, rawValue);
     case 'artist':     return buildArtistPredicate(op, rawValue);
     case 'kw':         return buildKeywordPredicate(op, rawValue);
@@ -2628,6 +2646,20 @@ function buildTypePredicate(op, rawValue) {
   // Page subtypes (Adventure / Discharge) are reachable via `t:adventure`
   // because the page face's own type is "Instant — Adventure" etc.
   if (op === ':') {
+    // Aliases for grouping by spell-vs-permanent rather than a single
+    // printed type. Only fires for `:` since `=`/`<=`/`==` test the
+    // types[] array word-by-word, where these names match nothing.
+    const v = stripQuotes(rawValue).toLowerCase();
+    if (v === 'spell' || v === 'permanent' || v === 'thing') {
+      const SPELL = new Set(['instant', 'sorcery']);
+      const THING = new Set(['enchantment', 'artifact', 'battle']);
+      return (c) => {
+        const ts = (c.types || []).map(t => String(t).toLowerCase());
+        if (v === 'spell')     return ts.some(t => SPELL.has(t));
+        if (v === 'permanent') return !ts.some(t => SPELL.has(t));
+        return ts.some(t => THING.has(t));
+      };
+    }
     return (c) => matcher(c.type || '');
   }
   const words = stripQuotes(rawValue)
@@ -2686,7 +2718,21 @@ function buildOraclePredicate(op, rawValue) {
       return re.test(text);
     };
   }
+  // `o=phrase` / `o==phrase`: whole-word match — wrap in \b…\b so `o=if`
+  // doesn't hit "lifelink" / "swift" / "modify". Multi-word values stay
+  // intact: `o="hot dog"` requires the literal sequence with word boundaries
+  // on each end. Falls back to substring for the bare `:` operator.
   const needle = stripQuotes(raw);
+  if (op === '=' || op === '==') {
+    return (c) => {
+      const text = oracleTextFor(c);
+      const expanded = needle.replace(/~/g, c.canonical);
+      if (!expanded) return true;
+      const escaped = expanded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`\\b${escaped}\\b`, 'i');
+      return re.test(text);
+    };
+  }
   return (c) => {
     const text = oracleTextFor(c);
     const hay = text.toLowerCase();
@@ -2804,7 +2850,6 @@ function buildManaPredicate(op, rawValue) {
   const hasCost = (c) => !!(c.rawManaCost && c.rawManaCost.length);
   switch (op) {
     case '>=':
-    case ':':
       return (c) => {
         if (!hasCost(c)) return false;
         const cd = decomposeCardCost(c.rawManaCost);
@@ -2831,6 +2876,7 @@ function buildManaPredicate(op, rawValue) {
         if (!pipsAreSubset(cd.pips, qPips)) return false;
         return cd.generic < qGen || cd.pips.length < qPips.length;
       };
+    case ':':
     case '=':
     case '==':
       return (c) => {
@@ -2897,7 +2943,7 @@ function decomposeManaQuery(raw) {
       generic += parseInt(v.slice(i, j), 10);
       i = j;
     } else if (ch === 'H') { pipMatchers.push({ kind: 'hybrid' }); i++; }
-    else if ('MNO'.includes(ch)) { pipMatchers.push({ kind: 'var', label: ch }); i++; }
+    else if ('MNO'.includes(ch)) { pipMatchers.push({ kind: 'var', label: ch.toLowerCase() }); i++; }
     else if (ch === 'C') { pipMatchers.push({ kind: 'any-color' }); i++; }
     else if ('WUBRGIVXP'.includes(ch)) { pipMatchers.push({ kind: 'exact', pip: ch }); i++; }
     else { i++; }
@@ -3006,23 +3052,55 @@ function buildRarityPredicate(op, rawValue) {
   });
 }
 
-function buildSetPredicate(op, rawValue) {
+function buildSetPredicate(_op, rawValue) {
   const values = parseListValue(rawValue).map(v => v.toLowerCase());
   if (!values.length) return (_c) => false;
   return (c) => {
-    // A canonical card matches if any of its printings matches.
+    // A canonical card matches if any of its printings matches. All
+    // operators behave the same: substring match on set code or name.
     const printings = STATE.byCanonical.get(c.canonical) || [c];
     for (const p of printings) {
       const code = (p.set || '').toLowerCase();
       const setObj = STATE.setsByCode[p.set];
       const name = setObj ? (setObj.longname || '').toLowerCase() : '';
       for (const v of values) {
-        if (op === '=' || op === '==') {
-          if (code === v || name === v) return true;
-        } else {
-          if (code.includes(v) || (name && name.includes(v))) return true;
-        }
+        if (code.includes(v) || (name && name.includes(v))) return true;
       }
+    }
+    return false;
+  };
+}
+
+// `sets:CODE1-CODE2` — any printing in the chronological range between the
+// two set codes, inclusive. Either bound may be empty (open-ended). Order
+// of the two codes doesn't matter. A value with no dash falls through to
+// `set:` so `sets:CODE` is forgiving.
+function buildSetsRangePredicate(op, rawValue) {
+  const raw = stripQuotes(rawValue);
+  const m = raw.match(/^([A-Za-z0-9_]*)\s*-\s*([A-Za-z0-9_]*)$/);
+  if (!m) return buildSetPredicate(op, rawValue);
+  const codeOf = (s) => s.toUpperCase();
+  const dateOf = (code) => {
+    const obj = STATE.setsByCode[code];
+    return obj ? (obj.releasedate || '') : null;
+  };
+  const aCode = m[1] ? codeOf(m[1]) : null;
+  const bCode = m[2] ? codeOf(m[2]) : null;
+  if (aCode && !STATE.setsByCode[aCode]) return (_c) => false;
+  if (bCode && !STATE.setsByCode[bCode]) return (_c) => false;
+  const aDate = aCode ? dateOf(aCode) : '';
+  // Empty upper bound means "newest"; using a sentinel that sorts after any
+  // real ISO date keeps the comparison logic uniform.
+  const bDate = bCode ? dateOf(bCode) : '￿';
+  const lo = aDate < bDate ? aDate : bDate;
+  const hi = aDate < bDate ? bDate : aDate;
+  return (c) => {
+    const printings = STATE.byCanonical.get(c.canonical) || [c];
+    for (const p of printings) {
+      const setObj = STATE.setsByCode[p.set];
+      if (!setObj) continue;
+      const d = setObj.releasedate || '';
+      if (d >= lo && d <= hi) return true;
     }
     return false;
   };
@@ -3180,6 +3258,7 @@ function buildHasPredicate(rawValue) {
   if (v === 'power')                     return (c) => Number.isFinite(parseIntOrNaN(c.power));
   if (v === 'toughness')                 return (c) => Number.isFinite(parseIntOrNaN(c.toughness));
   if (v === 'loyalty')                   return (c) => Number.isFinite(parseIntOrNaN(c.loyalty));
+  if (v === 'defense')                   return (c) => Number.isFinite(parseIntOrNaN(c.defense));
   return (_c) => false;
 }
 
@@ -3208,6 +3287,17 @@ function buildLayoutPredicate(_op, rawValue) {
 // ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
+
+// Default zone for "add this dropdown card" actions. Modifier keys still
+// override (Shift→maybe, Alt→side); otherwise the focused deck pane wins,
+// so working in the side/maybe/sanctum pane lets Enter add straight there.
+function searchAddZone(ev) {
+  if (ev && ev.shiftKey) return 'maybe';
+  if (ev && ev.altKey)   return 'side';
+  const f = STATE.focusedZone;
+  if (f === 'side' || f === 'maybe' || f === 'sanctum') return f;
+  return 'main';
+}
 
 function wireSearch() {
   const input = document.getElementById('search');
@@ -3262,7 +3352,7 @@ function wireSearch() {
       ev.preventDefault();
       const item = r[STATE.search.selectedIdx];
       const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
-      const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
+      const zone = searchAddZone(ev);
       addCardToZone(picked.id, zone);
       // Don't clear input — power users repeatedly add the same card by hitting Enter 4x.
       // But do refocus and reset selection.
@@ -3553,7 +3643,7 @@ function renderSearchResults() {
       // Chip clicks bubble up here too — but the chip handler stopPropagation()s
       // before we get called, so reaching this code means "row body was clicked",
       // which adds whichever printing is currently picked.
-      const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
+      const zone = searchAddZone(ev);
       addCardToZone(item.printings[item.pickedIdx].id, zone);
       renderAll();
       document.getElementById('search').focus();
@@ -3587,7 +3677,7 @@ function renderSearchResults() {
           ev.preventDefault();
           ev.stopPropagation();
           item.pickedIdx = pi;
-          const zone = ev.shiftKey ? 'maybe' : (ev.altKey ? 'side' : 'main');
+          const zone = searchAddZone(ev);
           addCardToZone(p.id, zone);
           renderAll();
           document.getElementById('search').focus();
@@ -5214,6 +5304,7 @@ function wireToolbar() {
   });
   wireShare();
   wirePasteImport();
+  wireSearchHelp();
   wireCopyTxt();
   wireSavedDecks();
   wireDragTrash();
@@ -6018,6 +6109,26 @@ async function resolveMaybeMode(exportLabel) {
   const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
   if (maybeCount === 0) return 'keep';
   return promptMaybeboardInclusion(exportLabel);
+}
+
+// ---------------------------------------------------------------------------
+// Search-syntax docs modal
+// ---------------------------------------------------------------------------
+
+function wireSearchHelp() {
+  const modal = document.getElementById('search-help-modal');
+  const trigger = document.getElementById('btn-search-help');
+  if (!modal || !trigger) return;
+  const open = () => modal.classList.remove('hidden');
+  const close = () => modal.classList.add('hidden');
+  trigger.addEventListener('click', open);
+  document.getElementById('search-help-close').addEventListener('click', close);
+  document.getElementById('search-help-ok').addEventListener('click', close);
+  modal.querySelector('.modal-backdrop').addEventListener('click', close);
+  document.addEventListener('keydown', (ev) => {
+    if (modal.classList.contains('hidden')) return;
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+  });
 }
 
 // ---------------------------------------------------------------------------
