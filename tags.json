@@ -83,7 +83,8 @@
         "removal"
       ],
       "The Weftheart": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Tsubasa Shigane": [
         "coco",
@@ -182,7 +183,8 @@
         "coco"
       ],
       "Blightstalker": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Border Junction": [
         "coco"
@@ -362,7 +364,8 @@
         "coco"
       ],
       "Envoy of the Fallen": [
-        "coco"
+        "coco",
+        "unearth"
       ],
       "Exotic Transformer": [
         "coco",
@@ -475,7 +478,8 @@
         "coco"
       ],
       "Heraldic Ley-Pillar": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Higana, Dragonscribe": [
         "coco"
@@ -606,7 +610,8 @@
         "coco"
       ],
       "Masksmith": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Master of Stances": [
         "coco"
@@ -675,7 +680,8 @@
         "coco"
       ],
       "Mystery Egg": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Mystic of Returns": [
         "coco"
@@ -696,7 +702,8 @@
         "coco"
       ],
       "Nimble Mentor": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "No_Response_Received": [
         "coco"
@@ -705,13 +712,16 @@
         "coco"
       ],
       "Nullblade Artisan": [
-        "coco"
+        "coco",
+        "tutor",
+        "cheat"
       ],
       "Oblivion's Escort": [
         "coco"
       ],
       "Ofuda Mistress": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Not_A_Teletype": [
         "coco"
@@ -873,7 +883,8 @@
         "coco"
       ],
       "Sire of Greatness": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Skytide Piercer": [
         "coco",
@@ -924,7 +935,8 @@
         "coco"
       ],
       "Stonework Titan": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Student of Immortality": [
         "coco"
@@ -1021,7 +1033,8 @@
         "coco"
       ],
       "Venture Capitalist": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Verdant Winder": [
         "coco"
@@ -1143,7 +1156,8 @@
         "coco"
       ],
       "Perils of Eternity": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Rebirth through Seasons": [
         "coco"
@@ -1199,7 +1213,8 @@
         "coco"
       ],
       "Archival Storage": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Artisan's Studio": [
         "coco"
@@ -1243,7 +1258,8 @@
         "coco"
       ],
       "Faces of the Faceless": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Figy Berry": [
         "coco"
@@ -1390,7 +1406,8 @@
         "below-rate"
       ],
       "Kinscale Reckoner": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Tzuhan's Lotus": [
         "coco"
@@ -1416,7 +1433,8 @@
         "coco"
       ],
       "Ruiner's Hijacking": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "Banish into Nothingness": [
         "coco",
@@ -1659,7 +1677,8 @@
         "coco"
       ],
       "Winterthorn Creeper": [
-        "coco"
+        "coco",
+        "tutor"
       ],
       "Benevolent Visitation": [
         "coco",
@@ -1674,7 +1693,8 @@
         "coco"
       ],
       "Devotion to Ghrin-Danu": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "The Haunting of Silbern": [
         "coco"
@@ -1711,7 +1731,8 @@
         "coco"
       ],
       "Unmarked Headstones": [
-        "coco"
+        "coco",
+        "gyhate"
       ],
       "Wolf-Fang Talisman": [
         "coco"
@@ -1806,7 +1827,8 @@
         "coco"
       ],
       "Madness of Ages": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "Orliss's Edict": [
         "coco",
@@ -1851,7 +1873,8 @@
         "fbite"
       ],
       "Siurne, Eternal Sentinel": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "Offer the Faithless": [
         "coco"
@@ -1961,7 +1984,8 @@
         "counterspell"
       ],
       "Forbidden Treasure": [
-        "counterspell"
+        "counterspell",
+        "extract"
       ],
       "Learn the Steps": [
         "counterspell"
@@ -2335,7 +2359,8 @@
         "creatureland"
       ],
       "Qaraz Observatory": [
-        "BLand"
+        "BLand",
+        "gyhate"
       ],
       "Resplendent Nebula": [
         "WLand"
@@ -2505,13 +2530,15 @@
         "handattack"
       ],
       "Listen In": [
-        "handattack"
+        "handattack",
+        "gyhate"
       ],
       "Duress": [
         "handattack"
       ],
       "Absentia": [
-        "handattack"
+        "handattack",
+        "gyhate"
       ],
       "Futurist Ideal": [
         "handattack"
@@ -2998,7 +3025,8 @@
       ],
       "Cathar's Charm": [
         "ae-rem",
-        "removal"
+        "removal",
+        "gyhate"
       ],
       "Center of Attention": [
         "removal",
@@ -3036,7 +3064,8 @@
         "removal"
       ],
       "Lunate Charm": [
-        "removal"
+        "removal",
+        "gyhate"
       ],
       "Magma Spray": [
         "removal"
@@ -3362,7 +3391,8 @@
       ],
       "Horrors Wrought": [
         "removal",
-        "wipe"
+        "wipe",
+        "cheat"
       ],
       "Full-Moon Assault": [
         "removal",
@@ -3637,9 +3667,211 @@
         "minus-rem",
         "wipe",
         "removal"
+      ],
+      "Cabinet Recruiter": [
+        "tutor"
+      ],
+      "Dawnspark Vanguard": [
+        "tutor"
+      ],
+      "Estrathian Gentrifiers": [
+        "tutor"
+      ],
+      "Fiend of the Crimson Pact": [
+        "tutor"
+      ],
+      "Moonbeam Artisan": [
+        "tutor"
+      ],
+      "Old Times Ruminator": [
+        "tutor"
+      ],
+      "Penrath Dispatcher": [
+        "tutor"
+      ],
+      "Warden of Soul": [
+        "tutor"
+      ],
+      "Pact Beyond Death": [
+        "tutor"
+      ],
+      "Zaccola, the Gentle End": [
+        "tutor"
+      ],
+      "Creation Mythos": [
+        "tutor"
+      ],
+      "Curse of Harvest's Reaping": [
+        "tutor"
+      ],
+      "Imperial Tour": [
+        "tutor"
+      ],
+      "Call for Backup": [
+        "tutor"
+      ],
+      "Assaulted by Shadows": [
+        "tutor"
+      ],
+      "Axiomatic Shift": [
+        "tutor"
+      ],
+      "Born From Fire": [
+        "tutor",
+        "cheat"
+      ],
+      "Cryptology": [
+        "tutor"
+      ],
+      "Shape the Pattern": [
+        "tutor"
+      ],
+      "Profane Scripture": [
+        "tutor"
+      ],
+      "Foes Unfed": [
+        "tutor"
+      ],
+      "The Founder's Hunt Begins": [
+        "tutor"
+      ],
+      "Witching Hour": [
+        "tutor"
+      ],
+      "Boughbreak Lumberknot": [
+        "gyhate"
+      ],
+      "Graceful Finalizer": [
+        "gyhate"
+      ],
+      "Helia Ley-Spire": [
+        "gyhate"
+      ],
+      "Illicit Mortician": [
+        "gyhate"
+      ],
+      "League of Their Own": [
+        "gyhate"
+      ],
+      "Clash at the Shaded Maw": [
+        "gyhate"
+      ],
+      "Falling Ashes": [
+        "gyhate"
+      ],
+      "Crucible of the Burning Sun": [
+        "gyhate"
+      ],
+      "Eternal Struggle": [
+        "gyhate"
+      ],
+      "Flutter": [
+        "gyhate"
+      ],
+      "Gisa's Breakthrough": [
+        "gyhate"
+      ],
+      "Go Blank": [
+        "gyhate"
+      ],
+      "Qaraz Ley-Spire": [
+        "extract"
+      ],
+      "Trauma Spike": [
+        "extract"
+      ],
+      "Seeker of the Pre-Weft": [
+        "cheat"
+      ],
+      "Warden of Heart": [
+        "cheat"
+      ],
+      "Divine Repurposing": [
+        "cheat"
+      ],
+      "Vile Resurgence": [
+        "cheat"
+      ],
+      "Gereishin's Entrance": [
+        "cheat"
+      ],
+      "Revolutionary's Monument": [
+        "cheat"
+      ],
+      "Rex Tyrannos": [
+        "cheat"
+      ],
+      "Death's Believers": [
+        "cheat"
+      ],
+      "Rhiannona, Pactborne": [
+        "cheat"
+      ],
+      "Umbrus Surectus": [
+        "cheat"
+      ],
+      "Auspicious Return": [
+        "cheat"
+      ],
+      "Curse of Disturbed Tombs": [
+        "cheat"
+      ],
+      "It's Alive!": [
+        "cheat"
+      ],
+      "Dark Horse Victory": [
+        "cheat"
+      ],
+      "Reclaim the Fallen": [
+        "cheat"
+      ],
+      "Reboot": [
+        "cheat"
+      ],
+      "Phemeros Redeemer": [
+        "cheat"
+      ],
+      "Weft Dancer": [
+        "cheat"
+      ],
+      "Dragon of Recollection": [
+        "unearth"
+      ],
+      "Guidelight Gravehart": [
+        "unearth"
+      ],
+      "Gravetithe Witch": [
+        "unearth"
+      ],
+      "Thorn and Trial": [
+        "unearth"
+      ],
+      "RETURN()": [
+        "unearth"
+      ],
+      "Stained Strokes": [
+        "unearth"
+      ],
+      "March of the Long Night": [
+        "unearth"
+      ],
+      "Become the Hunted": [
+        "unearth"
+      ],
+      "Het's Call": [
+        "unearth",
+        "cheat"
+      ],
+      "Too Late for Grace": [
+        "unearth"
       ]
     },
     "order": [
+      "unearth",
+      "cheat",
+      "extract",
+      "gyhate",
+      "tutor",
       "below-rate",
       "wipe",
       "removal",
@@ -3683,7 +3915,11 @@
       "coco"
     ],
     "aliases": {
-      "boardwipe": "wipe"
+      "boardwipe": "wipe",
+      "extraction": "extract",
+      "bad": "below-rate",
+      "banishing": "texile",
+      "counter": "counterspell"
     }
   },
   "voyager": {

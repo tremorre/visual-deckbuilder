@@ -299,6 +299,15 @@
       </section>
 
       <section>
+        <h4>Castability (<code>castable:</code>)</h4>
+        <dl>
+          <dt><code>castable:wu</code> · <code>castable=wu</code></dt><dd>Card is castable from a pool of <code>W</code> and <code>U</code> mana (unlimited quantity, any combination).</dd>
+          <dt><code>castable:wuc</code></dt><dd>Pool letter <code>c</code> means colorless mana is also available, satisfying <code>{C}</code> pips.</dd>
+        </dl>
+        <p class="help-note">Differs from <code>mana&lt;=</code>: pool is a <em>set</em> of colors, not a multiset of pips. <code>{W}{W}</code> is castable from <code>castable:w</code>. Generic, <code>X</code>, Phyrexian <code>{W/P}</code>, and monohybrid <code>{2/W}</code> are always payable. Hybrids need either side in the pool. Vertex <code>{V}</code> is treated as always free. Prismatic <code>{Vp}</code> requires k distinct pool colors not already used by the spell's colored pips, where k is the number of <code>{Vp}</code> pips. Lands and no-cost spells never match.</p>
+      </section>
+
+      <section>
         <h4>Color and identity</h4>
         <dl>
           <dt><code>c:w</code> · <code>color:w</code></dt><dd>Card colors include <code>W</code>. Letters are <code>W</code> <code>U</code> <code>B</code> <code>R</code> <code>G</code> <code>I</code>.</dd>

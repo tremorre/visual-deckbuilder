@@ -2174,6 +2174,7 @@ const FIELD_ALIASES = {
   ci: 'id', id: 'id', identity: 'id',
   mv: 'mv', cmc: 'mv',
   mana: 'mana',
+  castable: 'castable',
   pow: 'power', power: 'power',
   tou: 'toughness', toughness: 'toughness',
   loy: 'loyalty', loyalty: 'loyalty',
@@ -2596,6 +2597,7 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
     case 'id':         return buildColorPredicate('ci', op, rawValue);
     case 'mv':         return buildNumericPredicate((c) => Number(c.cmc) || 0, op, rawValue);
     case 'mana':       return buildManaPredicate(op, rawValue);
+    case 'castable':   return buildCastablePredicate(op, rawValue);
     case 'power':      return buildNumericPredicate((c) => parseIntOrNaN(c.power), op, rawValue);
     case 'toughness':  return buildNumericPredicate((c) => parseIntOrNaN(c.toughness), op, rawValue);
     case 'loyalty':    return buildNumericPredicate((c) => parseIntOrNaN(c.loyalty), op, rawValue);
@@ -3034,6 +3036,78 @@ function tryMatchAll(queryPips, qi, cardPips, used, bindings) {
       used[ci] = false;
     }
     bindings.m = savedM; bindings.n = savedN; bindings.o = savedO;
+  }
+  return false;
+}
+
+// `castable:<pool>` — every pip in the card's mana cost is payable from a
+// pool of available mana colors. Differs from `mana<=` (multiset-subset):
+// the pool is a *set* of colors with unlimited quantity, so {W}{W} is
+// castable from pool W. Vertex {V} is treated as always free; {Vp}
+// (Revolution prismatic) requires k distinct pool colors that are *not*
+// already part of the spell's color, where k is the {Vp} pip count.
+//
+// Pool letters: w u b r g i (silver) → WUBRGI; c → colorless mana available.
+// Only `:` / `=` / `==` are supported (castability isn't ordered).
+function buildCastablePredicate(op, rawValue) {
+  if (op !== ':' && op !== '=' && op !== '==') return (_c) => false;
+  const raw = stripQuotes(rawValue).toLowerCase();
+  const pool = new Set();
+  for (const ch of raw) {
+    if ('wubrgi'.includes(ch)) pool.add(ch.toUpperCase());
+    else if (ch === 'c') pool.add('C');
+  }
+  return (c) => {
+    if (!c.rawManaCost) return false;
+    const pips = splitCostPips(c.rawManaCost);
+    let vpCount = 0;
+    const spellColors = new Set();
+    for (const pip of pips) {
+      if (pip === 'VP') { vpCount++; continue; }
+      if (!pipCastable(pip, pool, spellColors)) return false;
+    }
+    if (vpCount > 0) {
+      let avail = 0;
+      for (const ch of 'WUBRGI') {
+        if (pool.has(ch) && !spellColors.has(ch)) avail++;
+      }
+      if (avail < vpCount) return false;
+    }
+    return true;
+  };
+}
+
+// Per-pip payability for `castable:`. Returns true iff the pip can be paid
+// from `pool`, and (as a side effect) accumulates the pip's WUBRGI color
+// contribution into `spellColors` for the {Vp} distinct-color rule. {Vp}
+// is handled by the caller and never reaches this function.
+function pipCastable(pip, pool, spellColors) {
+  if (/^\d+$/.test(pip)) return true;
+  if (pip === 'X' || pip === 'Y' || pip === 'Z') return true;
+  if (pip === 'V') return true;
+  if (pip === 'C') return pool.has('C');
+  if (pip.length === 1 && 'WUBRGI'.includes(pip)) {
+    if (!pool.has(pip)) return false;
+    spellColors.add(pip);
+    return true;
+  }
+  if (pip.includes('/')) {
+    const [a, b] = pip.split('/');
+    const addColors = () => {
+      if ('WUBRGI'.includes(a)) spellColors.add(a);
+      if ('WUBRGI'.includes(b)) spellColors.add(b);
+    };
+    // Phyrexian {C/P}: pay 2 life. Always payable.
+    if (b === 'P') { addColors(); return true; }
+    // Monohybrid {2/W}: pay 2 generic. Always payable.
+    if (a === '2') { addColors(); return true; }
+    // Vertex hybrid {V/W}: V side is always free.
+    if (a === 'V' || b === 'V') { addColors(); return true; }
+    // Two-color hybrid (incl. {C/W}): pay either side.
+    const sideOK = (s) => (s === 'C' && pool.has('C')) || (/[WUBRGI]/.test(s) && pool.has(s));
+    if (!sideOK(a) && !sideOK(b)) return false;
+    addColors();
+    return true;
   }
   return false;
 }
@@ -5290,7 +5364,31 @@ function setFocusedZone(zoneName) {
 // Toolbar (import/export/clear/legal toggle)
 // ---------------------------------------------------------------------------
 
+// wireToolbar wires the deckbuilder header. Two of its concerns are shared
+// with the tagger page (which loads this same module): the format dropdown
+// and the floating actions (theme / refresh / image cache). Those are
+// extracted into wireFormatDropdown / wireFloatingActions and run in both
+// modes. Everything below the `if (STATE.tagMode) return` is deckbuilder-
+// only — its buttons live in index.html, NOT tags.html, so the wiring code
+// here may assume each getElementById hits and may crash loudly if it
+// doesn't (a missing button on index.html is a bug). When you add a new
+// deckbuilder-only toolbar button, wire it below the gate; do NOT add a
+// hidden stub to tags.html.
 function wireToolbar() {
+  wireFormatDropdown();
+  wireFloatingActions();
+  // wireSearchHelp / wirePlanBanner null-check their own controls and are
+  // safe in both modes. Tag mode has no search-help modal but does have
+  // a plan-exit stub; both tolerate either.
+  wireSearchHelp();
+  wirePlanBanner();
+  // drag-trash is a shared element (tags.html ships it too) so the drag
+  // handlers wire in either mode.
+  wireDragTrash();
+
+  if (STATE.tagMode) return;
+
+  // ---- deckbuilder-only wiring below ----
   document.getElementById('btn-import').addEventListener('click', () => {
     document.getElementById('file-import').click();
   });
@@ -5304,11 +5402,8 @@ function wireToolbar() {
   });
   wireShare();
   wirePasteImport();
-  wireSearchHelp();
   wireCopyTxt();
   wireSavedDecks();
-  wireDragTrash();
-  wirePlanBanner();
   document.getElementById('btn-new-deck').addEventListener('click', () => {
     if (deckIsDirty() && !confirm('Clear all zones and start a new deck?')) return;
     clearAllZones();
@@ -5322,7 +5417,11 @@ function wireToolbar() {
     resetHistory();
     markDeckClean();
   });
-  // Format dropdown: toggle menu on trigger click, pick on item click.
+}
+
+// Format / dataset switcher. Shared between deckbuilder and tagger; both
+// pages ship the format-btn / format-menu / range-pickers DOM.
+function wireFormatDropdown() {
   const formatBtn = document.getElementById('format-btn');
   const formatMenu = document.getElementById('format-menu');
   formatBtn.addEventListener('click', (ev) => {
@@ -5397,6 +5496,11 @@ function wireToolbar() {
   endSel.addEventListener('change', () => onRangeChange('end'));
   // Reflect any persisted format on first paint.
   syncFormatUI();
+}
+
+// Floating actions (theme / refresh / image cache). Shared between
+// deckbuilder and tagger; both pages ship these buttons.
+function wireFloatingActions() {
   const refreshBtn = document.getElementById('btn-refresh');
   refreshBtn.addEventListener('click', async () => {
     const original = refreshBtn.textContent;
@@ -7802,16 +7906,12 @@ function renderTagSidebar() {
     sec.dataset.title = aliases.length
       ? `${tag} — also: ${aliases.join(', ')}`
       : `${tag}`;
-    const aliasLine = aliases.length
-      ? `<div class="tag-zone-aliases">${escapeHtml(aliases.join(', '))}</div>`
-      : '';
     sec.innerHTML = `
       <header>
         <span class="zone-title">${escapeHtml(tag)}</span>
         <button type="button" class="tag-zone-edit" data-title="Manage aliases for this tag">✎</button>
         <span class="zone-count">${count}</span>
       </header>
-      ${aliasLine}
     `;
     const editBtn = sec.querySelector('.tag-zone-edit');
     if (editBtn) {
