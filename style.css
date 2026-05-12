@@ -2564,17 +2564,6 @@ html:has(body.league-page.detail-active) {
 /* Tag aliases — sidebar subtitle, all-tags row, popover editor, toast.
  * Aliases are the "alternate names that resolve to one canonical" feature;
  * see addTagAlias / aliasesForTag in app.js. */
-.tag-zone-aliases {
-  font-size: 10px;
-  color: var(--text-muted);
-  padding: 0 10px 4px;
-  font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tag-zone.focused .tag-zone-aliases { color: var(--text-on-accent); opacity: 0.85; }
-
 .tag-list-row .tag-list-aliases {
   font-size: 11px;
   color: var(--text-muted);

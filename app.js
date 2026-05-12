@@ -8227,6 +8227,7 @@ function renderAliasEditorChips() {
   input.type = 'text';
   input.placeholder = aliases.length ? '' : 'add alias…';
   input.setAttribute('list', 'tag-datalist');
+  input.addEventListener('input', () => refreshTagDatalist(input.value));
   input.addEventListener('keydown', (ev) => {
     ev.stopPropagation();
     if (ev.key === 'Enter' || ev.key === ',') {
@@ -8297,13 +8298,21 @@ function ensureTagPopover() {
   document.body.appendChild(pop);
 }
 
-function refreshTagDatalist() {
+function refreshTagDatalist(currentInput = '') {
   const dl = document.getElementById('tag-datalist');
   if (!dl) return;
   const ds = currentDataset();
   const slot = STATE.tags[ds];
   const order = (slot?.order || []).slice();
   const aliases = slot?.aliases || {};
+  // Once the user has typed a complete canonical, suggestions are noise
+  // (they'd just echo the typed value and pull in any aliases pointing at
+  // it). Empty the datalist so the browser dropdown collapses.
+  const trimmedLow = currentInput.trim().toLowerCase();
+  if (trimmedLow && order.some(t => t.toLowerCase() === trimmedLow)) {
+    dl.innerHTML = '';
+    return;
+  }
   // Canonicals first, then each alias (with the canonical as a hint label
   // — datalists render `option[label]` next to the value in modern browsers).
   const parts = order.map(t => `<option value="${escapeHtml(t)}">`);
@@ -8361,6 +8370,7 @@ function closeTagPopover() {
 function wireTagPopover() {
   const input = document.getElementById('tag-popover-input');
   if (!input) return;
+  input.addEventListener('input', () => refreshTagDatalist(input.value));
   input.addEventListener('keydown', (ev) => {
     ev.stopPropagation();
     if (ev.key === 'Enter') {

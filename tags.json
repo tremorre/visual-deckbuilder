@@ -89,7 +89,8 @@
       "Tsubasa Shigane": [
         "coco",
         "removal",
-        "bounce"
+        "bounce",
+        "protection"
       ],
       "Vasilisa, Helping Hand": [
         "coco"
@@ -321,7 +322,8 @@
         "coco"
       ],
       "Distinguished Weaverkin": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Dormant Camel": [
         "coco"
@@ -334,9 +336,6 @@
         "removal"
       ],
       "Dregstreet Inquisitor": [
-        "coco"
-      ],
-      "Dropped_Polygon": [
         "coco"
       ],
       "Earworm DJ": [
@@ -400,7 +399,8 @@
         "coco"
       ],
       "Fission Feaster": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Fluttering Sun": [
         "coco"
@@ -418,7 +418,9 @@
         "coco"
       ],
       "Fortune Bearer": [
-        "coco"
+        "coco",
+        "fastramp",
+        "below-rate"
       ],
       "Friendly Dragonling": [
         "coco"
@@ -497,7 +499,8 @@
         "coco"
       ],
       "Huskforger Acolyte": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Identity Forger": [
         "coco"
@@ -562,7 +565,9 @@
         "coco"
       ],
       "Kinox Naturalist": [
-        "coco"
+        "coco",
+        "fastramp",
+        "below-rate"
       ],
       "Lavaborn Slug": [
         "coco"
@@ -574,7 +579,8 @@
         "coco"
       ],
       "Lightning Warmonger": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Living Compass": [
         "coco"
@@ -592,7 +598,8 @@
         "coco"
       ],
       "Lustrous Starfish": [
-        "coco"
+        "coco",
+        "protection"
       ],
       "Magnetic Mystery": [
         "coco"
@@ -607,7 +614,8 @@
         "coco"
       ],
       "Mana Harvesters": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Masksmith": [
         "coco",
@@ -623,7 +631,8 @@
         "coco"
       ],
       "Mellan, Defense Attorney": [
-        "coco"
+        "coco",
+        "protection"
       ],
       "Menagerie Mechanic": [
         "coco"
@@ -656,7 +665,8 @@
         "coco"
       ],
       "Mirage Model": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Mirageform Shinobi": [
         "coco"
@@ -835,7 +845,8 @@
         "coco"
       ],
       "Sanctified Attendant": [
-        "coco"
+        "coco",
+        "protection"
       ],
       "Sarsupei All-Seer": [
         "coco"
@@ -844,7 +855,8 @@
         "coco"
       ],
       "Scintillation Scion": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Sculptor's Replica": [
         "coco"
@@ -896,7 +908,8 @@
         "below-rate"
       ],
       "Slumberzoa": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Smog Hound": [
         "coco"
@@ -914,7 +927,8 @@
         "coco"
       ],
       "Speculative Stockbroker": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Spiteful Griefer": [
         "coco"
@@ -942,7 +956,8 @@
         "coco"
       ],
       "Sunsoaker": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Sunsower": [
         "coco"
@@ -980,7 +995,8 @@
         "coco"
       ],
       "Tough Nut": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Towering Moonrazer": [
         "coco",
@@ -1088,7 +1104,8 @@
         "coco"
       ],
       "Cartographer's Skill": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Chronicle Calamity": [
         "coco"
@@ -1222,7 +1239,8 @@
       "Atomic Core": [
         "coco",
         "wipe",
-        "removal"
+        "removal",
+        "fastramp"
       ],
       "Auto Sifter": [
         "coco"
@@ -1237,7 +1255,8 @@
         "coco"
       ],
       "Cosmolith": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Creature Catalog": [
         "coco"
@@ -1246,7 +1265,8 @@
         "coco"
       ],
       "Data Staff": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Dynasty Pendant": [
         "coco"
@@ -1307,10 +1327,12 @@
         "handattack"
       ],
       "Concurrent Escapist": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Ethereal Blossom": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Nascent Star": [
         "coco"
@@ -1319,7 +1341,8 @@
         "coco"
       ],
       "Ring of Promised Vows": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Waypoint Armillary": [
         "coco"
@@ -1463,7 +1486,8 @@
         "coco"
       ],
       "Darkstar Harbinger": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Lavis' Hydroponicist": [
         "coco"
@@ -1516,22 +1540,28 @@
         "coco"
       ],
       "Cackling Igniter": [
-        "coco"
+        "coco",
+        "highrate"
       ],
       "Captain Faulmorr": [
         "coco"
       ],
       "Darkthicket Howler": [
-        "coco"
+        "coco",
+        "fastramp",
+        "highrate"
       ],
       "Dawnhart Augur": [
-        "coco"
+        "coco",
+        "fastramp",
+        "highrate"
       ],
       "Dawnsmite Cavalier": [
         "coco"
       ],
       "Eerie Nightdrifter": [
-        "coco"
+        "coco",
+        "highrate"
       ],
       "Enthralled Alchemist": [
         "coco"
@@ -1674,7 +1704,8 @@
         "coco"
       ],
       "Westvale Adherent": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "Winterthorn Creeper": [
         "coco",
@@ -1735,7 +1766,9 @@
         "gyhate"
       ],
       "Wolf-Fang Talisman": [
-        "coco"
+        "coco",
+        "fastramp",
+        "below-rate"
       ],
       "Claret Ascendance": [
         "coco",
@@ -1767,7 +1800,9 @@
         "coco"
       ],
       "Melodious Mallard": [
-        "coco"
+        "coco",
+        "fastramp",
+        "below-rate"
       ],
       "Overseer's Chosen": [
         "coco"
@@ -1841,7 +1876,8 @@
         "below-rate"
       ],
       "Reap the Rewards": [
-        "coco"
+        "coco",
+        "cheat"
       ],
       "Coffers Altar": [
         "coco"
@@ -1852,7 +1888,8 @@
         "below-rate"
       ],
       "The Founder's Cage": [
-        "coco"
+        "coco",
+        "fastramp"
       ],
       "Beneath the Tide": [
         "coco",
@@ -2490,7 +2527,8 @@
         "utilityland"
       ],
       "Tomb of the Founder": [
-        "utilityland"
+        "utilityland",
+        "cheat"
       ],
       "The Shrouded Seas": [
         "utilityland"
@@ -2562,7 +2600,8 @@
       ],
       "Moonsilver Archangel": [
         "texile",
-        "removal"
+        "removal",
+        "highrate"
       ],
       "Advance of the Quiet Moon": [
         "texile",
@@ -2616,7 +2655,8 @@
       "Blinding Ambush": [
         "fbite",
         "removal",
-        "below-rate"
+        "below-rate",
+        "protection"
       ],
       "Rabid Mauling": [
         "fbite",
@@ -2694,7 +2734,8 @@
       ],
       "Griffin's Blessing": [
         "fbite",
-        "removal"
+        "removal",
+        "protection"
       ],
       "Oathbreaker's Challenge": [
         "fbite",
@@ -2817,7 +2858,8 @@
       ],
       "Die as Thou Wilt": [
         "edict",
-        "removal"
+        "removal",
+        "protection"
       ],
       "Tug of the Void": [
         "edict",
@@ -2976,7 +3018,8 @@
         "ae-rem"
       ],
       "Shatter the Sigil": [
-        "ae-rem"
+        "ae-rem",
+        "protection"
       ],
       "Change Allegiances": [
         "ae-rem"
@@ -3009,7 +3052,8 @@
         "wipe"
       ],
       "Levicta Visio": [
-        "removal"
+        "removal",
+        "cheat"
       ],
       "Serpens Oblis": [
         "removal",
@@ -3065,7 +3109,8 @@
       ],
       "Lunate Charm": [
         "removal",
-        "gyhate"
+        "gyhate",
+        "protection"
       ],
       "Magma Spray": [
         "removal"
@@ -3208,20 +3253,23 @@
         "removal"
       ],
       "Feudrach of Ashmouth": [
-        "removal"
+        "removal",
+        "highrate"
       ],
       "General of the Damned": [
         "removal",
         "below-rate"
       ],
       "Gereishin, the Stormlord": [
-        "removal"
+        "removal",
+        "cheat"
       ],
       "Goldnight Purgeblade": [
         "removal"
       ],
       "Huntmaster of the Fells": [
-        "removal"
+        "removal",
+        "highrate"
       ],
       "Iwai and Oda": [
         "removal"
@@ -3699,7 +3747,8 @@
         "tutor"
       ],
       "Creation Mythos": [
-        "tutor"
+        "tutor",
+        "cheat"
       ],
       "Curse of Harvest's Reaping": [
         "tutor"
@@ -3763,10 +3812,12 @@
         "gyhate"
       ],
       "Eternal Struggle": [
-        "gyhate"
+        "gyhate",
+        "protection"
       ],
       "Flutter": [
-        "gyhate"
+        "gyhate",
+        "protection"
       ],
       "Gisa's Breakthrough": [
         "gyhate"
@@ -3864,15 +3915,164 @@
       ],
       "Too Late for Grace": [
         "unearth"
+      ],
+      "Alwanor, the Humbled Star": [
+        "fastramp"
+      ],
+      "Andir Wildsoul": [
+        "fastramp"
+      ],
+      "Groove Surfer": [
+        "fastramp"
+      ],
+      "Hope's Trail Pilgrim": [
+        "fastramp",
+        "below-rate"
+      ],
+      "Leonin Revivalist": [
+        "fastramp"
+      ],
+      "Ursus Majora": [
+        "fastramp"
+      ],
+      "Teeming Secrets": [
+        "fastramp"
+      ],
+      "Step Beyond": [
+        "fastramp"
+      ],
+      "Binder of Greed and Merit": [
+        "fastramp"
+      ],
+      "Patrol Veteran": [
+        "fastramp",
+        "below-rate"
+      ],
+      "Umber Grovetender": [
+        "fastramp"
+      ],
+      "Secrecy": [
+        "fastramp"
+      ],
+      "Sustainable Investments": [
+        "fastramp"
+      ],
+      "Nimomae, Who Flows": [
+        "cheat"
+      ],
+      "Warden of Tremors": [
+        "fastramp"
+      ],
+      "Bulk Bioengineering": [
+        "cheat"
+      ],
+      "Lantern Festival": [
+        "cheat"
+      ],
+      "Prime for Innovation": [
+        "cheat"
+      ],
+      "Sakura Dance": [
+        "cheat"
+      ],
+      "Tempting Puzzlebox": [
+        "cheat"
+      ],
+      "Soulcage": [
+        "cheat"
+      ],
+      "Master Skaabstitcher": [
+        "cheat"
+      ],
+      "Aegis of Grace": [
+        "protection"
+      ],
+      "Arlinn's Kindred": [
+        "protection"
+      ],
+      "Attuned Lightbinder": [
+        "protection"
+      ],
+      "Convol, Archive Exec": [
+        "protection"
+      ],
+      "Evasive Tactics": [
+        "protection"
+      ],
+      "Make an Escape": [
+        "protection"
+      ],
+      "Out of Sight": [
+        "protection"
+      ],
+      "Placated Mind": [
+        "protection"
+      ],
+      "Refusal of the Hollow Gift": [
+        "protection"
+      ],
+      "Shaper's Rites": [
+        "protection"
+      ],
+      "Thalia's Skill": [
+        "protection"
+      ],
+      "Heavy Snowfall": [
+        "protection"
+      ],
+      "Medic's Implant": [
+        "protection"
+      ],
+      "Iron Defense": [
+        "protection"
+      ],
+      "Fight as One": [
+        "protection"
+      ],
+      "Profane Sustenance": [
+        "protection"
+      ],
+      "Ash-Addled Pyromaniac": [
+        "highrate"
+      ],
+      "Estwald Brigands": [
+        "cheat"
+      ],
+      "Looming Serpent": [
+        "highrate"
+      ],
+      "Misthollow Primarch": [
+        "highrate"
+      ],
+      "Thalia, the Guiding Blade": [
+        "highrate"
+      ],
+      "The Ulvenvater": [
+        "highrate"
+      ],
+      "Unstable Masterpiece": [
+        "highrate"
+      ],
+      "Tovolar Wolfbound": [
+        "highrate"
+      ],
+      "Wald-Cottage Crone": [
+        "highrate"
+      ],
+      "Curse of Eerie Streets": [
+        "highrate"
       ]
     },
     "order": [
-      "unearth",
+      "highrate",
       "cheat",
+      "protection",
+      "fastramp",
+      "below-rate",
+      "unearth",
       "extract",
       "gyhate",
       "tutor",
-      "below-rate",
       "wipe",
       "removal",
       "minus-rem",
