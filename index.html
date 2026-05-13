@@ -331,6 +331,7 @@
           <dt><code>e:CODE</code> · <code>set:CODE</code> · <code>edition:CODE</code></dt><dd>Some printing's set code or set name contains <code>CODE</code>. All operators behave the same; matches reprints regardless of which other sets the card also appears in.</dd>
           <dt><code>e:A,B,C</code></dt><dd>Comma-separated list, OR-combined.</dd>
           <dt><code>sets:A-B</code></dt><dd>Some printing's set falls in the chronological range from <code>A</code> to <code>B</code>, inclusive. Either bound may be omitted (<code>sets:A-</code>, <code>sets:-B</code>). Order of the two codes does not matter.</dd>
+          <dt><code>set&gt;=CODE</code> · <code>set&lt;=CODE</code> · <code>set&gt;CODE</code> · <code>set&lt;CODE</code></dt><dd>Some printing's set falls on the given side of <code>CODE</code> chronologically. E.g. <code>set&gt;=sol</code> matches cards printed in Solastere or any later set.</dd>
           <dt><code>cn:N</code> · <code>number:N</code> · <code>num:N</code></dt><dd>Collector number equals N. Numeric operators apply.</dd>
           <dt><code>r:c</code> · <code>r:u</code> · <code>r:r</code> · <code>r:m</code> · <code>r:s</code></dt><dd>Rarity letter (common, uncommon, rare, mythic, special). Full names also accepted.</dd>
           <dt><code>r&lt;=u</code> · <code>r&gt;=r</code></dt><dd>Rarity ordering: <code>c &lt; u &lt; r &lt; m &lt; s</code>. Matches if any printing satisfies the comparison.</dd>

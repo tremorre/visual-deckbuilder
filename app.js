@@ -3126,12 +3126,37 @@ function buildRarityPredicate(op, rawValue) {
   });
 }
 
-function buildSetPredicate(_op, rawValue) {
+function buildSetPredicate(op, rawValue) {
+  // Comparison operators (`set>=sol`, `set<=sol`, etc.) match any printing
+  // whose set's release date sits on the correct side of the pivot set's
+  // release date. The value must resolve to a known set code — substring
+  // matching only applies to `:`/`=`/`==`. Voyager sets get synthetic
+  // ordinal release dates in declaration order, so this works there too.
+  if (op === '>=' || op === '<=' || op === '>' || op === '<') {
+    const code = stripQuotes(rawValue).toUpperCase();
+    const pivotSet = STATE.setsByCode[code];
+    if (!pivotSet) return (_c) => false;
+    const pivot = pivotSet.releasedate || '';
+    return (c) => {
+      const printings = STATE.byCanonical.get(c.canonical) || [c];
+      for (const p of printings) {
+        const ps = STATE.setsByCode[p.set];
+        if (!ps) continue;
+        const d = ps.releasedate || '';
+        if (op === '>=' && d >= pivot) return true;
+        if (op === '<=' && d <= pivot) return true;
+        if (op === '>'  && d >  pivot) return true;
+        if (op === '<'  && d <  pivot) return true;
+      }
+      return false;
+    };
+  }
   const values = parseListValue(rawValue).map(v => v.toLowerCase());
   if (!values.length) return (_c) => false;
   return (c) => {
-    // A canonical card matches if any of its printings matches. All
-    // operators behave the same: substring match on set code or name.
+    // A canonical card matches if any of its printings matches. Substring
+    // match on set code or name across `:`, `=`, `==`, `!=`. (The
+    // comparison-operator branch above handles `>=`/`<=`/`>`/`<`.)
     const printings = STATE.byCanonical.get(c.canonical) || [c];
     for (const p of printings) {
       const code = (p.set || '').toLowerCase();
