@@ -362,6 +362,7 @@
           <dt><code>is:prismatic</code></dt><dd>Mana cost contains the prismatic pip <code>{Vp}</code>.</dd>
           <dt><code>is:common</code> · <code>is:uncommon</code> · <code>is:rare</code> · <code>is:mythic</code> · <code>is:special</code></dt><dd>Card's current rarity equals that value.</dd>
           <dt><code>is:&lt;tag&gt;</code></dt><dd>Card carries the named user tag (or an alias resolving to it). Falls through when the value matches no built-in.</dd>
+          <dt><code>tag:&lt;tag&gt;</code></dt><dd>Like <code>is:</code> but only searches user tags — built-in keywords (<code>page</code>, <code>hybrid</code>, <code>reprint</code>, …) are skipped, so a tag whose name collides with one of those is reachable here.</dd>
         </dl>
       </section>
 

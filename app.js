@@ -2188,6 +2188,7 @@ const FIELD_ALIASES = {
   f: 'format', format: 'format',
   legal: 'legal', banned: 'banned', restricted: 'restricted',
   is: 'is',
+  tag: 'tag',
   has: 'has',
   manabase: 'manabase',
   ft: 'flavor', flavor: 'flavor',
@@ -2617,6 +2618,7 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
     case 'restricted': ctx.overridesFormat = true;
                        return buildFormatPredicate('restricted', rawValue);
     case 'is':         return buildIsPredicate(rawValue);
+    case 'tag':        return buildTagPredicate(rawValue);
     case 'has':        return buildHasPredicate(rawValue);
     case 'manabase':   return buildManabasePredicate(rawValue);
     case 'flavor':     return buildFlavorPredicate(op, rawValue);
@@ -3262,31 +3264,34 @@ function buildIsPredicate(rawValue) {
     case 'rare':
     case 'mythic':
     case 'special':   return (c) => c.rarity === v;
-    default: {
-      // Fall back to user-defined tags from static/tags.json. Scoped to the
-      // active dataset (Revolution / Voyager never overlap) and keyed by
-      // canonical name so reprints share tags. Case-insensitive. Built-in
-      // is:X values above win; a user tag named "page" or "reprint" is
-      // unreachable via is:<tag> and shouldn't be created.
-      // Aliases resolve here too — `is:kill` finds every removal-tagged
-      // card the same way the tagger does. This works in the deckbuilder
-      // because tags.json (with its aliases map) is loaded in both modes.
-      const ds = currentDataset();
-      const slot0 = STATE.tags[ds];
-      const aliased = slot0 && slot0.aliases ? slot0.aliases[v] : null;
-      const matchLow = aliased ? String(aliased).toLowerCase() : v;
-      return (c) => {
-        const slot = STATE.tags[ds];
-        if (!slot) return false;
-        const arr = slot.cards[c.canonical] || slot.cards[c.name];
-        if (!arr) return false;
-        for (const t of arr) {
-          if (String(t).toLowerCase() === matchLow) return true;
-        }
-        return false;
-      };
-    }
+    // Fall back to user-defined tags. `tag:<x>` reaches the same lookup
+    // directly, skipping the built-in keywords — use it when a tag name
+    // collides with a built-in (e.g. a user tag literally named "page").
+    default: return buildTagPredicate(rawValue);
   }
+}
+
+// User-defined tag lookup. Scoped to the active dataset (Revolution /
+// Voyager never overlap) and keyed by canonical name so reprints share
+// tags. Case-insensitive. Aliases resolve here too — `tag:kill` finds
+// every removal-tagged card the same way the tagger does. tags.json
+// (with its aliases map) is loaded in both modes.
+function buildTagPredicate(rawValue) {
+  const v = stripQuotes(rawValue).toLowerCase();
+  const ds = currentDataset();
+  const slot0 = STATE.tags[ds];
+  const aliased = slot0 && slot0.aliases ? slot0.aliases[v] : null;
+  const matchLow = aliased ? String(aliased).toLowerCase() : v;
+  return (c) => {
+    const slot = STATE.tags[ds];
+    if (!slot) return false;
+    const arr = slot.cards[c.canonical] || slot.cards[c.name];
+    if (!arr) return false;
+    for (const t of arr) {
+      if (String(t).toLowerCase() === matchLow) return true;
+    }
+    return false;
+  };
 }
 
 // Tag-name shape recognised by `manabase:`. Also used by the tagger

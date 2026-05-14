@@ -1522,19 +1522,24 @@
         "coco"
       ],
       "Angel of Fading Dusk": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Ashmouth Wolf": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Callous Killer": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Awoken Heir": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Bewitching Hagmother": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Bloodpack Invoker": [
         "coco"
@@ -1544,7 +1549,8 @@
         "highrate"
       ],
       "Captain Faulmorr": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Darkthicket Howler": [
         "coco",
@@ -1570,7 +1576,8 @@
         "coco"
       ],
       "Devilthorn Hunter": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Disciple of Darker Powers": [
         "coco"
@@ -1580,40 +1587,49 @@
         "removal"
       ],
       "Gavony Trapper": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Geist Researcher": [
         "coco"
       ],
       "Getander Wildlander": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Grand Necrotect": [
         "coco"
       ],
       "Herald of Krothus": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Herghast, Niblis Magister": [
         "coco"
       ],
       "Looming Grafspider": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Markov Imperator": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Greedy Duelist": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Harvest Warden": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Haunted Doll": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Horrendous Experiment": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Kessig Pathkeeper": [
         "coco"
@@ -1622,22 +1638,27 @@
         "coco"
       ],
       "Moonlight Firemaker": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Nebelgast Retainer": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Nephalia Heartsewer": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Odric, Traft's Anointed": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Ossuary Guardian": [
         "coco"
       ],
       "Pious Friar": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Practiced Occultist": [
         "coco"
@@ -1646,38 +1667,46 @@
         "coco"
       ],
       "Ravenous Companions": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Rotjaw Predator": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Sacred Stag": [
         "coco"
       ],
       "Sacrificial Lamb": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Scorned Zombie": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Scourge of Drunau Port": [
         "coco"
       ],
       "Shambling Rotcap": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Silverflame Cathar": [
         "coco"
       ],
       "Silverflame Zealot": [
         "coco",
-        "handattack"
+        "handattack",
+        "promising"
       ],
       "Somberwald Boar": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Speaker of Ghrin-Danu": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Sporecyst Toad": [
         "coco"
@@ -1686,30 +1715,37 @@
         "coco"
       ],
       "Stromkirk Vanguard": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Subsuming Sludge": [
         "coco",
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "The Collabomination": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Thing from the Depths": [
         "coco",
         "removal",
-        "bounce"
+        "bounce",
+        "promising"
       ],
       "Tinua, of Whispered Pains": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Westvale Adherent": [
         "coco",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Winterthorn Creeper": [
         "coco",
-        "tutor"
+        "tutor",
+        "promising"
       ],
       "Benevolent Visitation": [
         "coco",
@@ -1718,20 +1754,25 @@
         "below-rate"
       ],
       "Blood Bank": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Curse of Profane Offerings": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Devotion to Ghrin-Danu": [
         "coco",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "The Haunting of Silbern": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Westvale Cult Induction": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Fleshwrithe Apparatus": [
         "coco",
@@ -1739,16 +1780,19 @@
         "below-rate"
       ],
       "Feasting Ceremony": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Sermons of Ormendahl": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Harvesttide Effigies": [
         "coco"
       ],
       "Hungering Coffin": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Bittersweet Parting": [
         "coco",
@@ -1756,14 +1800,17 @@
         "below-rate"
       ],
       "Restoring Presence": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Suspicious Carriage": [
         "coco"
       ],
       "Unmarked Headstones": [
         "coco",
-        "gyhate"
+        "gyhate",
+        "promising",
+        "highrate"
       ],
       "Wolf-Fang Talisman": [
         "coco",
@@ -1772,7 +1819,8 @@
       ],
       "Claret Ascendance": [
         "coco",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Consuming Grounds": [
         "coco"
@@ -2025,7 +2073,8 @@
         "extract"
       ],
       "Learn the Steps": [
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "Legislative Gridlock": [
         "counterspell",
@@ -2052,7 +2101,8 @@
         "below-rate"
       ],
       "Storms over Nephalia": [
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "Thistrel Charm": [
         "counterspell",
@@ -2077,7 +2127,8 @@
       ],
       "Addled Psyche": [
         "counterspell",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Draconos Iracus": [
         "coco",
@@ -2111,7 +2162,9 @@
         "GWland"
       ],
       "Solstice Circle": [
-        "GWland"
+        "GWland",
+        "promising",
+        "highrate"
       ],
       "Thicketed Path": [
         "GWland"
@@ -2135,7 +2188,8 @@
         "RGLand"
       ],
       "Lonely Cabin": [
-        "RGLand"
+        "RGLand",
+        "promising"
       ],
       "Chimeric Soulspace": [
         "GULand"
@@ -2332,7 +2386,8 @@
         "WULand"
       ],
       "Niblis's Haunt": [
-        "WULand"
+        "WULand",
+        "promising"
       ],
       "Tranquil Cove": [
         "WULand"
@@ -2363,7 +2418,8 @@
         "Rland"
       ],
       "Desolate Cemetery": [
-        "BLand"
+        "BLand",
+        "promising"
       ],
       "Desolate Garrison": [
         "WLand"
@@ -2376,10 +2432,12 @@
         "ULand"
       ],
       "Desolate Harbor": [
-        "ULand"
+        "ULand",
+        "promising"
       ],
       "Desolate Pinnacle": [
-        "Rland"
+        "Rland",
+        "promising"
       ],
       "Desolate Thicket": [
         "GLand"
@@ -2539,7 +2597,8 @@
       "Desperate Exorcism": [
         "counterspell",
         "removal",
-        "bounce"
+        "bounce",
+        "promising"
       ],
       "Quid Pro Quo": [
         "counterspell"
@@ -2548,7 +2607,8 @@
         "counterspell"
       ],
       "Sorin's Interrogation": [
-        "handattack"
+        "handattack",
+        "promising"
       ],
       "Pluck the Soul": [
         "handattack"
@@ -2702,7 +2762,8 @@
       ],
       "The Goremoon Unleashed": [
         "fbite",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Main Street Hooligang": [
         "fbite",
@@ -2735,7 +2796,8 @@
       "Griffin's Blessing": [
         "fbite",
         "removal",
-        "protection"
+        "protection",
+        "promising"
       ],
       "Oathbreaker's Challenge": [
         "fbite",
@@ -2781,16 +2843,19 @@
       ],
       "Anje's Thirst": [
         "minus-rem",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Affliction of Undeath": [
         "minus-rem",
         "wipe",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Thirsty Work": [
         "minus-rem",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Empty Shell": [
         "minus-rem",
@@ -2885,7 +2950,8 @@
       ],
       "Horrific Stitching": [
         "edict",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Burn Up": [
         "removal",
@@ -2941,7 +3007,8 @@
         "below-rate"
       ],
       "Bone Shards": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Forced Shutdown": [
         "removal",
@@ -2965,7 +3032,9 @@
       ],
       "Sanguine Liturgy": [
         "removal",
-        "ae-rem"
+        "ae-rem",
+        "promising",
+        "fbite"
       ],
       "Whirlwind Kick": [
         "removal",
@@ -2980,7 +3049,8 @@
       ],
       "Beyond Comprehension": [
         "wipe",
-        "removal"
+        "removal",
+        "highrate"
       ],
       "Path's End": [
         "wipe",
@@ -3070,7 +3140,8 @@
       "Cathar's Charm": [
         "ae-rem",
         "removal",
-        "gyhate"
+        "gyhate",
+        "promising"
       ],
       "Center of Attention": [
         "removal",
@@ -3116,7 +3187,8 @@
         "removal"
       ],
       "Prayer of Banishing": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Radiance Unmade": [
         "removal"
@@ -3168,7 +3240,9 @@
       ],
       "Drowntide Rising": [
         "wipe",
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Imminent Disaster": [
         "removal",
@@ -3176,7 +3250,8 @@
       ],
       "Night of the Long Silence": [
         "wipe",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Spice of Life": [
         "removal",
@@ -3204,7 +3279,8 @@
         "ae-rem"
       ],
       "Malignant Entangler": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Meteor Golem": [
         "removal",
@@ -3246,11 +3322,11 @@
         "ae-rem"
       ],
       "Ashmouth Intruders": [
-        "removal",
-        "below-rate"
+        "removal"
       ],
       "Cordelia's Ripper": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Feudrach of Ashmouth": [
         "removal",
@@ -3265,7 +3341,8 @@
         "cheat"
       ],
       "Goldnight Purgeblade": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Huntmaster of the Fells": [
         "removal",
@@ -3275,7 +3352,8 @@
         "removal"
       ],
       "Lunarblind Packmaster": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Lumen Irregular": [
         "removal",
@@ -3348,7 +3426,9 @@
         "below-rate"
       ],
       "Geistblaster's Breakthrough": [
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Hell's Boon": [
         "removal"
@@ -3401,7 +3481,8 @@
         "removal"
       ],
       "Wanton Display": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Charge Beam": [
         "removal",
@@ -3440,7 +3521,8 @@
       "Horrors Wrought": [
         "removal",
         "wipe",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Full-Moon Assault": [
         "removal",
@@ -3458,7 +3540,8 @@
         "below-rate"
       ],
       "Olivia's Debauchery": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Skycleave": [
         "removal"
@@ -3468,7 +3551,9 @@
         "wipe"
       ],
       "Rally to Thraben": [
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Splintering Blast": [
         "removal",
@@ -3487,7 +3572,8 @@
         "removal"
       ],
       "Unstable Experimentation": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Tear Down": [
         "removal",
@@ -3538,7 +3624,8 @@
         "removal"
       ],
       "Trapped in the Mirror": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Into the Grove": [
         "removal",
@@ -3619,10 +3706,12 @@
         "bounce"
       ],
       "Ashiok's Manipulation": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Geralf's Studies": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Grasp of the Elements": [
         "removal",
@@ -3751,7 +3840,8 @@
         "cheat"
       ],
       "Curse of Harvest's Reaping": [
-        "tutor"
+        "tutor",
+        "promising"
       ],
       "Imperial Tour": [
         "tutor"
@@ -3785,7 +3875,8 @@
         "tutor"
       ],
       "Witching Hour": [
-        "tutor"
+        "tutor",
+        "promising"
       ],
       "Boughbreak Lumberknot": [
         "gyhate"
@@ -3820,7 +3911,8 @@
         "protection"
       ],
       "Gisa's Breakthrough": [
-        "gyhate"
+        "gyhate",
+        "promising"
       ],
       "Go Blank": [
         "gyhate"
@@ -3841,7 +3933,8 @@
         "cheat"
       ],
       "Vile Resurgence": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Gereishin's Entrance": [
         "cheat"
@@ -3865,10 +3958,12 @@
         "cheat"
       ],
       "Curse of Disturbed Tombs": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "It's Alive!": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Dark Horse Victory": [
         "cheat"
@@ -3926,8 +4021,7 @@
         "fastramp"
       ],
       "Hope's Trail Pilgrim": [
-        "fastramp",
-        "below-rate"
+        "fastramp"
       ],
       "Leonin Revivalist": [
         "fastramp"
@@ -3936,7 +4030,8 @@
         "fastramp"
       ],
       "Teeming Secrets": [
-        "fastramp"
+        "fastramp",
+        "promising"
       ],
       "Step Beyond": [
         "fastramp"
@@ -3976,13 +4071,15 @@
         "cheat"
       ],
       "Tempting Puzzlebox": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Soulcage": [
         "cheat"
       ],
       "Master Skaabstitcher": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Aegis of Grace": [
         "protection"
@@ -4030,13 +4127,15 @@
         "protection"
       ],
       "Profane Sustenance": [
-        "protection"
+        "protection",
+        "below-rate"
       ],
       "Ash-Addled Pyromaniac": [
         "highrate"
       ],
       "Estwald Brigands": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Looming Serpent": [
         "highrate"
@@ -4061,14 +4160,257 @@
       ],
       "Curse of Eerie Streets": [
         "highrate"
+      ],
+      "Bleachbark Dryad": [
+        "promising"
+      ],
+      "Cloistered Haunt": [
+        "promising"
+      ],
+      "Bloodsire's Herald": [
+        "promising"
+      ],
+      "Dawnhart Familiar": [
+        "below-rate"
+      ],
+      "Covetous Neonate": [
+        "promising"
+      ],
+      "Cordelia Stromkirk": [
+        "promising"
+      ],
+      "Dire-Strain Imbuer": [
+        "promising"
+      ],
+      "Elgaud Dawnrider": [
+        "promising"
+      ],
+      "Emrakul, Visage of Gore": [
+        "promising"
+      ],
+      "Festering Rats": [
+        "below-rate"
+      ],
+      "Famished Twins": [
+        "promising"
+      ],
+      "Falkenrath Executor": [
+        "below-rate"
+      ],
+      "Geist of the Erdwal Road": [
+        "below-rate"
+      ],
+      "Gavony Watchman": [
+        "promising"
+      ],
+      "Geist-Honored Warden": [
+        "below-rate"
+      ],
+      "Gloaming Demon": [
+        "promising"
+      ],
+      "Gravespore Guardian": [
+        "promising"
+      ],
+      "Grizzled Ironwright": [
+        "promising"
+      ],
+      "Hanweir Sentries": [
+        "below-rate"
+      ],
+      "Guide of Faith": [
+        "promising"
+      ],
+      "Heron's Grace Rescuer": [
+        "promising"
+      ],
+      "Hollowhenge Martyr": [
+        "promising"
+      ],
+      "Hope's Trail Ranger": [
+        "promising"
+      ],
+      "Hulking Horror": [
+        "below-rate"
+      ],
+      "Insatiable Elder": [
+        "promising"
+      ],
+      "Mournwraith": [
+        "below-rate"
+      ],
+      "Niblis of the Gloom": [
+        "below-rate"
+      ],
+      "Odric, Accursed Slayer": [
+        "promising"
+      ],
+      "Ominous Frogs": [
+        "promising"
+      ],
+      "Overfueled Abomination": [
+        "below-rate"
+      ],
+      "Ominous Marionette": [
+        "below-rate"
+      ],
+      "Profane Invoker": [
+        "promising"
+      ],
+      "Prying Eyedra": [
+        "promising"
+      ],
+      "Runstalker Maiden": [
+        "promising"
+      ],
+      "Repressed Aristocrat": [
+        "below-rate"
+      ],
+      "Shadowgrange Tormenter": [
+        "promising"
+      ],
+      "Selhoff Conduit": [
+        "promising"
+      ],
+      "Sigardian Gryffknight": [
+        "below-rate"
+      ],
+      "Sigarda, Hope's Accord": [
+        "promising"
+      ],
+      "Skulking Shadowbeast": [
+        "below-rate"
+      ],
+      "Stewards of Ulvenwald": [
+        "below-rate"
+      ],
+      "Stromkirk Warlord": [
+        "below-rate"
+      ],
+      "Stonegraf Awakener": [
+        "promising"
+      ],
+      "Tethered Fettergeists": [
+        "promising"
+      ],
+      "Thraben Stalwart": [
+        "below-rate"
+      ],
+      "Traft, Aiding the Worthy": [
+        "promising"
+      ],
+      "Tormented Bride": [
+        "below-rate"
+      ],
+      "Voracious Assembly": [
+        "below-rate"
+      ],
+      "Wailing Apparition": [
+        "below-rate"
+      ],
+      "Waldshadow Ambusher": [
+        "below-rate"
+      ],
+      "Wilderhunt Companions": [
+        "below-rate"
+      ],
+      "Worn Semblance": [
+        "promising"
+      ],
+      "Wildcaster Devil": [
+        "promising"
+      ],
+      "Avacyn's Legacy": [
+        "promising"
+      ],
+      "Curse of Dark Blasphemy": [
+        "promising"
+      ],
+      "Curse of Devilish Ire": [
+        "promising"
+      ],
+      "Curse of Entomophobia": [
+        "promising"
+      ],
+      "Curse of Insidious Thoughts": [
+        "promising"
+      ],
+      "Curse of Searing Ground": [
+        "promising"
+      ],
+      "Harvesttide Procession": [
+        "promising"
+      ],
+      "In the Face of Darkness": [
+        "promising"
+      ],
+      "Traft's Embrace": [
+        "below-rate"
+      ],
+      "Lumberjack's Axe": [
+        "promising"
+      ],
+      "Hope-Blessed Bow": [
+        "promising"
+      ],
+      "Beckon the Beyond": [
+        "promising"
+      ],
+      "Embers of a New Moon": [
+        "promising"
+      ],
+      "Dirge of the Drowned": [
+        "promising"
+      ],
+      "Mysteries of the Forbidden": [
+        "promising"
+      ],
+      "Mortis Infusion": [
+        "below-rate"
+      ],
+      "Nightfright": [
+        "below-rate"
+      ],
+      "Stain with Crimson": [
+        "below-rate"
+      ],
+      "Urgent Investigations": [
+        "promising",
+        "highrate"
+      ],
+      "Ulrich's Proclamation": [
+        "below-rate"
+      ],
+      "Thought Scour": [
+        "promising"
+      ],
+      "Bleeding Tithe": [
+        "promising"
+      ],
+      "Bounty of Trostad": [
+        "below-rate"
+      ],
+      "Collected Thoughts": [
+        "promising"
+      ],
+      "Foray into Stensia": [
+        "below-rate"
+      ],
+      "Hour of the Wolf": [
+        "promising"
+      ],
+      "Plunder the Grafs": [
+        "promising"
       ]
     },
     "order": [
       "highrate",
+      "promising",
+      "fbite",
+      "below-rate",
       "cheat",
       "protection",
       "fastramp",
-      "below-rate",
       "unearth",
       "extract",
       "gyhate",
@@ -4081,7 +4423,6 @@
       "handattack",
       "edict",
       "creatureland",
-      "fbite",
       "texile",
       "counterspell",
       "utilityland",
@@ -4119,7 +4460,12 @@
       "extraction": "extract",
       "bad": "below-rate",
       "banishing": "texile",
-      "counter": "counterspell"
+      "counter": "counterspell",
+      "belowrate": "below-rate",
+      "lowrate": "below-rate",
+      "f-bite": "fbite",
+      "fight": "fbite",
+      "bite": "fbite"
     }
   },
   "voyager": {
