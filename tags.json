@@ -1975,11 +1975,13 @@
       ],
       "Gloomcover Steppe": [
         "coco",
-        "WBLand"
+        "WBLand",
+        "highrate"
       ],
       "Heart of the Glade": [
         "coco",
-        "GWland"
+        "GWland",
+        "highrate"
       ],
       "Hopeful Soulspace": [
         "coco",
@@ -1999,7 +2001,8 @@
       ],
       "Pool of Light": [
         "coco",
-        "WULand"
+        "WULand",
+        "highrate"
       ],
       "Soaring Soulspace": [
         "coco",
@@ -2007,7 +2010,8 @@
       ],
       "Spiraling Canyon": [
         "coco",
-        "RWLand"
+        "RWLand",
+        "highrate"
       ],
       "Stack Conviviplex": [
         "coco",
@@ -2153,7 +2157,8 @@
         "removal"
       ],
       "Flourishing Crevasse": [
-        "RGLand"
+        "RGLand",
+        "highrate"
       ],
       "Hall of the Gentle Light": [
         "GWland"
@@ -2204,7 +2209,8 @@
         "GULand"
       ],
       "Lush Oasis": [
-        "GULand"
+        "GULand",
+        "highrate"
       ],
       "Regrowing Outlands": [
         "GULand"
@@ -2225,7 +2231,8 @@
         "BGLand"
       ],
       "Fungal Mire": [
-        "BGLand"
+        "BGLand",
+        "highrate"
       ],
       "Gallowsprout Timber": [
         "BGLand",
@@ -2265,7 +2272,8 @@
         "BRLand"
       ],
       "Lavatorn Fields": [
-        "BRLand"
+        "BRLand",
+        "highrate"
       ],
       "Marzela's Sanctum": [
         "BRLand"
@@ -2289,7 +2297,8 @@
         "WBLand"
       ],
       "Flooded Morass": [
-        "UBLand"
+        "UBLand",
+        "highrate"
       ],
       "Dismal Backwater": [
         "UBLand"
@@ -2323,7 +2332,8 @@
         "URLand"
       ],
       "Frostfire Geysers": [
-        "URLand"
+        "URLand",
+        "highrate"
       ],
       "Glimmerveil Lake": [
         "URLand",

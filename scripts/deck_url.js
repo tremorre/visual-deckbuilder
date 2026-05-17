@@ -44,7 +44,15 @@
 (function () {
   'use strict';
 
-  const VERSION = 1;
+  // Encoder always emits v2. The decoder accepts both v1 and v2, dispatching
+  // to a version-specific pool so URLs shared from the pre-v2 deckbuilder
+  // continue to round-trip. v1 ≡ single-pass bare-name strip + no basic
+  // overflow in the appendix (the broken EOS encoder lived here, but its
+  // output is still bit-readable when the appendix's first bit happens to be
+  // `1` — the cases where it isn't were never decodable to begin with).
+  // v2 ≡ multi-pass strip (so `Foo_PRO_KDT` collapses to bare `Foo`) + basics
+  // appended to fullCanonical at indices N..N+4 for overflow + EOS rice pad.
+  const VERSION = 2;
   const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'];
   const COLOR_BIT = { W: 1, U: 2, B: 4, R: 8, G: 16 };
   const BASIC_NAMES = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
@@ -157,15 +165,37 @@
   // ------------------------------------------------------------------------
   // Card pool — load cards.json + staples.txt. Cached after first build.
 
-  let _poolPromise = null;
+  // Cached pool per version (v1 for legacy decode, v2 for encode + decode).
+  const _poolPromises = new Map();
 
   // Builds the canonical card data structures the encoder/decoder share.
   // The legal-pool is the gap-stream's universe; the full-pool is used by
   // the appendix for 13-bit absolute indices so any card can still be encoded.
-  function buildPool(data, staples, unplayable) {
+  function buildPool(data, staples, unplayable, version) {
     const info = new Map();
     const lookup = new Map();
     const sets = Object.keys(data).sort();
+    // Bare-name strip semantics differ by version. v1 strips one trailing
+    // `_<ALNUM>` only — leaves phantom bares like `Foo_PRO` when the actual
+    // printing is `Foo_PRO_KDT`. v2 strips repeatedly, honouring every
+    // cards.json set code AND `_PRO` (matching app.js's canonicalName) so
+    // every printing of a card lands at the same pool index and produces the
+    // same URL.
+    const allSetCodes = new Set(Object.keys(data));
+    function stripBareV1(name) {
+      const m = /^(.*)_([A-Z0-9]+)$/.exec(name);
+      return m ? m[1] : name;
+    }
+    function stripBareV2(name) {
+      while (name.includes('_')) {
+        const i = name.lastIndexOf('_');
+        const tail = name.slice(i + 1);
+        if (allSetCodes.has(tail) || tail === 'PRO') name = name.slice(0, i);
+        else break;
+      }
+      return name;
+    }
+    const stripBare = version === 1 ? stripBareV1 : stripBareV2;
     for (const s of sets) {
       if (s === 'REV') continue;
       const cards = (data[s] && data[s].cards) || [];
@@ -174,8 +204,7 @@
         const side = (c.side || '').toLowerCase();
         if (side === 'b' || side === 'back') continue;
         const full = (c.name || '').split(' // ', 2)[0];
-        const m = /^(.*)_([A-Z0-9]+)$/.exec(full);
-        const bare = m ? m[1] : full;
+        const bare = stripBare(full);
         if (BASIC_NAMES.indexOf(bare) >= 0) continue;
         let ci = 0;
         for (const col of (c.colorIdentity || [])) {
@@ -190,6 +219,13 @@
             manaCost: c.manaCost || '',
             text: c.text || '',
             legal: isLegalPrinting,
+            // The cards.json printing name first encountered for this bare.
+            // Used as the decoder's output name so alt-art / set-only printings
+            // (e.g. `Swamp Romantic_DOV`, whose stripped bare `Swamp Romantic`
+            // matches no `STATE.byName` key) re-import cleanly. For bares whose
+            // first printing is the base name (no `_SET`/parens/word suffix),
+            // firstName == bare so output is unchanged from the pre-fix codec.
+            firstName: full,
           });
           lookup.set(bare, bare);
           lookup.set(full, bare);
@@ -206,16 +242,27 @@
       if (ia.set !== ib.set) return ia.set < ib.set ? -1 : 1;
       return numKey(ia.num).localeCompare(numKey(ib.num));
     });
+    // v2 only: append the 5 basic names at indices N..N+4 so the appendix
+    // can encode basic overflows (>15 main or >7 side per basic — the
+    // header's 4+3-bit counts top out there). In v1 there are no
+    // basic-overflow appendix entries (and the pool has no slot for them),
+    // so basics live only in the header.
+    const nonBasicFullLen = fullCanonical.length;
+    if (version === 2) {
+      for (const b of BASIC_NAMES) fullCanonical.push(b);
+    }
     const fullNameIndex = new Map();
     fullCanonical.forEach((b, i) => fullNameIndex.set(b, i));
     // The gap-coded legal pool excludes freeze-time illegal cards AND
     // user-marked unplayable cards (still encode via appendix on rare picks).
-    const legalCanonical = fullCanonical.filter(
+    // Only the non-basic prefix participates — basics live at the tail of
+    // fullCanonical purely for appendix overflow indexing.
+    const legalCanonical = fullCanonical.slice(0, nonBasicFullLen).filter(
       b => info.get(b).legal && !unplayable.has(b));
     const legalNameIndex = new Map();
     legalCanonical.forEach((b, i) => legalNameIndex.set(b, i));
     return { fullCanonical, fullNameIndex, legalCanonical, legalNameIndex,
-             info, lookup, staples };
+             info, lookup, staples, nonBasicFullLen };
   }
 
   function parseStaples(text) {
@@ -238,9 +285,9 @@
     return '￿' + s;
   }
 
-  async function ensurePool() {
-    if (_poolPromise) return _poolPromise;
-    _poolPromise = (async () => {
+  async function ensurePool(version) {
+    if (_poolPromises.has(version)) return _poolPromises.get(version);
+    const p = (async () => {
       const [cardsResp, staplesResp, unplayableResp] = await Promise.all([
         fetch('cards.json', { cache: 'force-cache' }),
         fetch('staples.txt', { cache: 'force-cache' }),
@@ -250,9 +297,10 @@
       const data = (await cardsResp.json()).data || {};
       const staples = parseStaples(staplesResp.ok ? await staplesResp.text() : '');
       const unplayable = parseStaples(unplayableResp.ok ? await unplayableResp.text() : '');
-      return buildPool(data, staples, unplayable);
+      return buildPool(data, staples, unplayable, version);
     })();
-    return _poolPromise;
+    _poolPromises.set(version, p);
+    return p;
   }
 
   // ------------------------------------------------------------------------
@@ -367,9 +415,9 @@
 
   // entries: [{ name, main, side }]   — name is the cards.json suffixed canonical form
   async function encode(entries) {
-    const pool = await ensurePool();
+    const pool = await ensurePool(VERSION);
     const { legalCanonical, legalNameIndex, fullNameIndex,
-            info, lookup, staples } = pool;
+            info, lookup, staples, nonBasicFullLen } = pool;
 
     const basics = {};
     for (const b of BASIC_NAMES) basics[b] = [0, 0];
@@ -422,6 +470,29 @@
       const entry = [pos, nb.main, nb.side];
       (pos < nStapleInPool ? seg1 : seg2).push(entry);
     }
+    // Basic overflow: header bits cap each basic at 15 main / 7 side; emit
+    // the remainder via appendix entries using the per-basic full-pool index
+    // (placed at nonBasicFullLen + basicIndex when the pool was built).
+    // Each appendix entry carries up to 4 main or 4 side via the Huffman
+    // pair table — chunk overflow into the biggest pair that fits.
+    for (let i = 0; i < BASIC_NAMES.length; i++) {
+      const b = BASIC_NAMES[i];
+      let mOver = Math.max(0, basics[b][0] - 15);
+      let sOver = Math.max(0, basics[b][1] - 7);
+      if (!mOver && !sOver) continue;
+      const idx = nonBasicFullLen + i;
+      while (mOver > 0) {
+        const take = mOver >= 4 ? 4 : mOver;
+        appendix.push([idx, take, 0]);
+        mOver -= take;
+      }
+      while (sOver > 0) {
+        const take = sOver >= 4 ? 4 : sOver;
+        appendix.push([idx, 0, take]);
+        sOver -= take;
+      }
+    }
+
     seg1.sort((a, b) => a[0] - b[0]);
     seg2.sort((a, b) => a[0] - b[0]);
     appendix.sort((a, b) => a[0] - b[0]);
@@ -476,6 +547,14 @@
       prev = idx;
     }
     if (appendix.length) {
+      // The decoder reads each rest entry as rice(gap)+huffman(sym); when it
+      // hits EOS it switches to the appendix. Naively writing just the 9-bit
+      // EOS code lets the decoder's rice consume the first `1` (unary
+      // terminator) and re-read the remaining 8 ones + the appendix's first
+      // bit as the 9-bit code `111111110` (= sym '1,3'), missing EOS.
+      // Pad with a discarded rice gap of 0 so rice consumes the padding and
+      // huffman reads the full EOS code.
+      rice(bw, 0, k2);
       bw.writeBits(MAIN_CODES[EOS]);
       for (const [fullIdx, m, s] of appendix) {
         bw.w(fullIdx, 13);
@@ -543,15 +622,23 @@
   }
 
   async function decode(b64) {
-    const pool = await ensurePool();
-    const { legalCanonical, fullCanonical, info, staples } = pool;
     const bytes = base64urlToBytes(b64);
     const br = new BitReader(bytes);
     while (br.bits[br.pos] === 0) br.pos++;
     br.pos++; // marker
-
     const version = br.read(8);
-    if (version !== VERSION) throw new Error('unknown deck-URL version: ' + version);
+    if (version !== 1 && version !== 2) {
+      throw new Error('unknown deck-URL version: ' + version);
+    }
+    const pool = await ensurePool(version);
+    const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen } = pool;
+    // Output the first cards.json printing name we saw for each bare, falling
+    // back to the bare itself. Fixes round-trip for cards whose stripped bare
+    // doesn't match any byName key (e.g. `Swamp Romantic_DOV` → bare
+    // `Swamp Romantic`, which is not a real printing). Applies to both
+    // versions — strictly improves re-importability without changing bytes.
+    const nameOut = (bare) =>
+      (info.has(bare) && info.get(bare).firstName) || bare;
     const mask = br.read(5);
     const nStaplesPicked = br.read(6);
     const k1 = br.read(4);
@@ -588,7 +675,7 @@
       const segPos = prev + 1 + gap;
       const legalIdx = newPool[segPos];
       const [m, s] = parsePair(sym);
-      cards[legalCanonical[legalIdx]] = { main: m, side: s };
+      cards[nameOut(legalCanonical[legalIdx])] = { main: m, side: s };
       prev = segPos;
     }
     // Rest segment: keep reading until EOS or end of bits.
@@ -605,7 +692,7 @@
       const segPos = prev + 1 + gap;
       const legalIdx = newPool[segPos];
       const [m, s] = parsePair(sym);
-      cards[legalCanonical[legalIdx]] = { main: m, side: s };
+      cards[nameOut(legalCanonical[legalIdx])] = { main: m, side: s };
       prev = segPos;
     }
     if (appendixStarts) {
@@ -616,7 +703,16 @@
           sym = huffmanDecodeOne(br, appHd);
         } catch (e) { break; }
         const [m, s] = parsePair(sym);
-        cards[fullCanonical[fullIdx]] = { main: m, side: s };
+        if (fullIdx >= nonBasicFullLen) {
+          // Basic-overflow entry: accumulate onto the basics counter so the
+          // header's (clamped) main/side and any number of overflow entries
+          // sum to the original count.
+          const name = fullCanonical[fullIdx];
+          basics[name][0] += m;
+          basics[name][1] += s;
+        } else {
+          cards[nameOut(fullCanonical[fullIdx])] = { main: m, side: s };
+        }
       }
     }
 
