@@ -2712,10 +2712,8 @@ function buildOraclePredicate(op, rawValue) {
   const isRegex = raw.length >= 2 && raw[0] === '/' && raw[raw.length - 1] === '/';
   if (isRegex) {
     const body = raw.slice(1, -1);
-    // Expand shortcut sequences: \spt \spp \smm \spm \smp \sbd \sm \smr \smh \sc
-    const expanded = expandOracleShortcuts(body);
     let re;
-    try { re = new RegExp(expanded, 'i'); }
+    try { re = new RegExp(body, 'i'); }
     catch (e) { throw new Error(`bad regex /${body}/`); }
     return (c) => {
       const text = oracleTextFor(c);
@@ -2751,25 +2749,6 @@ function oracleTextFor(c) {
   const front = c.text || '';
   const back = (c.back && c.back.text) || '';
   return back ? (front + '\n' + back) : front;
-}
-
-// Expand the oracle-regex shortcut sequences from the search spec.
-function expandOracleShortcuts(body) {
-  const subs = [
-    [/\\spt/g,  '[+-]?\\d+/[+-]?\\d+'],
-    [/\\spp/g,  '\\+\\d+/\\+\\d+'],
-    [/\\smm/g,  '-\\d+/-\\d+'],
-    [/\\spm/g,  '\\+\\d+/-\\d+'],
-    [/\\smp/g,  '-\\d+/\\+\\d+'],
-    [/\\sbd/g,  '[+-]?\\d+/[+-]?\\d+'],
-    [/\\smr/g,  '\\{[WUBRGI]\\}\\{[WUBRGI]\\}'],
-    [/\\smh/g,  '\\{[WUBRGI]/[WUBRGI]\\}'],
-    [/\\sc/g,   '\\{[WUBRGI]\\}'],
-    [/\\sm/g,   '\\{[^}]+\\}'],
-  ];
-  let out = body;
-  for (const [pat, rep] of subs) out = out.replace(pat, rep);
-  return out;
 }
 
 function buildColorPredicate(fieldKey, op, rawValue) {
@@ -3358,11 +3337,6 @@ function buildHasPredicate(rawValue) {
   if (v === 'flavor' || v === 'flavour') {
     return (c) => anyPrinting(c, p => p.flavor && p.flavor.trim());
   }
-  if (v === 'oracle' || v === 'text')    return (c) => !!(c.text && c.text.trim());
-  if (v === 'power')                     return (c) => Number.isFinite(parseIntOrNaN(c.power));
-  if (v === 'toughness')                 return (c) => Number.isFinite(parseIntOrNaN(c.toughness));
-  if (v === 'loyalty')                   return (c) => Number.isFinite(parseIntOrNaN(c.loyalty));
-  if (v === 'defense')                   return (c) => Number.isFinite(parseIntOrNaN(c.defense));
   return (_c) => false;
 }
 
@@ -4302,9 +4276,12 @@ function wireUndoRedo() {
   document.addEventListener('keydown', (ev) => {
     if (!(ev.ctrlKey || ev.metaKey)) return;
     // Let the browser's native text-undo handle the input/textarea case so
-    // typing corrections aren't hijacked by deck undo.
+    // typing corrections aren't hijacked by deck undo. #search is excluded:
+    // every search-add path refocuses it, so leaving it in this bucket means
+    // Ctrl+Z is a no-op for the most common add flow.
     const a = document.activeElement;
-    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
+    if (a && (a.tagName === 'TEXTAREA' || a.isContentEditable
+              || (a.tagName === 'INPUT' && a.id !== 'search'))) return;
     const key = ev.key.toLowerCase();
     if (key === 'z' && !ev.shiftKey) {
       ev.preventDefault();
@@ -6192,34 +6169,33 @@ function downloadFile(filename, contents, mime) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 }
 
-// Ask the user whether to merge the maybeboard into the sideboard at export
-// time. Called from the cod/txt export handlers, gated on the maybeboard
-// actually having cards. Returns a Promise that resolves to 'merge',
-// 'keep', or 'cancel'. The modal HTML lives in index.html (#maybe-export-
-// modal); we mutate its message to fit the chosen export format.
+// Ask the user whether to merge the maybeboard into the sideboard or leave
+// it out of the export entirely. Called from the txt export handler, gated
+// on the maybeboard actually having cards. Returns a Promise that resolves
+// to 'merge', 'omit', or 'cancel'.
 function promptMaybeboardInclusion(exportLabel) {
   return new Promise((resolve) => {
     const modal  = document.getElementById('maybe-export-modal');
     const msg    = document.getElementById('maybe-export-msg');
     const cancel = document.getElementById('maybe-export-cancel');
-    const keep   = document.getElementById('maybe-export-keep');
+    const omit   = document.getElementById('maybe-export-omit');
     const merge  = document.getElementById('maybe-export-merge');
     const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
     msg.textContent = `Your maybeboard has ${maybeCount} card${maybeCount === 1 ? '' : 's'}. `
                     + `For the ${exportLabel} export, merge them into the sideboard, `
-                    + `or keep them as a separate maybeboard section?`;
+                    + `or leave them out entirely?`;
     modal.classList.remove('hidden');
     function cleanup(result) {
       modal.classList.add('hidden');
       cancel.removeEventListener('click', onCancel);
-      keep.removeEventListener('click', onKeep);
+      omit.removeEventListener('click', onOmit);
       merge.removeEventListener('click', onMerge);
       backdrop.removeEventListener('click', onCancel);
       document.removeEventListener('keydown', onKey);
       resolve(result);
     }
     function onCancel() { cleanup('cancel'); }
-    function onKeep()   { cleanup('keep'); }
+    function onOmit()   { cleanup('omit'); }
     function onMerge()  { cleanup('merge'); }
     function onKey(ev) {
       if (ev.key === 'Escape') { ev.preventDefault(); onCancel(); }
@@ -6227,7 +6203,7 @@ function promptMaybeboardInclusion(exportLabel) {
     }
     const backdrop = modal.querySelector('.modal-backdrop');
     cancel.addEventListener('click', onCancel);
-    keep.addEventListener('click', onKeep);
+    omit.addEventListener('click', onOmit);
     merge.addEventListener('click', onMerge);
     backdrop.addEventListener('click', onCancel);
     document.addEventListener('keydown', onKey);
@@ -6237,11 +6213,11 @@ function promptMaybeboardInclusion(exportLabel) {
 }
 
 // Decide the maybeboard mode for the current export. Resolves synchronously
-// to 'keep' when the maybeboard is empty (no prompt needed) — otherwise
+// to 'omit' when the maybeboard is empty (no prompt needed) — otherwise
 // awaits the user's choice from the modal.
 async function resolveMaybeMode(exportLabel) {
   const maybeCount = STATE.zones.maybe.piles.reduce((n, p) => n + p.length, 0);
-  if (maybeCount === 0) return 'keep';
+  if (maybeCount === 0) return 'omit';
   return promptMaybeboardInclusion(exportLabel);
 }
 
@@ -7781,12 +7757,13 @@ async function loadDeckFromUrlFragment() {
 
 // Build the plain decklist text used by Export to clipboard:
 //   "<count> <name>" lines, with a blank line separating zones.
-// We write main, then side, then maybe (if present). No header line —
+// We write main, then side. The maybeboard is either folded into the
+// sideboard or left out entirely — never its own section. No header line —
 // the imported title line, if any, isn't tracked in state.
-// `maybeMode` is 'merge' | 'keep'. 'merge' folds the maybeboard into the
-// sideboard section (no third section in the output).
+// `maybeMode` is 'merge' | 'omit'. 'merge' folds the maybeboard into the
+// sideboard section; 'omit' drops it.
 function buildTxtExport(maybeMode) {
-  const mode = maybeMode || 'keep';
+  const mode = maybeMode || 'omit';
   const main  = aggregateZone('main');
   const maybe = aggregateZone('maybe');
   let side    = aggregateZone('side');
@@ -7803,9 +7780,6 @@ function buildTxtExport(maybeMode) {
   const sections = [];
   if (main.length) sections.push(main.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
   if (side.length) sections.push(side.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
-  if (mode !== 'merge' && maybe.length) {
-    sections.push(maybe.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
-  }
   return sections.join('\n\n') + '\n';
 }
 

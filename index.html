@@ -260,7 +260,6 @@
           <dt><code>kw:flying</code> · <code>keyword:flying</code></dt><dd>Card carries the named keyword (matched against the parsed keyword list).</dd>
           <dt><code>ft:foo</code> · <code>flavor:foo</code></dt><dd>Any printing's flavor text contains <code>foo</code>.</dd>
         </dl>
-        <p class="help-note">Regex shortcuts inside <code>o:/.../</code>: <code>\spt</code> any P/T like <code>1/1</code>; <code>\spp</code> <code>+N/+N</code>; <code>\smm</code> <code>-N/-N</code>; <code>\spm</code> <code>+N/-N</code>; <code>\smp</code> <code>-N/+N</code>; <code>\sbd</code> any P/T modifier; <code>\sm</code> any <code>{…}</code> symbol; <code>\sc</code> any colored pip; <code>\smr</code> two consecutive colored pips; <code>\smh</code> a hybrid pip. Because <code>\sc</code>, <code>\sm</code>, <code>\smh</code> etc. are reserved, a literal <code>\s</code> followed by <code>c</code>, <code>m</code>, <code>p</code>, <code>b</code>, <code>r</code>, or <code>h</code> in the user's regex will be replaced.</p>
       </section>
 
       <section>
@@ -355,11 +354,8 @@
           <dt><code>is:permanent</code></dt><dd>Does not have type instant or sorcery.</dd>
           <dt><code>is:split</code> · <code>is:mdfc</code> · <code>is:transform</code> · <code>is:saga</code> · <code>is:class</code> · <code>is:planar</code></dt><dd>Layout is exactly that value.</dd>
           <dt><code>is:reprint</code></dt><dd>Card has more than one printing in the corpus.</dd>
-          <dt><code>is:page</code></dt><dd>Card has a second-spell face (page-mechanic data present).</dd>
-          <dt><code>is:adventure</code> · <code>is:discharge</code></dt><dd>Card's page face has the named subtype.</dd>
-          <dt><code>is:vertex</code></dt><dd>Mana cost contains a Vertex pip (any pip whose contents include <code>V</code>).</dd>
-          <dt><code>is:hybrid</code></dt><dd>Mana cost contains any slash-pip.</dd>
-          <dt><code>is:prismatic</code></dt><dd>Mana cost contains the prismatic pip <code>{Vp}</code>.</dd>
+          <dt><code>is:page</code> · <code>is:adventure</code> · <code>is:discharge</code></dt><dd>Card has a page face (second spell); the subtype-named variants further require that face to have that subtype.</dd>
+          <dt><code>is:vertex</code> · <code>is:hybrid</code> · <code>is:prismatic</code></dt><dd>Mana cost contains a Vertex pip, any slash-pip, or the prismatic pip <code>{Vp}</code>, respectively.</dd>
           <dt><code>is:common</code> · <code>is:uncommon</code> · <code>is:rare</code> · <code>is:mythic</code> · <code>is:special</code></dt><dd>Card's current rarity equals that value.</dd>
           <dt><code>is:&lt;tag&gt;</code></dt><dd>Card carries the named user tag (or an alias resolving to it). Falls through when the value matches no built-in.</dd>
           <dt><code>tag:&lt;tag&gt;</code></dt><dd>Like <code>is:</code> but only searches user tags — built-in keywords (<code>page</code>, <code>hybrid</code>, <code>reprint</code>, …) are skipped, so a tag whose name collides with one of those is reachable here.</dd>
@@ -370,11 +366,6 @@
         <h4><code>has:</code></h4>
         <dl>
           <dt><code>has:flavor</code> · <code>has:flavour</code></dt><dd>Some printing has non-empty flavor text.</dd>
-          <dt><code>has:oracle</code> · <code>has:text</code></dt><dd>Card has non-empty oracle text.</dd>
-          <dt><code>has:power</code></dt><dd>Card has a numeric power value.</dd>
-          <dt><code>has:toughness</code></dt><dd>Card has a numeric toughness value.</dd>
-          <dt><code>has:loyalty</code></dt><dd>Card has a numeric loyalty value.</dd>
-          <dt><code>has:defense</code></dt><dd>Card has a numeric starting defense value (Battles).</dd>
         </dl>
       </section>
 
@@ -414,7 +405,7 @@
     <p id="maybe-export-msg" class="modal-help"></p>
     <div class="modal-buttons">
       <button id="maybe-export-cancel">Cancel</button>
-      <button id="maybe-export-keep">Keep separate</button>
+      <button id="maybe-export-omit">Omit maybeboard</button>
       <button id="maybe-export-merge" class="primary">Merge into sideboard</button>
     </div>
   </div>
