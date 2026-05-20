@@ -7458,6 +7458,7 @@ function wireSavedDecks() {
         if (!name) return;
         try { createPlan(deckName, name); }
         catch (e) { alert(e && e.message ? e.message : e); return; }
+        loadPlanFromStorage(deckName, name);
         renderDecksList();
       });
     }

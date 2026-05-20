@@ -212,31 +212,12 @@
     <div class="search-help-body">
 
       <section>
-        <h4>Lexical</h4>
-        <dl>
-          <dt><code>foo bar</code></dt><dd>Whitespace separates atoms; multiple atoms combine with implicit AND.</dd>
-          <dt><code>"foo bar"</code></dt><dd>Quote a value to keep whitespace inside one atom.</dd>
-          <dt><code>(a b)</code></dt><dd>Parentheses group atoms.</dd>
-        </dl>
-      </section>
-
-      <section>
         <h4>Booleans</h4>
         <dl>
-          <dt><code>a b</code> · <code>a AND b</code></dt><dd>Both match. <code>AND</code>/<code>OR</code>/<code>NOT</code> are case-insensitive keywords.</dd>
+          <dt><code>a b</code> · <code>a AND b</code></dt><dd>Both match.</dd>
           <dt><code>a OR b</code></dt><dd>At least one matches.</dd>
-          <dt><code>NOT a</code> · <code>-a</code></dt><dd>Negate the next atom. The <code>-</code> form must be at start of input or follow whitespace or <code>(</code>.</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h4>Operators</h4>
-        <dl>
-          <dt><code>:</code></dt><dd>Substring for text fields; equality for numeric fields and mana costs; superset for color sets.</dd>
-          <dt><code>=</code></dt><dd>Equal for numeric fields, color sets, and mana costs; "all listed words present" for <code>t=</code>.</dd>
-          <dt><code>==</code></dt><dd>Strict equality. For <code>t==</code>, exactly the listed words and no others.</dd>
-          <dt><code>!=</code></dt><dd>Not equal.</dd>
-          <dt><code>&lt;</code> · <code>&lt;=</code> · <code>&gt;</code> · <code>&gt;=</code></dt><dd>Numeric ordering, or subset/superset relations for color sets and mana costs.</dd>
+          <dt><code>NOT a</code> · <code>-a</code></dt><dd>Negate the next atom.</dd>
+          <dt><code>(a b)</code></dt><dd>Parentheses group atoms.</dd>
         </dl>
       </section>
 
@@ -248,9 +229,7 @@
           <dt><code>name="Foo Bar"</code></dt><dd>Exact card name.</dd>
           <dt><code>t:creature</code> · <code>type:creature</code></dt><dd>Type line contains the substring <code>creature</code>.</dd>
           <dt><code>t:"legendary creature"</code></dt><dd>Type line contains the literal substring (with the space).</dd>
-          <dt><code>t:spell</code></dt><dd>Has type instant or sorcery.</dd>
-          <dt><code>t:permanent</code></dt><dd>Does not have type instant or sorcery.</dd>
-          <dt><code>t:thing</code></dt><dd>Has type enchantment, artifact, or battle.</dd>
+          <dt><code>t:spell</code> · <code>t:permanent</code> · <code>t:thing</code></dt><dd><code>spell</code> = instant or sorcery; <code>permanent</code> = neither; <code>thing</code> = enchantment, artifact, or battle.</dd>
           <dt><code>t=enchantment</code></dt><dd>Has the type word <code>enchantment</code>; with multiple words, all must be present.</dd>
           <dt><code>t==enchantment</code></dt><dd>Has exactly the listed words as its complete type set (supertypes, types, subtypes).</dd>
           <dt><code>t&lt;="enchantment artifact"</code></dt><dd>Every type word on the card is among the listed words.</dd>
@@ -265,14 +244,10 @@
       <section>
         <h4>Numeric fields</h4>
         <dl>
-          <dt><code>mv:N</code> · <code>cmc:N</code></dt><dd>Mana value equals N.</dd>
-          <dt><code>mv&lt;N</code> · <code>mv&lt;=N</code> · <code>mv&gt;N</code> · <code>mv&gt;=N</code> · <code>mv=N</code> · <code>mv!=N</code></dt><dd>Numeric comparison against mana value.</dd>
-          <dt><code>mv=odd</code> · <code>mv=even</code></dt><dd>Parity of the numeric value.</dd>
-          <dt><code>power:N</code> · <code>pow:N</code></dt><dd>Power equals N. Same operators as <code>mv:</code>.</dd>
-          <dt><code>toughness:N</code> · <code>tou:N</code></dt><dd>Toughness equals N.</dd>
-          <dt><code>loyalty:N</code> · <code>loy:N</code></dt><dd>Loyalty equals N.</dd>
-          <dt><code>defense:N</code> · <code>def:N</code></dt><dd>Battle starting defense equals N. Read from the <code>Starting defense: N</code> line in the oracle text.</dd>
-          <dt><code>pow=tou</code></dt><dd>Right-hand side may name another numeric field. Accepted on either side: <code>mv</code>/<code>cmc</code>, <code>pow</code>/<code>power</code>, <code>tou</code>/<code>toughness</code>, <code>loy</code>/<code>loyalty</code>, <code>def</code>/<code>defense</code>.</dd>
+          <dt><code>mv:N</code> · <code>cmc:N</code> · <code>power:N</code> · <code>pow:N</code> · <code>toughness:N</code> · <code>tou:N</code> · <code>loyalty:N</code> · <code>loy:N</code> · <code>defense:N</code> · <code>def:N</code></dt><dd>Field equals N.</dd>
+          <dt><code>mv&lt;N</code> · <code>mv&lt;=N</code> · ...</dt><dd>Numeric comparison.</dd>
+          <dt><code>mv=odd</code> · <code>mv=even</code></dt><dd>Parity of the value.</dd>
+          <dt><code>pow=tou</code></dt><dd>Right-hand side may name another numeric field.</dd>
         </dl>
       </section>
 
@@ -283,8 +258,7 @@
           <dt><code>mana:1WW</code></dt><dd>Cost is exactly <code>{1}{W}{W}</code>. Digit runs sum to a single generic value.</dd>
           <dt><code>mana&gt;=Q</code></dt><dd>Cost is a multiset superset of <code>Q</code> (cost has at least everything in <code>Q</code>).</dd>
           <dt><code>mana&lt;=Q</code></dt><dd>Cost fits within <code>Q</code>.</dd>
-          <dt><code>mana&gt;Q</code> · <code>mana&lt;Q</code></dt><dd>Strict superset / strict subset of <code>Q</code>.</dd>
-          <dt><code>mana!=Q</code></dt><dd>Not multiset-equal to <code>Q</code>.</dd>
+          <dt><code>mana&gt;Q</code></dt><dd>Strict superset of <code>Q</code>.</dd>
           <dt><code>mana:U/G</code></dt><dd>Cost is exactly one hybrid pip <code>{U/G}</code>.</dd>
           <dt><code>mana:c</code></dt><dd>Cost is exactly one colored pip.</dd>
           <dt><code>mana:h</code></dt><dd>Cost is exactly one hybrid pip.</dd>
@@ -300,14 +274,13 @@
       <section>
         <h4>Castability (<code>castable:</code>)</h4>
         <dl>
-          <dt><code>castable:wu</code> · <code>castable=wu</code></dt><dd>Card is castable from a pool of <code>W</code> and <code>U</code> mana (unlimited quantity, any combination).</dd>
-          <dt><code>castable:wuc</code></dt><dd>Pool letter <code>c</code> means colorless mana is also available, satisfying <code>{C}</code> pips.</dd>
+          <dt><code>castable:wu</code> · <code>castable=wu</code></dt><dd>Card is castable from a pool of <code>W</code> and <code>U</code> mana.</dd>
+          <dt><code>castable:wuc</code></dt><dd>Pool letter <code>c</code> adds colorless mana.</dd>
         </dl>
-        <p class="help-note">Differs from <code>mana&lt;=</code>: pool is a <em>set</em> of colors, not a multiset of pips. <code>{W}{W}</code> is castable from <code>castable:w</code>. Generic, <code>X</code>, Phyrexian <code>{W/P}</code>, and monohybrid <code>{2/W}</code> are always payable. Hybrids need either side in the pool. Vertex <code>{V}</code> is treated as always free. Prismatic <code>{Vp}</code> requires k distinct pool colors not already used by the spell's colored pips, where k is the number of <code>{Vp}</code> pips. Lands and no-cost spells never match.</p>
       </section>
 
       <section>
-        <h4>Color and identity</h4>
+        <h4>Color</h4>
         <dl>
           <dt><code>c:w</code> · <code>color:w</code></dt><dd>Card colors include <code>W</code>. Letters are <code>W</code> <code>U</code> <code>B</code> <code>R</code> <code>G</code> <code>I</code>.</dd>
           <dt><code>c:wu</code></dt><dd>Card colors include both <code>W</code> and <code>U</code>.</dd>
@@ -319,19 +292,16 @@
           <dt><code>c:c</code> · <code>c:colorless</code></dt><dd>Card has no colors.</dd>
           <dt><code>c:m</code> · <code>c:multi</code> · <code>c:multicolor</code></dt><dd>Card has two or more colors.</dd>
           <dt><code>c:N</code></dt><dd>Card has exactly N colors (N is a digit).</dd>
-          <dt><code>c:silver</code></dt><dd>Synonym for <code>c:i</code>.</dd>
-          <dt><code>id:wu</code> · <code>ci:wu</code> · <code>identity:wu</code></dt><dd>Color identity. Same value vocabulary and operators as <code>c:</code>.</dd>
         </dl>
       </section>
 
       <section>
         <h4>Set and printing</h4>
         <dl>
-          <dt><code>e:CODE</code> · <code>set:CODE</code> · <code>edition:CODE</code></dt><dd>Some printing's set code or set name contains <code>CODE</code>. All operators behave the same; matches reprints regardless of which other sets the card also appears in.</dd>
+          <dt><code>e:CODE</code> · <code>set:CODE</code></dt><dd>Some printing's set code or set name contains <code>CODE</code>. All operators behave the same; matches reprints regardless of which other sets the card also appears in.</dd>
           <dt><code>e:A,B,C</code></dt><dd>Comma-separated list, OR-combined.</dd>
           <dt><code>sets:A-B</code></dt><dd>Some printing's set falls in the chronological range from <code>A</code> to <code>B</code>, inclusive. Either bound may be omitted (<code>sets:A-</code>, <code>sets:-B</code>). Order of the two codes does not matter.</dd>
           <dt><code>set&gt;=CODE</code> · <code>set&lt;=CODE</code> · <code>set&gt;CODE</code> · <code>set&lt;CODE</code></dt><dd>Some printing's set falls on the given side of <code>CODE</code> chronologically. E.g. <code>set&gt;=sol</code> matches cards printed in Solastere or any later set.</dd>
-          <dt><code>cn:N</code> · <code>number:N</code> · <code>num:N</code></dt><dd>Collector number equals N. Numeric operators apply.</dd>
           <dt><code>r:c</code> · <code>r:u</code> · <code>r:r</code> · <code>r:m</code> · <code>r:s</code></dt><dd>Rarity letter (common, uncommon, rare, mythic, special). Full names also accepted.</dd>
           <dt><code>r&lt;=u</code> · <code>r&gt;=r</code></dt><dd>Rarity ordering: <code>c &lt; u &lt; r &lt; m &lt; s</code>. Matches if any printing satisfies the comparison.</dd>
           <dt><code>a:foo</code> · <code>art:foo</code> · <code>artist:foo</code></dt><dd>Some printing's artist name contains <code>foo</code>.</dd>
