@@ -1546,7 +1546,8 @@
       ],
       "Cackling Igniter": [
         "coco",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Captain Faulmorr": [
         "coco",
@@ -1555,19 +1556,22 @@
       "Darkthicket Howler": [
         "coco",
         "fastramp",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Dawnhart Augur": [
         "coco",
         "fastramp",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Dawnsmite Cavalier": [
         "coco"
       ],
       "Eerie Nightdrifter": [
         "coco",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Enthralled Alchemist": [
         "coco"
@@ -1827,25 +1831,32 @@
       ],
       "Tesh, Fragmented Founder": [
         "coco",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Aspiring Shaper": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Blossoming Steward": [
         "coco"
       ],
       "Forsaken Shroudguard": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Leiowen, Escape Artist": [
-        "coco"
+        "coco",
+        "promising",
+        "highrate"
       ],
       "Leybound Ritualist": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Loresk, Ever-Curious": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Melodious Mallard": [
         "coco",
@@ -1853,49 +1864,60 @@
         "below-rate"
       ],
       "Overseer's Chosen": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Preacher of Singularity": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Renegade Recruiter": [
         "coco"
       ],
       "Shriek of the Shroud": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Midnight Warden": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Shroudpiercer": [
         "coco"
       ],
       "Thing in the Dark": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Shroudwalker": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Soya, Nal Executioner": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Sunset Recruit": [
         "coco"
       ],
       "The Setral Shaper": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Titanic Mycoid": [
         "coco"
       ],
       "Undergrowth Steward": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Vie, the First Hero": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Waylen, Bloodhunter": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Wistful Strategist": [
         "coco"
@@ -1904,19 +1926,23 @@
         "coco"
       ],
       "Due Reward": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "It's Just Business": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Madness of Ages": [
         "coco",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Orliss's Edict": [
         "coco",
         "edict",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Overseer's Shackles": [
         "coco",
@@ -1928,7 +1954,8 @@
         "cheat"
       ],
       "Coffers Altar": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Disposable Dagger": [
         "coco",
@@ -1937,7 +1964,8 @@
       ],
       "The Founder's Cage": [
         "coco",
-        "fastramp"
+        "fastramp",
+        "promising"
       ],
       "Beneath the Tide": [
         "coco",
@@ -1945,13 +1973,16 @@
         "below-rate"
       ],
       "Herbalist's Satchel": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Morbid Missive": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Planar Archives": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Tale of Bedlam": [
         "coco",
@@ -1959,29 +1990,36 @@
       ],
       "Siurne, Eternal Sentinel": [
         "coco",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Offer the Faithless": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Offer Yourself": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "High Priestess Symi": [
-        "coco"
+        "coco",
+        "promising"
       ],
       "Disciple of Surola": [
-        "coco"
+        "coco",
+        "below-rate"
       ],
       "Gloomcover Steppe": [
         "coco",
         "WBLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Heart of the Glade": [
         "coco",
         "GWland",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Hopeful Soulspace": [
         "coco",
@@ -2002,7 +2040,8 @@
       "Pool of Light": [
         "coco",
         "WULand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Soaring Soulspace": [
         "coco",
@@ -2011,7 +2050,8 @@
       "Spiraling Canyon": [
         "coco",
         "RWLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Stack Conviviplex": [
         "coco",
@@ -2033,7 +2073,8 @@
         "counterspell"
       ],
       "Attuned Rebuttal": [
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "Omenmare": [
         "counterspell",
@@ -2094,7 +2135,8 @@
         "counterspell"
       ],
       "Pickpocket": [
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "Refuse to Bloom": [
         "counterspell",
@@ -2113,7 +2155,8 @@
         "removal"
       ],
       "Tireless Refutation": [
-        "counterspell"
+        "counterspell",
+        "promising"
       ],
       "Unravel Thoughts": [
         "counterspell",
@@ -2158,7 +2201,8 @@
       ],
       "Flourishing Crevasse": [
         "RGLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Hall of the Gentle Light": [
         "GWland"
@@ -2210,7 +2254,8 @@
       ],
       "Lush Oasis": [
         "GULand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Regrowing Outlands": [
         "GULand"
@@ -2232,7 +2277,8 @@
       ],
       "Fungal Mire": [
         "BGLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Gallowsprout Timber": [
         "BGLand",
@@ -2273,7 +2319,8 @@
       ],
       "Lavatorn Fields": [
         "BRLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Marzela's Sanctum": [
         "BRLand"
@@ -2298,7 +2345,8 @@
       ],
       "Flooded Morass": [
         "UBLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Dismal Backwater": [
         "UBLand"
@@ -2333,7 +2381,8 @@
       ],
       "Frostfire Geysers": [
         "URLand",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Glimmerveil Lake": [
         "URLand",
@@ -2513,7 +2562,8 @@
         "Goldland"
       ],
       "Forgotten Foundation": [
-        "Goldland"
+        "Goldland",
+        "promising"
       ],
       "Gilded Court": [
         "Goldland"
@@ -2546,13 +2596,15 @@
         "creatureland"
       ],
       "Secluded Courtyard": [
-        "nopie"
+        "nopie",
+        "promising"
       ],
       "Weather Research Station": [
         "nopie"
       ],
       "The Volwood": [
-        "nopie"
+        "nopie",
+        "below-rate"
       ],
       "Abandoned Memorial": [
         "utilityland"
@@ -2570,7 +2622,8 @@
         "utilityland"
       ],
       "Humming Furnace": [
-        "utilityland"
+        "utilityland",
+        "promising"
       ],
       "Illicit Marketplace": [
         "utilityland"
@@ -2596,10 +2649,12 @@
       ],
       "Tomb of the Founder": [
         "utilityland",
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "The Shrouded Seas": [
-        "utilityland"
+        "utilityland",
+        "promising"
       ],
       "Withered Waygate": [
         "utilityland"
@@ -2639,7 +2694,8 @@
       ],
       "Listen In": [
         "handattack",
-        "gyhate"
+        "gyhate",
+        "promising"
       ],
       "Duress": [
         "handattack"
@@ -2671,7 +2727,8 @@
       "Moonsilver Archangel": [
         "texile",
         "removal",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Advance of the Quiet Moon": [
         "texile",
@@ -2720,7 +2777,8 @@
       ],
       "Unending Unrest": [
         "fbite",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Blinding Ambush": [
         "fbite",
@@ -2759,7 +2817,8 @@
       ],
       "End the Chase": [
         "fbite",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Momentous Strike": [
         "fbite",
@@ -2849,7 +2908,8 @@
       ],
       "Go for the Gut": [
         "minus-rem",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Anje's Thirst": [
         "minus-rem",
@@ -2947,7 +3007,8 @@
       ],
       "Tragic Accident": [
         "edict",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Cornered by the Dead": [
         "edict",
@@ -3060,7 +3121,8 @@
       "Beyond Comprehension": [
         "wipe",
         "removal",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Path's End": [
         "wipe",
@@ -3221,7 +3283,8 @@
         "removal"
       ],
       "With Impunity": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Angelic Purge": [
         "removal",
@@ -3229,7 +3292,8 @@
         "below-rate"
       ],
       "Beyond the Shroud": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Coordinated Shot": [
         "removal"
@@ -3269,7 +3333,8 @@
       ],
       "Spite of the Founder": [
         "wipe",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Chief Executive Dhante": [
         "removal"
@@ -3340,7 +3405,8 @@
       ],
       "Feudrach of Ashmouth": [
         "removal",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "General of the Damned": [
         "removal",
@@ -3356,7 +3422,8 @@
       ],
       "Huntmaster of the Fells": [
         "removal",
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Iwai and Oda": [
         "removal"
@@ -3412,7 +3479,9 @@
         "removal"
       ],
       "Blade Flourish": [
-        "removal"
+        "removal",
+        "highrate",
+        "promising"
       ],
       "Convergence of Fae": [
         "removal",
@@ -3500,7 +3569,9 @@
       ],
       "Burn It All Down": [
         "wipe",
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Boiling Storm": [
         "wipe",
@@ -3522,7 +3593,9 @@
       ],
       "Impromptu Exit": [
         "wipe",
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Error Tide": [
         "removal",
@@ -3539,7 +3612,8 @@
         "below-rate"
       ],
       "Grand Larceny": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Level Drain": [
         "removal",
@@ -3576,10 +3650,13 @@
         "removal"
       ],
       "Strangle": [
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Sunder the Cage": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Unstable Experimentation": [
         "removal",
@@ -3607,7 +3684,8 @@
         "removal"
       ],
       "Intangibility": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Grasp of Oblivion": [
         "removal"
@@ -3713,7 +3791,8 @@
       ],
       "Subtle Touch": [
         "removal",
-        "bounce"
+        "bounce",
+        "promising"
       ],
       "Ashiok's Manipulation": [
         "removal",
@@ -3729,11 +3808,14 @@
       ],
       "On Top of the World": [
         "wipe",
-        "removal"
+        "removal",
+        "promising",
+        "highrate"
       ],
       "Wanton Destruction": [
         "wipe",
-        "removal"
+        "removal",
+        "promising"
       ],
       "Social Engineering": [
         "removal"
@@ -3764,7 +3846,8 @@
       "Bloodletting": [
         "removal",
         "wipe",
-        "minus-rem"
+        "minus-rem",
+        "promising"
       ],
       "Cheat Code": [
         "minus-rem",
@@ -3780,7 +3863,8 @@
         "minus-rem"
       ],
       "Divine Liberation": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Failed Gateway": [
         "minus-rem",
@@ -3788,7 +3872,8 @@
         "removal"
       ],
       "Founder's Malice": [
-        "removal"
+        "removal",
+        "promising"
       ],
       "Grasping Dreams": [
         "removal"
@@ -3803,7 +3888,8 @@
         "below-rate"
       ],
       "Pick Your Poison": [
-        "ae-rem"
+        "ae-rem",
+        "promising"
       ],
       "Rain of Blight": [
         "minus-rem",
@@ -3857,7 +3943,9 @@
         "tutor"
       ],
       "Call for Backup": [
-        "tutor"
+        "tutor",
+        "promising",
+        "highrate"
       ],
       "Assaulted by Shadows": [
         "tutor"
@@ -3873,7 +3961,8 @@
         "tutor"
       ],
       "Shape the Pattern": [
-        "tutor"
+        "tutor",
+        "promising"
       ],
       "Profane Scripture": [
         "tutor"
@@ -3882,7 +3971,8 @@
         "tutor"
       ],
       "The Founder's Hunt Begins": [
-        "tutor"
+        "tutor",
+        "promising"
       ],
       "Witching Hour": [
         "tutor",
@@ -4012,7 +4102,8 @@
         "unearth"
       ],
       "Become the Hunted": [
-        "unearth"
+        "unearth",
+        "promising"
       ],
       "Het's Call": [
         "unearth",
@@ -4034,7 +4125,8 @@
         "fastramp"
       ],
       "Leonin Revivalist": [
-        "fastramp"
+        "fastramp",
+        "promising"
       ],
       "Ursus Majora": [
         "fastramp"
@@ -4054,7 +4146,9 @@
         "below-rate"
       ],
       "Umber Grovetender": [
-        "fastramp"
+        "fastramp",
+        "promising",
+        "highrate"
       ],
       "Secrecy": [
         "fastramp"
@@ -4085,7 +4179,8 @@
         "promising"
       ],
       "Soulcage": [
-        "cheat"
+        "cheat",
+        "promising"
       ],
       "Master Skaabstitcher": [
         "cheat",
@@ -4141,35 +4236,44 @@
         "below-rate"
       ],
       "Ash-Addled Pyromaniac": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Estwald Brigands": [
         "cheat",
         "promising"
       ],
       "Looming Serpent": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Misthollow Primarch": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Thalia, the Guiding Blade": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "The Ulvenvater": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Unstable Masterpiece": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Tovolar Wolfbound": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Wald-Cottage Crone": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Curse of Eerie Streets": [
-        "highrate"
+        "highrate",
+        "promising"
       ],
       "Bleachbark Dryad": [
         "promising"
@@ -4411,13 +4515,359 @@
       ],
       "Plunder the Grafs": [
         "promising"
+      ],
+      "Arital, Grand Adjudicator": [
+        "promising"
+      ],
+      "Ascendant Judge": [
+        "below-rate"
+      ],
+      "Backalley Minstrel": [
+        "below-rate"
+      ],
+      "Brazen Burglar": [
+        "promising"
+      ],
+      "Blinded Arbiter": [
+        "below-rate"
+      ],
+      "Chapel Crasher": [
+        "highrate",
+        "promising"
+      ],
+      "Crypt Tiller": [
+        "promising"
+      ],
+      "Crypt Caretaker": [
+        "below-rate"
+      ],
+      "Concord Alchemist": [
+        "below-rate"
+      ],
+      "Culvert Inspector": [
+        "below-rate"
+      ],
+      "Dockside Hawker": [
+        "below-rate"
+      ],
+      "Exultant Shepherd": [
+        "promising"
+      ],
+      "Esteemed Exterminator": [
+        "highrate",
+        "promising"
+      ],
+      "Evrax, Enlightened Endling": [
+        "promising"
+      ],
+      "Ery, Leyfused": [
+        "promising"
+      ],
+      "Eyes of the Overseer": [
+        "below-rate"
+      ],
+      "Forsaken Penitents": [
+        "promising"
+      ],
+      "Founder's Echo": [
+        "promising"
+      ],
+      "Frontline Victor": [
+        "promising"
+      ],
+      "Greedy Deserter": [
+        "promising"
+      ],
+      "Hand of the Overseer": [
+        "promising"
+      ],
+      "Heist Lookout": [
+        "below-rate"
+      ],
+      "Het, False God": [
+        "promising"
+      ],
+      "Hired Hand": [
+        "below-rate"
+      ],
+      "Impatient Bandits": [
+        "below-rate"
+      ],
+      "Ivari, Liberated Mentor": [
+        "highrate",
+        "promising"
+      ],
+      "Innovative Alchemist": [
+        "promising"
+      ],
+      "Kane, Unyielding": [
+        "promising"
+      ],
+      "Kindly Tavernkeep": [
+        "below-rate"
+      ],
+      "Killer-for-Hire": [
+        "below-rate"
+      ],
+      "Malicious Pactmaker": [
+        "promising"
+      ],
+      "Lucrative Larcenist": [
+        "below-rate"
+      ],
+      "Liberated Convert": [
+        "below-rate"
+      ],
+      "Marle, Vicuro Head": [
+        "highrate",
+        "promising"
+      ],
+      "Malicious Throng": [
+        "promising"
+      ],
+      "Overprepared Accomplice": [
+        "promising"
+      ],
+      "Outskirts Steward": [
+        "below-rate"
+      ],
+      "Reclaimed Convert": [
+        "below-rate"
+      ],
+      "Renegade Banneret": [
+        "below-rate"
+      ],
+      "Prodigious Cultivator": [
+        "promising"
+      ],
+      "Reckless Show-Off": [
+        "promising"
+      ],
+      "Renegade Trueheart": [
+        "promising"
+      ],
+      "Ruthless Duo": [
+        "below-rate"
+      ],
+      "Rooftop Runner": [
+        "promising"
+      ],
+      "Sahra, Siege Captain": [
+        "promising"
+      ],
+      "Sanctum Deathspeaker": [
+        "promising"
+      ],
+      "Sanctum Enforcer": [
+        "below-rate"
+      ],
+      "Scrounging Sensor": [
+        "below-rate"
+      ],
+      "Semari Weaponsmith": [
+        "below-rate"
+      ],
+      "Silent Warden": [
+        "promising",
+        "highrate"
+      ],
+      "Shroud Scholar": [
+        "below-rate"
+      ],
+      "Setral Sentry": [
+        "below-rate"
+      ],
+      "Setral Shoresculptor": [
+        "below-rate"
+      ],
+      "Sieging Volleymage": [
+        "promising"
+      ],
+      "Shroudwarder Phoenix": [
+        "promising"
+      ],
+      "Slinking Swiftblade": [
+        "below-rate"
+      ],
+      "South-Street Scoundrel": [
+        "below-rate"
+      ],
+      "Starry-Eyed Scholar": [
+        "promising"
+      ],
+      "Sprouting Sproutling": [
+        "promising"
+      ],
+      "Surola, Vile Preacher": [
+        "promising"
+      ],
+      "Sunset Sentries": [
+        "promising"
+      ],
+      "Sunset Champion": [
+        "promising"
+      ],
+      "Streetwise Surveyor": [
+        "below-rate"
+      ],
+      "Tenacious Thief": [
+        "below-rate"
+      ],
+      "Survivalist Mentor": [
+        "below-rate"
+      ],
+      "Swift-Step Robber": [
+        "promising"
+      ],
+      "Turen, Untouchable": [
+        "promising"
+      ],
+      "Thoroughfare Busker": [
+        "below-rate"
+      ],
+      "Toxin Peddler": [
+        "below-rate"
+      ],
+      "Unerring Killer": [
+        "below-rate"
+      ],
+      "Veteran Hunter": [
+        "below-rate"
+      ],
+      "Valiant Firebrand": [
+        "promising"
+      ],
+      "Vicuro Informant": [
+        "promising"
+      ],
+      "Vie's Lieutenant": [
+        "promising"
+      ],
+      "Voice of the Old Grove": [
+        "promising"
+      ],
+      "Volwood Deadeye": [
+        "below-rate"
+      ],
+      "Volwood Warder": [
+        "highrate",
+        "promising"
+      ],
+      "Winding Assailant": [
+        "promising",
+        "highrate"
+      ],
+      "Wharf Patrol": [
+        "promising"
+      ],
+      "Wharf Forgemaster": [
+        "promising"
+      ],
+      "Volwood Defilers": [
+        "promising"
+      ],
+      "Wharf Vendor": [
+        "promising"
+      ],
+      "Call of the Grove": [
+        "promising"
+      ],
+      "Expert Infiltration": [
+        "promising"
+      ],
+      "Friendly Misdirection": [
+        "promising"
+      ],
+      "Juniper's Awakening": [
+        "promising"
+      ],
+      "In Tune": [
+        "promising"
+      ],
+      "Rally the Rabble": [
+        "promising"
+      ],
+      "Perfect Plan": [
+        "promising"
+      ],
+      "Race for the Glory": [
+        "promising"
+      ],
+      "Smolder Away": [
+        "promising"
+      ],
+      "Smooth Operation": [
+        "promising"
+      ],
+      "Trespass the Volwood": [
+        "promising"
+      ],
+      "Heart of Bedlam": [
+        "below-rate"
+      ],
+      "Memorial to the First Shaper": [
+        "promising"
+      ],
+      "Stalker's Cowl": [
+        "below-rate"
+      ],
+      "Prized Possession": [
+        "promising"
+      ],
+      "Creeping Overgrowth": [
+        "below-rate"
+      ],
+      "Find Your Prey": [
+        "below-rate"
+      ],
+      "Eerie Gathering": [
+        "promising"
+      ],
+      "Glimpse the Worldsoul": [
+        "promising"
+      ],
+      "Jump the Gap": [
+        "promising"
+      ],
+      "Memoriam": [
+        "promising"
+      ],
+      "Makeshift Justice": [
+        "promising"
+      ],
+      "Stand Ready": [
+        "promising"
+      ],
+      "Stand as One": [
+        "promising"
+      ],
+      "Blessed Proselytism": [
+        "below-rate"
+      ],
+      "Consult the Offerings": [
+        "promising"
+      ],
+      "Scatter Evidence": [
+        "promising"
+      ],
+      "Slip Through the Streets": [
+        "promising"
+      ],
+      "Solemn Procession": [
+        "promising"
+      ],
+      "Siurne's Betrayal": [
+        "below-rate"
+      ],
+      "Yoink!": [
+        "promising"
       ]
     },
     "order": [
-      "highrate",
       "promising",
-      "fbite",
       "below-rate",
+      "highrate",
+      "fbite",
       "cheat",
       "protection",
       "fastramp",

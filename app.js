@@ -1346,6 +1346,7 @@ function addTagToCards(tag, canonicals, dataset = currentDataset()) {
   slot.order.unshift(display);
   STATE.lastUsedTag = display;
   if (aliasedTo) showAliasToast(input, display);
+  refreshCardTagChips(canonicals);
   persistTags();
   return display;
 }
@@ -1374,6 +1375,7 @@ function removeTagFromCard(tag, canonical, dataset = currentDataset()) {
       STATE.focusedTag = null;
     }
   }
+  refreshCardTagChips([canonical]);
   persistTags();
 }
 
@@ -8256,6 +8258,24 @@ function renderAliasEditorChips() {
     }
   });
   chipsEl.appendChild(input);
+}
+
+// After a tag mutation, replace the chip strip on any visible card tiles
+// for the affected canonicals. Surgical so we don't rebuild the search /
+// focused-tag panel (which would drop scroll and re-trigger lazy images).
+// Safe outside tag mode — no .card-tag-chips exist there, so the query
+// returns nothing.
+function refreshCardTagChips(canonicals) {
+  if (!canonicals || !canonicals.length) return;
+  const wanted = new Set(canonicals);
+  const slots = document.querySelectorAll('.card-slot[data-card-id]');
+  for (const slot of slots) {
+    const card = STATE.byId.get(Number(slot.dataset.cardId));
+    if (!card || !card.canonical || !wanted.has(card.canonical)) continue;
+    const old = slot.querySelector(':scope > .card-tag-chips');
+    if (old) old.remove();
+    slot.appendChild(makeCardTagChips(card.canonical));
+  }
 }
 
 function makeCardTagChips(canonical) {
