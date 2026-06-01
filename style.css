@@ -2073,9 +2073,15 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   margin: 0;
   min-height: 100vh;
 }
+/* Flex (not grid) so the header degrades predictably as it narrows (e.g.
+   under zoom): the left cluster — back link, title, season button — is
+   flex-shrink:0 and never wraps or compresses, while the search box and the
+   status text to its right absorb all the shrink, truncating before the
+   header is ever forced onto a second line. */
 .league-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  display: flex;
+  flex-wrap: nowrap;   /* override the generic `header { flex-wrap: wrap }` —
+                          this header shrinks its contents, it never wraps */
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
@@ -2085,6 +2091,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   top: 0;
   z-index: 10;
 }
+/* Left cluster: fixed, protected from shrinking. */
+.league-back,
+.league-title,
+.league-season-dropdown { flex: 0 0 auto; }
 .league-back {
   color: var(--accent);
   text-decoration: none;
@@ -2105,16 +2115,31 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.league-tourney {
-  font-weight: 400;
-  color: var(--text-muted);
+/* Season selector — a left-side dropdown next to the title. Reuses the
+   .sort-dropdown shell but bumps the font to header size and left-anchors
+   the menu (the menu's default right:0 would push it off the title). */
+.league-season-dropdown .sort-dropdown-btn {
   font-size: 13px;
-  margin-left: 6px;
+  padding: 5px 10px;
+  white-space: nowrap;   /* the month/year label stays on one line, always */
 }
-.league-search-wrap { min-width: 240px; }
+.league-season-dropdown .sort-dropdown-menu {
+  right: auto;
+  left: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+/* Right cluster begins here. margin-left:auto eats the free space so the
+   search box + toolbar sit at the right edge when the header is wide; when
+   it narrows that free space is consumed first, then these items shrink. */
+.league-search-wrap {
+  margin-left: auto;
+  flex: 0 1 320px;   /* up to 320px, but allowed to shrink toward 0 */
+  min-width: 0;      /* let the input clip its text instead of forcing width */
+}
 .league-search-wrap input {
-  width: 320px;
-  max-width: 40vw;
+  width: 100%;
+  min-width: 0;
   background: var(--bg-input);
   color: var(--text-secondary);
   border: 1px solid var(--border-strong);
@@ -2129,13 +2154,20 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;      /* permit the status text inside to truncate */
 }
 .league-status {
   font-size: 12px;
   color: var(--text-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;      /* this is the first thing to give way */
 }
 .league-status.error { color: var(--danger); }
+/* Refresh never shrinks or wraps — only the status text beside it does. */
+.league-toolbar #league-refresh { flex: 0 0 auto; white-space: nowrap; }
 /* Override the global `main { display: grid; grid-template-columns: 280px 1fr }`
    from the deckbuilder. On the league page, .league-main holds either the list
    view (which wants the full page width) or the detail view (which sets up its
@@ -2540,13 +2572,10 @@ html:has(body.league-page.detail-active) {
 .league-toast.fade-out { opacity: 0; }
 
 @media (max-width: 720px) {
-  .league-header {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-  }
-  .league-search-wrap { grid-column: 1 / -1; }
-  .league-search-wrap input { width: 100%; max-width: none; }
-  .league-toolbar { grid-column: 2 / -1; justify-content: flex-end; }
+  /* At an extreme narrow (heavy zoom / very small window) the header still
+     stays on one line; we just drop the sync-time status entirely rather
+     than leave a clipped sliver competing with the search box. */
+  .league-status { display: none; }
   /* On narrow viewports we hide the id-cards and pips columns to fit, so
      the shared list grid + subgrid stops being a fit. Fall back to a
      non-grid list and per-row layout so rows can size independently and

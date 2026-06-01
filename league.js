@@ -27,12 +27,51 @@
 // ---------------------------------------------------------------------------
 // Configuration
 
+// League seasons follow the `rev_YY_MM` convention (zero-padded month),
+// one per calendar month. lackeybot has no "list tournaments" endpoint, so
+// we don't discover seasons — we generate the slugs by convention, from the
+// first 2026 season through the current month. This auto-rolls forward:
+// next month's slug appears in the picker with no code change.
+const SEASON_FLOOR_YEAR = 2026;     // don't list seasons before 2026
+const SEASON_FLOOR_MONTH = 1;       // January 2026 (rev_26_01)
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+function seasonSlug(year, month) {
+  return `rev_${String(year % 100).padStart(2, '0')}_${String(month).padStart(2, '0')}`;
+}
+function parseSeasonSlug(slug) {
+  const m = /^rev_(\d{2})_(\d{2})$/.exec(slug || '');
+  if (!m) return null;
+  return { year: 2000 + Number(m[1]), month: Number(m[2]) };
+}
+function seasonLabel(slug) {
+  const p = parseSeasonSlug(slug);
+  if (!p || p.month < 1 || p.month > 12) return slug;   // e.g. a gprev_ override
+  return `${MONTH_NAMES[p.month - 1]} ${p.year}`;
+}
+function currentSeasonSlug() {
+  const now = new Date();
+  return seasonSlug(now.getFullYear(), now.getMonth() + 1);
+}
+// Season slugs newest-first, from the floor through the current month.
+function listSeasons() {
+  const now = new Date();
+  const out = [];
+  let y = now.getFullYear(), m = now.getMonth() + 1;
+  while (y > SEASON_FLOOR_YEAR || (y === SEASON_FLOOR_YEAR && m >= SEASON_FLOOR_MONTH)) {
+    out.push(seasonSlug(y, m));
+    if (--m === 0) { m = 12; y -= 1; }
+  }
+  return out;
+}
+
 // The tournament slug the page wraps. Read from URL hash if provided
-// (#t=foo) so the same page can browse other lackeybot tournaments later
-// without code changes. Default tracks the current league.
+// (#t=foo) so the page can also browse arbitrary lackeybot tournaments
+// (e.g. a grand prix slug). Default tracks the current month's season.
 function getTourney() {
   const m = /[#&?]t=([\w-]+)/.exec(location.hash || '');
-  return (m && m[1]) || 'rev_26_05';
+  return (m && m[1]) || currentSeasonSlug();
 }
 const TOURNEY = getTourney();
 
@@ -49,7 +88,10 @@ const API_URL = 'https://lackeybot.com/statdex/api';
 // :v2 — bumped when the player-username map was added to the bundle. Old
 // :v1 entries don't carry players, so falling back to them would silently
 // reproduce the broken-author bug after we fixed it.
-const CACHE_KEY = 'rev-deckbuilder-league-cache:v2:' + TOURNEY;
+// :v3 — bumped when 404 "no decklist on file" run slots stopped counting as
+// load failures. A :v2 bundle still carries those ids in missingDeckIds, so
+// falling back to it would keep showing the stale "N could not be loaded".
+const CACHE_KEY = 'rev-deckbuilder-league-cache:v3:' + TOURNEY;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
 // How many deck POSTs to run in parallel during a fresh fetch. Browsers
@@ -1886,9 +1928,16 @@ async function fetchBundle(onProgress) {
       try {
         out[i] = await fetchOneDeck(ids[i]);
       } catch (e) {
-        console.warn('league: deck fetch failed', ids[i], e);
         out[i] = null;
-        missingDeckIds.push(ids[i]);
+        // A 404 means the `viewable` index advertised a run slot that has no
+        // decklist on file — a registered-but-unsubmitted/abandoned run, not
+        // a load failure. There's no deck to show, so drop it silently rather
+        // than counting it against the "could not be loaded" tally. Genuine
+        // misses (500 withheld active runs, network errors) still count.
+        if (!(e && e.status === 404)) {
+          console.warn('league: deck fetch failed', ids[i], e);
+          missingDeckIds.push(ids[i]);
+        }
       }
       done += 1;
       if (onProgress) onProgress(done, ids.length);
@@ -1974,7 +2023,11 @@ async function callStatDex(payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!r.ok) throw new Error(`statdex ${r.status}`);
+  if (!r.ok) {
+    const err = new Error(`statdex ${r.status}`);
+    err.status = r.status;   // let callers distinguish 404 (no such deck) from 500 etc.
+    throw err;
+  }
   return r.json();
 }
 
@@ -2108,9 +2161,50 @@ function pushSort(method) {
   }
 }
 
+// Season picker. Lists every generated season newest-first; the active one
+// is highlighted. Picking a different season reloads the page with the new
+// slug in the hash so all module-load-time state (TOURNEY, cache key, STATE)
+// is rebuilt cleanly rather than surgically reset.
+function wireSeasonDropdown() {
+  const btn = document.getElementById('league-season-btn');
+  const menu = document.getElementById('league-season-menu');
+  if (!btn || !menu) return;
+
+  const seasons = listSeasons();
+  // If TOURNEY came from a #t= override outside the generated range (an old
+  // season below the floor, or a non-league slug like a gprev), surface it
+  // at the top so the button still shows the active selection.
+  if (!seasons.includes(TOURNEY)) seasons.unshift(TOURNEY);
+
+  btn.innerHTML = seasonLabel(TOURNEY) + ' &#x25BE;';
+  menu.innerHTML = '';
+  for (const slug of seasons) {
+    const item = el('button', { 'data-season': slug, text: seasonLabel(slug) });
+    if (slug === TOURNEY) item.classList.add('active');
+    item.addEventListener('click', () => {
+      menu.classList.add('hidden');
+      if (slug !== TOURNEY) selectSeason(slug);
+    });
+    menu.appendChild(item);
+  }
+
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (ev) => {
+    if (!menu.contains(ev.target) && ev.target !== btn) menu.classList.add('hidden');
+  });
+}
+
+function selectSeason(slug) {
+  location.hash = 't=' + slug;
+  location.reload();
+}
+
 function wireUI() {
-  document.getElementById('league-tourney').textContent = '· ' + TOURNEY;
-  document.title = 'League: ' + TOURNEY;
+  document.title = 'League: ' + seasonLabel(TOURNEY);
+  wireSeasonDropdown();
 
   const search = document.getElementById('league-search');
   search.addEventListener('input', () => {

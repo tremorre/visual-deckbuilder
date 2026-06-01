@@ -23,7 +23,11 @@
 <!-- Header for the list view -->
 <header class="league-header">
   <a class="league-back" href="index.html" data-title="Back to the deckbuilder">&larr; Deckbuilder</a>
-  <h1 class="league-title">League Decks <span id="league-tourney" class="league-tourney"></span></h1>
+  <h1 class="league-title">League Decks</h1>
+  <div class="sort-dropdown league-season-dropdown">
+    <button id="league-season-btn" class="sort-dropdown-btn" data-title="Choose a league season">Season &#x25BE;</button>
+    <div id="league-season-menu" class="sort-dropdown-menu hidden"></div>
+  </div>
   <div class="league-search-wrap">
     <input id="league-search" type="text" placeholder="Search: name, color, player, or syntax (c:wu, has:Card, p:foo, w>=3, wr>0.4)" autocomplete="off" spellcheck="false">
   </div>
