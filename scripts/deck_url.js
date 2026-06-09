@@ -7,14 +7,20 @@
 // FORMAT FROZEN — version 1, locked 2026-05-07.
 //
 // Do not change the bit layout, MAIN_CODES/APP_CODES, the pool
-// definition (legal AND NOT unplayable from cards.json + unplayable.txt),
-// or staples.txt without coordinating a version bump. Doing so breaks
-// every URL ever shared.
+// definition (legal AND NOT unplayable), or staples.txt without
+// coordinating a version bump. Doing so breaks every URL ever shared.
 //
-// Regression test: scratch/url_deck/test_freeze.py — re-encodes the
-// 104-deck rev_26_05 corpus and compares byte-for-byte against
-// scratch/url_deck/corpus_urls.txt.
-// JS↔Python parity: scratch/url_deck/verify_js.mjs.
+// The pool is built from cards.frozen.json — a write-once snapshot of the
+// fields buildPool reads, taken from the cards.json that was current at
+// format-freeze. The LIVE cards.json must NOT feed the pool (a card update
+// would reindex it). The live file is fetched only to bridge renamed/new
+// printing names onto frozen slots. Regenerate the snapshot only with
+// scratch/url_deck/gen_frozen_pool.py, and never after launch.
+//
+// Regression tests: scratch/url_deck/verify_frozen.mjs (frozen input is
+// faithful), scratch/url_deck/test_freeze.py (Python reference byte-stable),
+// scratch/url_deck/test_url_backcompat.mjs (corpus URLs unchanged across a
+// card update). JS↔Python parity: scratch/url_deck/verify_js.mjs.
 // ════════════════════════════════════════════════════════════════════
 //
 // Stream layout (bits):
@@ -32,7 +38,7 @@
 //     repeats until end-of-bytes]
 //
 // Pool: only cards with legalities['revolution']==='Legal' on at least one
-// printing. Frozen at format-launch from cards.json's legalities field.
+// printing. Frozen at format-launch from cards.frozen.json's legalities field.
 // Within the legal pool, two segments:
 //   1. staples (cards listed in static/staples.txt) in canonical (set, num)
 //   2. remaining legal cards in canonical order
@@ -163,7 +169,7 @@
   }
 
   // ------------------------------------------------------------------------
-  // Card pool — load cards.json + staples.txt. Cached after first build.
+  // Card pool — load cards.frozen.json + staples.txt. Cached after first build.
 
   // Cached pool per version (v1 for legacy decode, v2 for encode + decode).
   const _poolPromises = new Map();
@@ -174,6 +180,10 @@
   function buildPool(data, staples, unplayable, version) {
     const info = new Map();
     const lookup = new Map();
+    // (set|number) → bare for every frozen printing. Lets the encoder bridge a
+    // live card whose NAME changed (a rename) but whose coordinates didn't back
+    // to its frozen pool slot. Names move; (set, number) is the stable identity.
+    const bareBySetNum = new Map();
     const sets = Object.keys(data).sort();
     // Bare-name strip semantics differ by version. v1 strips one trailing
     // `_<ALNUM>` only — leaves phantom bares like `Foo_PRO` when the actual
@@ -206,6 +216,7 @@
         const full = (c.name || '').split(' // ', 2)[0];
         const bare = stripBare(full);
         if (BASIC_NAMES.indexOf(bare) >= 0) continue;
+        bareBySetNum.set(s + '|' + String(c.number || ''), bare);
         let ci = 0;
         for (const col of (c.colorIdentity || [])) {
           if (COLOR_BIT[col]) ci |= COLOR_BIT[col];
@@ -262,7 +273,31 @@
     const legalNameIndex = new Map();
     legalCanonical.forEach((b, i) => legalNameIndex.set(b, i));
     return { fullCanonical, fullNameIndex, legalCanonical, legalNameIndex,
-             info, lookup, staples, nonBasicFullLen };
+             info, lookup, staples, nonBasicFullLen, bareBySetNum, allSetCodes };
+  }
+
+  // Live-data bridge: indices come from the frozen pool, but display names and
+  // new-printing resolution must track the CURRENT cards.json so a card renamed
+  // upstream (e.g. Silent → Shimmering Lakefront) still encodes into its frozen
+  // slot and decodes back to a name the live deckbuilder can import.
+  function buildLiveBridge(data) {
+    const liveByName = new Set();
+    const liveNameBySetNum = new Map();
+    const liveSetNumByName = new Map();
+    for (const s of Object.keys(data)) {
+      const cards = (data[s] && data[s].cards) || [];
+      for (const c of cards) {
+        const side = (c.side || '').toLowerCase();
+        if (side === 'b' || side === 'back') continue;
+        const full = (c.name || '').split(' // ', 2)[0];
+        if (!full) continue;
+        const sn = s + '|' + String(c.number || '');
+        liveByName.add(full);
+        if (!liveNameBySetNum.has(sn)) liveNameBySetNum.set(sn, full);
+        if (!liveSetNumByName.has(full)) liveSetNumByName.set(full, sn);
+      }
+    }
+    return { liveByName, liveNameBySetNum, liveSetNumByName };
   }
 
   function parseStaples(text) {
@@ -288,16 +323,23 @@
   async function ensurePool(version) {
     if (_poolPromises.has(version)) return _poolPromises.get(version);
     const p = (async () => {
-      const [cardsResp, staplesResp, unplayableResp] = await Promise.all([
-        fetch('cards.json', { cache: 'force-cache' }),
+      // Pool indices come from the FROZEN snapshot (cards.frozen.json); the
+      // live cards.json is fetched only to bridge renamed/new printing names.
+      const [frozenResp, liveResp, staplesResp, unplayableResp] = await Promise.all([
+        fetch('cards.frozen.json', { cache: 'force-cache' }),
+        fetch('cards.json', { cache: 'force-cache' }).catch(() => null),
         fetch('staples.txt', { cache: 'force-cache' }),
         fetch('unplayable.txt', { cache: 'force-cache' }),
       ]);
-      if (!cardsResp.ok) throw new Error('cards.json fetch failed');
-      const data = (await cardsResp.json()).data || {};
+      if (!frozenResp.ok) throw new Error('cards.frozen.json fetch failed');
+      const data = (await frozenResp.json()).data || {};
       const staples = parseStaples(staplesResp.ok ? await staplesResp.text() : '');
       const unplayable = parseStaples(unplayableResp.ok ? await unplayableResp.text() : '');
-      return buildPool(data, staples, unplayable, version);
+      const pool = buildPool(data, staples, unplayable, version);
+      let liveData = {};
+      try { if (liveResp && liveResp.ok) liveData = (await liveResp.json()).data || {}; } catch (e) {}
+      Object.assign(pool, buildLiveBridge(liveData));
+      return pool;
     })();
     _poolPromises.set(version, p);
     return p;
@@ -356,6 +398,30 @@
       // phyrexian / monohybrid / generic always payable
     }
     return true;
+  }
+
+  // Resolve a live deck-card name to its frozen pool bare. Order matters:
+  // direct frozen lookup wins, so the 57 crossover cards that legitimately
+  // carry a "(Flavor)" / "(SETCODE)" suffix in the frozen pool keep mapping to
+  // themselves and the later heuristics never touch them.
+  function resolveCanon(name, pool) {
+    const { lookup, bareBySetNum, liveSetNumByName, allSetCodes } = pool;
+    const head = name.split('_')[0];
+    // 1. Unchanged printing names (and every frozen bare/full name).
+    let c = lookup.get(name) || lookup.get(head);
+    if (c) return c;
+    // 2. Rename: the live name shares (set, number) with a frozen printing.
+    const sn = (liveSetNumByName && (liveSetNumByName.get(name) || liveSetNumByName.get(head)));
+    if (sn && bareBySetNum.has(sn)) return bareBySetNum.get(sn);
+    // 3. New "(SETCODE)" reprint of a card already in the pool, e.g.
+    //    "Exorcist of Errors (IWH)" → base "Exorcist of Errors". Only fires for
+    //    names that missed (1), so it never collapses an existing frozen bare.
+    const m = /^(.*) \(([0-9A-Z]+)\)$/.exec(head);
+    if (m && allSetCodes && allSetCodes.has(m[2])) {
+      const base = lookup.get(m[1]);
+      if (base) return base;
+    }
+    return null;
   }
 
   // ------------------------------------------------------------------------
@@ -428,7 +494,7 @@
       if (m + s <= 0) continue;
       const b = isBasic(e.name);
       if (b) { basics[b][0] += m; basics[b][1] += s; continue; }
-      const canon = lookup.get(e.name) || lookup.get(e.name.split('_')[0]);
+      const canon = resolveCanon(e.name, pool);
       if (canon && info.has(canon)) nonbasic.push({ canon, main: m, side: s });
       else unresolved.push(e.name);
     }
@@ -631,14 +697,20 @@
       throw new Error('unknown deck-URL version: ' + version);
     }
     const pool = await ensurePool(version);
-    const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen } = pool;
-    // Output the first cards.json printing name we saw for each bare, falling
-    // back to the bare itself. Fixes round-trip for cards whose stripped bare
-    // doesn't match any byName key (e.g. `Swamp Romantic_DOV` → bare
-    // `Swamp Romantic`, which is not a real printing). Applies to both
-    // versions — strictly improves re-importability without changing bytes.
-    const nameOut = (bare) =>
-      (info.has(bare) && info.get(bare).firstName) || bare;
+    const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen,
+            liveByName, liveNameBySetNum } = pool;
+    // Output the frozen pool's first printing name for each bare (which fixes
+    // round-trip for bares like `Swamp Romantic` that aren't real printings).
+    // But if that name no longer exists in the live data — because the card was
+    // renamed upstream — emit the current name at the same (set, number) so the
+    // decoded deck still imports. Unchanged cards keep their exact old output.
+    const nameOut = (bare) => {
+      const e = info.get(bare);
+      const fn = (e && e.firstName) || bare;
+      if (!liveByName || liveByName.has(fn)) return fn;
+      const sn = e && (e.set + '|' + e.num);
+      return (sn && liveNameBySetNum && liveNameBySetNum.get(sn)) || fn;
+    };
     const mask = br.read(5);
     const nStaplesPicked = br.read(6);
     const k1 = br.read(4);
