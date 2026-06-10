@@ -608,7 +608,12 @@ button.danger:hover { background: var(--danger-bg); }
 
 main {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  /* 280px at rest, but capped as a fraction of the viewport so it can't claim
+     an ever-larger share. Browser zoom (Ctrl +) narrows the CSS-px viewport,
+     which would otherwise leave the fixed sidebar hogging space; the vw cap
+     lets it shrink instead, so the zoom lands on the pile/search images. The
+     200px floor keeps deck-list rows readable at heavy zoom. */
+  grid-template-columns: clamp(200px, 22vw, 280px) 1fr;
   /* Fills whatever vertical space the header doesn't use. min-height: 0 is
      required so that .zones / .piles-pane can shrink and own their own
      scroll instead of overflowing the body. */
