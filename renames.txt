@@ -1,0 +1,35 @@
+# Card rename ledger — APPEND-ONLY.
+#
+# Upstream card data carries no stable identity: a card's name, collector
+# number, and uuid (which is literally "<name>_<SETCODE>") all change over
+# time. When a card is renamed, its old name simply vanishes and a new name
+# appears. This file records those renames so shared-deck URLs, which encode
+# cards by a frozen pool slot, still decode to the card's CURRENT importable
+# name — and so a deck built with the current name still encodes into that
+# frozen slot.
+#
+# Each line:  old name => current name
+# Entries chain: if A => B was recorded in one update and B => C in a later
+# one, the codec follows A => B => C. Records the base printing and, where the
+# promo/alt-art printing was renamed too, its "_PRO_<SET>" variant.
+#
+# NOT part of the frozen bit-format. Unlike staples.txt / unplayable.txt, this
+# file does NOT affect pool indices or the encoded bitstream — it only maps
+# names for cards whose name vanished upstream. Appending is always safe and
+# never invalidates an existing URL; it only makes a vanished-name decode more
+# accurate. Do NOT rewrite or reorder past lines.
+#
+# Maintenance: after replacing cards.json, run
+#   python3 scratch/url_deck/detect_renames.py <old cards.json> <new cards.json>
+# and append its confident "old => new" lines here. Names it flags for review
+# (no confident in-place successor) are usually genuine removals — leave them
+# out; a removed card should decode to its old name (a visible unknown), never
+# to a different card.
+
+# --- 2026-06-03 update ---
+Harvesttide Procession => The Harvesttide Procession
+Silent Lakefront => Shimmering Lakefront
+Silent Lakefront_PRO_ERR => Shimmering Lakefront_PRO_ERR
+
+# --- 2026-07-04 update ---
+Fablewoven Kitsune => Fablewoven Seishin

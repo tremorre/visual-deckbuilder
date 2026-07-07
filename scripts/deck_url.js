@@ -311,6 +311,56 @@
     return out;
   }
 
+  // Rename ledger (static/renames.txt): one "old => current" per line,
+  // append-only. Records cards whose NAME vanished upstream (upstream data has
+  // no stable id), so decode can recover the current importable name and encode
+  // can find the frozen slot. Chains: A=>B plus B=>C resolves A through to C.
+  // Authoritative — consulted before the (set,num) heuristic. Does NOT affect
+  // pool indices or the encoded bitstream, so appending never breaks a URL.
+  function parseRenames(text) {
+    const fwd = new Map(); const back = new Map();
+    if (!text) return { fwd, back };
+    for (const raw of text.split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const i = line.indexOf('=>');
+      if (i < 0) continue;
+      const from = line.slice(0, i).trim();
+      const to = line.slice(i + 2).trim();
+      if (!from || !to) continue;
+      if (!fwd.has(from)) fwd.set(from, to);
+      if (!back.has(to)) back.set(to, from);
+    }
+    return { fwd, back };
+  }
+
+  // Walk a vanished frozen name forward along the rename chain to the first
+  // name the live data still has. null if the chain dead-ends off-live (e.g. a
+  // card that was later removed).
+  function renameToLive(name, fwd, liveByName) {
+    let cur = name; const seen = new Set([cur]);
+    while (fwd.has(cur)) {
+      cur = fwd.get(cur);
+      if (seen.has(cur)) break; // cycle guard
+      seen.add(cur);
+      if (liveByName && liveByName.has(cur)) return cur;
+    }
+    return null;
+  }
+
+  // Walk a live deck-card name backward along the rename chain to the first
+  // name the frozen pool owns; returns that frozen bare, or null.
+  function renameToFrozen(name, back, lookup) {
+    let cur = name; const seen = new Set([cur]);
+    while (back.has(cur)) {
+      cur = back.get(cur);
+      if (seen.has(cur)) break; // cycle guard
+      seen.add(cur);
+      if (lookup.has(cur)) return lookup.get(cur);
+    }
+    return null;
+  }
+
   // Sort key for card numbers: pad numeric prefix to fixed width so "10"
   // sorts after "2", and append the alpha suffix so "162a" < "162b".
   function numKey(n) {
@@ -325,20 +375,23 @@
     const p = (async () => {
       // Pool indices come from the FROZEN snapshot (cards.frozen.json); the
       // live cards.json is fetched only to bridge renamed/new printing names.
-      const [frozenResp, liveResp, staplesResp, unplayableResp] = await Promise.all([
+      const [frozenResp, liveResp, staplesResp, unplayableResp, renamesResp] = await Promise.all([
         fetch('cards.frozen.json', { cache: 'force-cache' }),
         fetch('cards.json', { cache: 'force-cache' }).catch(() => null),
         fetch('staples.txt', { cache: 'force-cache' }),
         fetch('unplayable.txt', { cache: 'force-cache' }),
+        fetch('renames.txt', { cache: 'force-cache' }).catch(() => null),
       ]);
       if (!frozenResp.ok) throw new Error('cards.frozen.json fetch failed');
       const data = (await frozenResp.json()).data || {};
       const staples = parseStaples(staplesResp.ok ? await staplesResp.text() : '');
       const unplayable = parseStaples(unplayableResp.ok ? await unplayableResp.text() : '');
+      const renames = parseRenames(renamesResp && renamesResp.ok ? await renamesResp.text() : '');
       const pool = buildPool(data, staples, unplayable, version);
       let liveData = {};
       try { if (liveResp && liveResp.ok) liveData = (await liveResp.json()).data || {}; } catch (e) {}
-      Object.assign(pool, buildLiveBridge(liveData));
+      Object.assign(pool, buildLiveBridge(liveData),
+                    { renameFwd: renames.fwd, renameBack: renames.back });
       return pool;
     })();
     _poolPromises.set(version, p);
@@ -405,14 +458,32 @@
   // carry a "(Flavor)" / "(SETCODE)" suffix in the frozen pool keep mapping to
   // themselves and the later heuristics never touch them.
   function resolveCanon(name, pool) {
-    const { lookup, bareBySetNum, liveSetNumByName, allSetCodes } = pool;
+    const { lookup, info, bareBySetNum, liveSetNumByName, liveByName,
+            allSetCodes, renameBack } = pool;
     const head = name.split('_')[0];
     // 1. Unchanged printing names (and every frozen bare/full name).
     let c = lookup.get(name) || lookup.get(head);
     if (c) return c;
-    // 2. Rename: the live name shares (set, number) with a frozen printing.
+    // 1b. Authoritative rename ledger: walk the live name back to a frozen bare.
+    if (renameBack) {
+      const b = renameToFrozen(name, renameBack, lookup)
+             || renameToFrozen(head, renameBack, lookup);
+      if (b) return b;
+    }
+    // 2. Rename: the live name shares (set, number) with a frozen printing —
+    //    but only if that frozen printing's name has itself VANISHED upstream
+    //    (a genuine in-place rename of this slot). If the frozen name still
+    //    exists live, the slot was merely renumbered and `name` is a different
+    //    or brand-new card that slid into the reused number; bridging it onto
+    //    the frozen slot would encode the wrong card. Leave it unresolved so a
+    //    genuinely new card is dropped (and surfaced) rather than mis-encoded.
     const sn = (liveSetNumByName && (liveSetNumByName.get(name) || liveSetNumByName.get(head)));
-    if (sn && bareBySetNum.has(sn)) return bareBySetNum.get(sn);
+    if (sn && bareBySetNum.has(sn)) {
+      const fbare = bareBySetNum.get(sn);
+      const e = info && info.get(fbare);
+      const fn = (e && e.firstName) || fbare;
+      if (!liveByName || (!liveByName.has(fbare) && !liveByName.has(fn))) return fbare;
+    }
     // 3. New "(SETCODE)" reprint of a card already in the pool, e.g.
     //    "Exorcist of Errors (IWH)" → base "Exorcist of Errors". Only fires for
     //    names that missed (1), so it never collapses an existing frozen bare.
@@ -698,18 +769,36 @@
     }
     const pool = await ensurePool(version);
     const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen,
-            liveByName, liveNameBySetNum } = pool;
+            lookup, liveByName, liveNameBySetNum, renameFwd } = pool;
     // Output the frozen pool's first printing name for each bare (which fixes
     // round-trip for bares like `Swamp Romantic` that aren't real printings).
     // But if that name no longer exists in the live data — because the card was
     // renamed upstream — emit the current name at the same (set, number) so the
     // decoded deck still imports. Unchanged cards keep their exact old output.
+    //
+    // The (set, number) fallback is only trustworthy when the slot's current
+    // occupant is a name NO other frozen slot owns. Upstream renumbers whole
+    // sets (a card inserted mid-set shifts every later number), so a frozen
+    // name's old slot can be reoccupied by a DIFFERENT, pre-existing pool card
+    // (e.g. frozen `Shock`@ERR150 → live `Segmentation_Fault`, which is really
+    // frozen ERR149 shifted down one). Substituting that would silently import
+    // the wrong card. So only accept an occupant that is itself new to the pool
+    // (a genuine in-place rename); otherwise keep the old name, which imports as
+    // a visible unknown rather than a plausible-but-wrong card.
+    const claimedByPool = (nm) =>
+      !!nm && (lookup.has(nm) || lookup.has(nm.split('_')[0]));
     const nameOut = (bare) => {
       const e = info.get(bare);
       const fn = (e && e.firstName) || bare;
       if (!liveByName || liveByName.has(fn)) return fn;
+      // Authoritative rename ledger first: follow fn's chain to a live name.
+      const led = renameFwd && renameToLive(fn, renameFwd, liveByName);
+      if (led) return led;
+      // Guarded (set,num) fallback for renames not (yet) in the ledger.
       const sn = e && (e.set + '|' + e.num);
-      return (sn && liveNameBySetNum && liveNameBySetNum.get(sn)) || fn;
+      const cand = sn && liveNameBySetNum && liveNameBySetNum.get(sn);
+      if (cand && !claimedByPool(cand)) return cand;
+      return fn;
     };
     const mask = br.read(5);
     const nStaplesPicked = br.read(6);

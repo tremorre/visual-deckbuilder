@@ -90264,11 +90264,11 @@
      "imageName": "shock_vrd",
      "layout": "normal",
      "legalities": {
-      "revolution": "Legal",
-      "brawl": "Legal",
+      "revolution": "Rotated",
+      "brawl": "Rotated",
       "eternal": "Legal",
       "eternal-pauper": "Legal",
-      "planechase": "Legal",
+      "planechase": "Rotated",
       "archaeologist": "Legal"
      },
      "manaCost": "{R}",
@@ -94408,11 +94408,11 @@
      "imageName": "shock_pro_vrd",
      "layout": "normal",
      "legalities": {
-      "revolution": "Legal",
-      "brawl": "Legal",
+      "revolution": "Rotated",
+      "brawl": "Rotated",
       "eternal": "Legal",
       "eternal-pauper": "Legal",
-      "planechase": "Legal",
+      "planechase": "Rotated",
       "archaeologist": "Legal"
      },
      "manaCost": "{R}",
@@ -125447,6 +125447,51 @@
      "uuid": "Matchmaker (Skirmish)_PRO_KSV"
     },
     {
+     "artist": "Tyler Miles Lockett",
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "Bergland",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Military_PRO_KSV",
+     "imageName": "military_pro_ksv",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Rotated",
+      "brawl": "Rotated",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Rotated",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{R}{R}{R}",
+     "identifiers": {
+      "scryfallId": 6378,
+      "multiverseId": 20260530
+     },
+     "name": "Military_PRO_KSV",
+     "number": "286",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "Whenever you attack with creatures with total power 6 or more, Military deals 2 damage to target opponent or planeswalker.\nWhenever you cast a red creature spell, it gets +2/+0 and gains haste until end of turn.",
+     "type": "Enchantment",
+     "types": [
+      "Enchantment"
+     ],
+     "uuid": "Military_PRO_KSV"
+    },
+    {
      "artist": "Jake Murray",
      "convertedManaCost": 2,
      "faceConvertedManaCost": 2,
@@ -125842,8 +125887,8 @@
      "uuid": "Wall of Blossoms_PRO_KSV"
     }
    ],
-   "baseSetSize": 296,
-   "totalSetSize": 296,
+   "baseSetSize": 297,
+   "totalSetSize": 297,
    "cardsphereSetId": 9,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -156182,6 +156227,57 @@
      "uuid": "The Running of the Bulls_PRO_DOV"
     },
     {
+     "artist": "Spareribs",
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
+     "colors": [
+      "G"
+     ],
+     "colorIdentity": [
+      "G"
+     ],
+     "designer": "Matt & Chumbeque",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Treasury Pilferer_PRO_DOV",
+     "imageName": "treasury pilferer_pro_dov",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Rotated",
+      "brawl": "Rotated",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Rotated",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{G}",
+     "identifiers": {
+      "scryfallId": 6398,
+      "multiverseId": 20260530
+     },
+     "name": "Treasury Pilferer_PRO_DOV",
+     "number": "323",
+     "power": "2",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Cat",
+      "Rogue"
+     ],
+     "text": "Whenever Treasury Pilferer becomes the target of a spell you control, you may have it dare 4. (It becomes a legendary Rebel with base power and toughness 4/4 in addition to its other types until end of turn.)\nWhenever a Rebel you control deals combat damage to a player, you draw a card and create a Treasure token.",
+     "toughness": "3",
+     "type": "Creature — Cat Rogue",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Treasury Pilferer_PRO_DOV"
+    },
+    {
      "artist": "cypritree",
      "convertedManaCost": 2,
      "faceConvertedManaCost": 2,
@@ -156235,8 +156331,8 @@
      "uuid": "Truthcleaver_PRO_DOV"
     }
    ],
-   "baseSetSize": 318,
-   "totalSetSize": 318,
+   "baseSetSize": 319,
+   "totalSetSize": 319,
    "cardsphereSetId": 11,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -170207,6 +170303,57 @@
      "uuid": "Mykian, Pop Paragon (Star)_POP"
     },
     {
+     "artist": "Io Tikhaya",
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
+     "colors": [
+      "W"
+     ],
+     "colorIdentity": [
+      "W"
+     ],
+     "designer": "platypeople",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Ozzen Enquirer_PRO_POP",
+     "imageName": "ozzen enquirer_pro_pop",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Rotated",
+      "brawl": "Rotated",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Rotated",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{W}",
+     "identifiers": {
+      "scryfallId": 6401,
+      "multiverseId": 20260530
+     },
+     "name": "Ozzen Enquirer_PRO_POP",
+     "number": "294",
+     "power": "2",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Advisor"
+     ],
+     "text": "Lifelink\nWhenever you gain life, noncreature spells your opponents cast cost {1} more to cast until your next turn. This ability triggers only once each turn.",
+     "toughness": "2",
+     "type": "Artifact Creature — Advisor",
+     "types": [
+      "Artifact",
+      "Creature"
+     ],
+     "uuid": "Ozzen Enquirer_PRO_POP"
+    },
+    {
      "artist": "Peter Kovacs",
      "convertedManaCost": 1,
      "faceConvertedManaCost": 1,
@@ -170708,8 +170855,8 @@
      "uuid": "Yaeji, Resplendent Idol (Star)_POP"
     }
    ],
-   "baseSetSize": 298,
-   "totalSetSize": 298,
+   "baseSetSize": 299,
+   "totalSetSize": 299,
    "cardsphereSetId": 12,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -202231,6 +202378,57 @@
      "uuid": "Audacious Roughrider_PRO_OLD"
     },
     {
+     "artist": "Ertac Altinoz",
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "Dodger",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Audacious Roughrider (KUT)_PRO_OLD",
+     "imageName": "audacious roughrider (kut)_old",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Rotated",
+      "brawl": "Rotated",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Rotated",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{R}{R}",
+     "identifiers": {
+      "scryfallId": 6440,
+      "multiverseId": 20260530
+     },
+     "name": "Audacious Roughrider (KUT)_OLD",
+     "number": "302",
+     "power": "3",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Human",
+      "Knight"
+     ],
+     "text": "When Audacious Roughrider enters or leaves the battlefield, exile the top card of your library. Then you may discard a card. If you do, put the exiled card into your hand. If you don't, create a Treasure token.\nWander {4}{R}{R} (You may cast this from the battlefield for its wander cost.)",
+     "toughness": "3",
+     "type": "Creature — Human Knight",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Audacious Roughrider (KUT)_PRO_OLD"
+    },
+    {
      "artist": "Jaron Zheng",
      "convertedManaCost": 3,
      "faceConvertedManaCost": 3,
@@ -202897,8 +203095,8 @@
      "uuid": "Thunderous Avalanche_PRO_OLD"
     }
    ],
-   "baseSetSize": 300,
-   "totalSetSize": 300,
+   "baseSetSize": 301,
+   "totalSetSize": 301,
    "cardsphereSetId": 14,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -229943,7 +230141,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Stasis",
      "flavor": "",
      "frameType": "dfc-normal-normal",
      "frameVersion": "2015",
@@ -229996,7 +230194,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Stasis",
      "flavor": "",
      "frameType": "dfc-normal-normal",
      "frameVersion": "2015",
@@ -233977,6 +234175,57 @@
      "uuid": "Zeno, Planar Engineer_CNY"
     },
     {
+     "artist": "ThemeFinland",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "G"
+     ],
+     "colorIdentity": [
+      "G"
+     ],
+     "designer": "Stasis",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Aspiring Anarchist_PRO_CNY",
+     "imageName": "aspiring anarchist_pro_cny",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{G}",
+     "identifiers": {
+      "scryfallId": 6410,
+      "multiverseId": 20260530
+     },
+     "name": "Aspiring Anarchist_PRO_CNY",
+     "number": "289",
+     "power": "1",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Crocodile",
+      "Rebel"
+     ],
+     "text": "Trample\nWhenever Aspiring Anarchist attacks, you may have its base power and toughness become equal to the power and toughness of another target attacking creature until end of turn.",
+     "toughness": "1",
+     "type": "Creature — Crocodile Rebel",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Aspiring Anarchist_PRO_CNY"
+    },
+    {
      "artist": "Mariusz Lewandowski",
      "convertedManaCost": 2,
      "faceConvertedManaCost": 2,
@@ -234309,6 +234558,56 @@
       "Enchantment"
      ],
      "uuid": "Defect_PRO_CNY"
+    },
+    {
+     "artist": "Gabriela Birchal",
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
+     "colors": [
+      "U",
+      "B"
+     ],
+     "colorIdentity": [
+      "U",
+      "B"
+     ],
+     "designer": "Stasis",
+     "flavor": "Dark powers hold easy sway over lesser minds.\n",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Defect (IWH)_PRO_CNY",
+     "imageName": "defect (iwh)",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{U}{B}",
+     "identifiers": {
+      "scryfallId": 7419,
+      "multiverseId": 20260530
+     },
+     "name": "Defect (IWH)",
+     "number": "300",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Aura"
+     ],
+     "text": "Enchant creature\nYou control enchanted creature.\nEnchanted creature has decayed. (It can't block. When it attacks, sacrifice it at end of combat.) (It can't block. When it attacks, sacrifice it at end of combat.)",
+     "type": "Enchantment — Aura",
+     "types": [
+      "Enchantment"
+     ],
+     "uuid": "Defect (IWH)_PRO_CNY"
     },
     {
      "artist": "Vladimir Rikowski",
@@ -235564,8 +235863,8 @@
      "uuid": "Work Safety Violation_PRO_CNY"
     }
    ],
-   "baseSetSize": 307,
-   "totalSetSize": 307,
+   "baseSetSize": 309,
+   "totalSetSize": 309,
    "cardsphereSetId": 16,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -256359,7 +256658,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -256374,10 +256673,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{U}{U}",
+     "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5279,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Architect of the Intangible",
      "number": "40",
@@ -256887,7 +257186,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "Laurel",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -256905,7 +257204,7 @@
      "manaCost": "{X}{X}{B}",
      "identifiers": {
       "scryfallId": 5290,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "BORROW()",
      "number": "83",
@@ -256983,7 +257282,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257001,7 +257300,7 @@
      "manaCost": "{B}",
      "identifiers": {
       "scryfallId": 5292,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Backdoor Prowler",
      "number": "81",
@@ -257014,7 +257313,7 @@
       "Human",
       "Rogue"
      ],
-     "text": "Level up {3}{B} ({3}{B}: Put a level counter on this as a sorcery.)\n[level 1-3] Menace\n[level 4+] Menace",
+     "text": "Level up {3}{B} ({3}{B}: Put a level counter on this as a sorcery.) [1/1]\n[level 1-2] Menace [4/4]\n[level 3+] Menace [7/7]",
      "toughness": "1",
      "type": "Creature — Human Rogue",
      "types": [
@@ -257126,17 +257425,17 @@
     },
     {
      "artist": "Liiga Smilshkalne",
-     "convertedManaCost": 4,
-     "faceConvertedManaCost": 4,
-     "manaValue": 4,
-     "faceManaValue": 4,
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
      "colors": [
       "R"
      ],
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257151,14 +257450,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{3}{R}",
+     "manaCost": "{1}{R}{R}",
      "identifiers": {
       "scryfallId": 5295,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Bootstrap Daemon",
      "number": "122",
-     "power": "3",
+     "power": "2",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -257166,8 +257465,8 @@
      "subtypes": [
       "Phoenix"
      ],
-     "text": "Flying, haste\nWhenever you attack, you may pay {R} and sacrifice two artifacts and/or enchantments. If you do, return this card from your graveyard to the battlefield tapped and attacking.",
-     "toughness": "3",
+     "text": "Flying, haste\nWhenever you attack, you may pay {R} and sacrifice an artifact or enchantment. If you do, return this card from your graveyard to the battlefield tapped and attacking.",
+     "toughness": "2",
      "type": "Enchantment Creature — Phoenix",
      "types": [
       "Enchantment",
@@ -257274,18 +257573,20 @@
     },
     {
      "artist": "Kode LGX",
-     "convertedManaCost": 4,
-     "faceConvertedManaCost": 4,
-     "manaValue": 4,
-     "faceManaValue": 4,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
+      "G",
       "U"
      ],
      "colorIdentity": [
+      "G",
       "U"
      ],
-     "designer": "DrChipmunk",
-     "flavor": "“The daemons remember things we users have long forgotten.”\n—Ys\n",
+     "designer": "false",
+     "flavor": "Daemons remember what users forget.\n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "Buoyant Datagrazer_ERR",
@@ -257299,14 +257600,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{3}{U}",
+     "manaCost": "{G}{U}",
      "identifiers": {
       "scryfallId": 5298,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Buoyant Datagrazer",
-     "number": "42",
-     "power": "3",
+     "number": "197",
+     "power": "2",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -257314,8 +257615,8 @@
      "subtypes": [
       "Whale"
      ],
-     "text": "Flying\nWhenever you sacrifice a Memory, draw a card.",
-     "toughness": "3",
+     "text": "Flying\nWhen this creature enters, cache the top card of your library face down. (Exile it and create a Memory enchantment token with “{2}, Sacrifice this: You may play the cached card this turn.”)\nWhenever you play a cached card, draw a card.",
+     "toughness": "2",
      "type": "Enchantment Creature — Whale",
      "types": [
       "Enchantment",
@@ -257435,7 +257736,7 @@
       "G",
       "W"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "User's best friend.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257453,10 +257754,10 @@
      "manaCost": "{G}{W}",
      "identifiers": {
       "scryfallId": 5301,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Burrow Checker",
-     "number": "197",
+     "number": "198",
      "power": "0",
      "rarity": "uncommon",
      "relatedCards": {
@@ -257627,8 +257928,8 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
-     "flavor": "I am the users' dreams given will. <\n",
+     "designer": "false",
+     "flavor": "              I am the users' dreams given will. <\n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "COPY()_ERR",
@@ -257645,10 +257946,10 @@
      "manaCost": "{2}{U}",
      "identifiers": {
       "scryfallId": 5304,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "COPY()",
-     "number": "46",
+     "number": "45",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -258081,7 +258382,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "Exceptionals seek out errors for fun, art, or just because they're told not to.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258099,7 +258400,7 @@
      "manaCost": "{2}{R}",
      "identifiers": {
       "scryfallId": 5313,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Charming Exceptional",
      "number": "126",
@@ -258113,8 +258414,8 @@
       "Bard",
       "Warlock"
      ],
-     "text": "Corrupt — When this creature enters, if you control a permanent with greater mana value, create two 1/1 white Citizen creature tokens.",
-     "toughness": "3",
+     "text": "Corrupt — When this creature enters, create a 1/1 white Citizen creature token. If you control a permanent with greater mana value, create two of those tokens instead.",
+     "toughness": "2",
      "type": "Creature — Human Bard Warlock",
      "types": [
       "Creature"
@@ -258294,7 +258595,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5317,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Clearwater Grotto",
      "number": "246",
@@ -258341,7 +258642,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5317,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Clearwater Grotto",
      "number": "246",
@@ -258371,7 +258672,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "“If it can run, I can follow.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258389,10 +258690,10 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5318,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Codepath Runner",
-     "number": "43",
+     "number": "42",
      "power": "1",
      "rarity": "common",
      "relatedCards": {
@@ -258615,7 +258916,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258633,10 +258934,10 @@
      "manaCost": "{2}{U}",
      "identifiers": {
       "scryfallId": 5323,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Composer of Skylines",
-     "number": "44",
+     "number": "43",
      "power": "2",
      "rarity": "mythic",
      "relatedCards": {
@@ -258646,7 +258947,7 @@
       "Construct",
       "Advisor"
      ],
-     "text": "Level up {2}{U} ({2}{U}: Put a level counter on this. Level up only as a sorcery.) [2/4]\n[level 1-2] If an ability of a permanent you control triggers, it triggers an additional time. [3/5]\n[level 3+] If an ability of a permanent you control triggers, it triggers two additional times. [4/6]",
+     "text": "Level up {1}{U} ({1}{U}: Put a level counter on this as a sorcery.) [2/4]\n[level 1-2] If an ability of a permanent you control triggers, it triggers an additional time. [2/4]\n[level 3+] If an ability of a permanent you control triggers, it triggers two additional times. [2/4]",
      "toughness": "4",
      "type": "Artifact Creature — Construct Advisor",
      "types": [
@@ -258819,7 +259120,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258837,10 +259138,10 @@
      "manaCost": "{1}{U}{U}{U}{U}",
      "identifiers": {
       "scryfallId": 5327,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Convol, Archive Exec",
-     "number": "45",
+     "number": "44",
      "power": "5",
      "rarity": "rare",
      "relatedCards": {
@@ -258963,7 +259264,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258981,10 +259282,10 @@
      "manaCost": "{5}{U}{U}",
      "identifiers": {
       "scryfallId": 5330,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Cybersaurus",
-     "number": "47",
+     "number": "46",
      "power": "7",
      "rarity": "common",
      "relatedCards": {
@@ -259055,17 +259356,17 @@
     },
     {
      "artist": "Yorgos Cotronis",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 5,
+     "faceConvertedManaCost": 5,
+     "manaValue": 5,
+     "faceManaValue": 5,
      "colors": [
       "W"
      ],
      "colorIdentity": [
       "W"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259080,10 +259381,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{W}",
+     "manaCost": "{4}{W}",
      "identifiers": {
       "scryfallId": 5332,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Daemonic Binding",
      "number": "8",
@@ -259091,10 +259392,10 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "As an additional cost to cast this spell, tap an untapped creature you control with a level counter on it or pay {3}.\nExile target creature or enchantment.",
-     "type": "Sorcery",
+     "text": "This spell costs {2} less to cast if you control a creature with a level counter on it.\nWhen this enchantment enters, exile target creature or enchantment an opponent controls until this enchantment leaves the battlefield.",
+     "type": "Enchantment",
      "types": [
-      "Sorcery"
+      "Enchantment"
      ],
      "uuid": "Daemonic Binding_ERR"
     },
@@ -259206,7 +259507,7 @@
      "uuid": "Darisha, Stack Exec_ERR"
     },
     {
-     "artist": "AlMaNeGrA",
+     "artist": "Imiak",
      "convertedManaCost": 2,
      "faceConvertedManaCost": 2,
      "manaValue": 2,
@@ -259217,12 +259518,12 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
-     "id": "Data Staff_ERR",
-     "imageName": "data staff",
+     "id": "Data Visionary_ERR",
+     "imageName": "data visionary",
      "layout": "normal",
      "legalities": {
       "revolution": "Legal",
@@ -259235,20 +259536,74 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5335,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
-     "name": "Data Staff",
-     "number": "48",
+     "name": "Data Visionary",
+     "number": "47",
+     "power": "1",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
      },
-     "text": "This artifact enters the battlefield tapped.\n{T}: Add one mana of any color. Spend this mana only to cast Subroutine spells.\n{4}, {T}: Draw a card. This ability costs {1} less to activate for each time a Subroutine ran under your control this turn.",
-     "type": "Artifact",
-     "types": [
-      "Artifact"
+     "subtypes": [
+      "Wolf",
+      "Wizard"
      ],
-     "uuid": "Data Staff_ERR"
+     "text": "When this creature enters, look at the top four cards of your library. You may reveal a noncreature, nonland card from among them and put it into your hand. Put the rest on the bottom in a random order.\n{2}, {T}: Target Subroutine you control runs. Activate only once and only as a sorcery.",
+     "toughness": "1",
+     "type": "Creature — Wolf Wizard",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Data Visionary_ERR"
+    },
+    {
+     "artist": "Christopher Balaskas",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "B"
+     ],
+     "colorIdentity": [
+      "B"
+     ],
+     "designer": "false",
+     "flavor": "In the sea of grief, Gemi could make out users. She could feel the tragic sensation reflecting and amplifying off them.\n",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Dead Weight_ERR",
+     "imageName": "dead weight",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Legal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{B}",
+     "identifiers": {
+      "scryfallId": 5340,
+      "multiverseId": 20260530
+     },
+     "name": "Dead Weight",
+     "number": "88",
+     "rarity": "common",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Aura"
+     ],
+     "text": "Enchant creature\nEnchanted creature gets -2/-2.",
+     "type": "Enchantment — Aura",
+     "types": [
+      "Enchantment"
+     ],
+     "uuid": "Dead Weight_ERR"
     },
     {
      "artist": "Bart Tchorzewski",
@@ -259262,7 +259617,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259280,10 +259635,10 @@
      "manaCost": "{2}{B}{B}",
      "identifiers": {
       "scryfallId": 5336,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Death's Believers",
-     "number": "88",
+     "number": "89",
      "power": "1",
      "rarity": "uncommon",
      "relatedCards": {
@@ -259313,7 +259668,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "The Decryption is a branching tree of puzzles all over the Archives. Those that reach an end point must add a new puzzle to the chain.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259331,10 +259686,10 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5337,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Decryption Puzzlemancer",
-     "number": "49",
+     "number": "48",
      "power": "2",
      "rarity": "uncommon",
      "relatedCards": {
@@ -259364,7 +259719,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "The self is data, and data can be overwritten.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259382,10 +259737,10 @@
      "manaCost": "{U}",
      "identifiers": {
       "scryfallId": 5338,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Denotation Failure",
-     "number": "50",
+     "number": "49",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -259454,8 +259809,8 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
-     "flavor": "“If you hear voices, don't answer.”\n—Mev's Rules of Survival\n",
+     "designer": "false",
+     "flavor": "“If you hear voices, don't answer.”\n—Mev's Rules of Survival \n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "Do_Not_Respond_ERR",
@@ -259472,10 +259827,10 @@
      "manaCost": "{4}{B}",
      "identifiers": {
       "scryfallId": 5339,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Do_Not_Respond",
-     "number": "89",
+     "number": "90",
      "power": "5",
      "rarity": "uncommon",
      "relatedCards": {
@@ -259491,51 +259846,6 @@
       "Creature"
      ],
      "uuid": "Do_Not_Respond_ERR"
-    },
-    {
-     "artist": "Christopher Balaskas",
-     "convertedManaCost": 1,
-     "faceConvertedManaCost": 1,
-     "manaValue": 1,
-     "faceManaValue": 1,
-     "colors": [
-      "B"
-     ],
-     "colorIdentity": [
-      "B"
-     ],
-     "designer": "DrChipmunk",
-     "flavor": "In the sea of grief, Gemi could make out users. She could feel the tragic sensation reflecting and amplifying off them.\n",
-     "frameType": "normal",
-     "frameVersion": "2015",
-     "id": "Downlink Overload_ERR",
-     "imageName": "downlink overload",
-     "layout": "normal",
-     "legalities": {
-      "revolution": "Legal",
-      "brawl": "Legal",
-      "eternal": "Legal",
-      "eternal-pauper": "Legal",
-      "planechase": "Legal",
-      "archaeologist": "Legal"
-     },
-     "manaCost": "{B}",
-     "identifiers": {
-      "scryfallId": 5340,
-      "multiverseId": 0
-     },
-     "name": "Downlink Overload",
-     "number": "90",
-     "rarity": "common",
-     "relatedCards": {
-      "spellbook": []
-     },
-     "text": "Target creature gets -2/-2 until end of turn. Its controller mills two cards.",
-     "type": "Instant",
-     "types": [
-      "Instant"
-     ],
-     "uuid": "Downlink Overload_ERR"
     },
     {
      "artist": "Allesandro Rossi",
@@ -259697,7 +260007,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259715,7 +260025,7 @@
      "manaCost": "{4}{B}{B}",
      "identifiers": {
       "scryfallId": 5344,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Dropped_Polygon",
      "number": "92",
@@ -259728,7 +260038,7 @@
       "Error"
      ],
      "text": "Menace\nSwampcycling {2} ({2}, Discard this card: Search your library for a Swamp card, reveal it, put it into your hand, then shuffle.)",
-     "toughness": "7",
+     "toughness": "5",
      "type": "Creature — Error",
      "types": [
       "Creature"
@@ -259849,7 +260159,7 @@
       "B",
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259867,10 +260177,10 @@
      "manaCost": "{U}",
      "identifiers": {
       "scryfallId": 5350,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Echo Choreographer",
-     "number": "51",
+     "number": "50",
      "power": "1",
      "rarity": "rare",
      "relatedCards": {
@@ -259881,7 +260191,7 @@
       "Bard",
       "Wizard"
      ],
-     "text": "Level up {B/G} ({B/G}: Put a level counter on this. Level up only as a sorcery.) [1/2]\n[level 1-3] {T}: Return to your hand target card from your graveyard that was put there from your library this turn. [2/3]\n[level 4+] {T}: Return to your hand all cards from your graveyard that were put there from your library this turn. [3/4]",
+     "text": "Level up {B/G} ({B/G}: Put a level counter on this as a sorcery.) [1/2]\n[level 1-3] {T}: Return to your hand target card from your graveyard that was put there from your library this turn. [2/3]\n[level 4+] {T}: Return to your hand all cards from your graveyard that were put there from your library this turn. [3/4]",
      "toughness": "2",
      "type": "Creature — Human Bard Wizard",
      "types": [
@@ -260298,7 +260608,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260313,10 +260623,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{X}{R}",
+     "manaCost": "{R}",
      "identifiers": {
       "scryfallId": 5359,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Error Tide",
      "number": "134",
@@ -260324,26 +260634,26 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Error Tide deals X damage to target creature or planeswalker.\nCorrupt — If you control a permanent with greater mana value than this spell, create an X/X colorless Construct artifact creature token. ",
-     "type": "Sorcery",
+     "text": "Error Tide deals 2 damage to any target. If you control a permanent with mana value 4 or greater, it deals 3 damage to that target instead.",
+     "type": "Instant",
      "types": [
-      "Sorcery"
+      "Instant"
      ],
      "uuid": "Error Tide_ERR"
     },
     {
      "artist": "Kode LGX",
-     "convertedManaCost": 4,
-     "faceConvertedManaCost": 4,
-     "manaValue": 4,
-     "faceManaValue": 4,
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260358,14 +260668,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{G}{G}",
+     "manaCost": "{1}{G}{G}",
      "identifiers": {
       "scryfallId": 5360,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Errorsbane Deadshot",
      "number": "167",
-     "power": "4",
+     "power": "3",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -260552,8 +260862,8 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
-     "flavor": "\\> The daemons told me you were dying.\n",
+     "designer": "false",
+     "flavor": "> The daemons told me you were dying.\n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "FLOCK()_ERR",
@@ -260570,10 +260880,10 @@
      "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 5364,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "FLOCK()",
-     "number": "52",
+     "number": "51",
      "rarity": "common",
      "relatedCards": {
       "spellbook": []
@@ -261128,7 +261438,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "Toki joined Catch to fight errors. She never thought she might have to remove another user.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261146,7 +261456,7 @@
      "manaCost": "{1}{B}",
      "identifiers": {
       "scryfallId": 5375,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Forced Shutdown",
      "number": "99",
@@ -261154,7 +261464,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Destroy target battle, creature, or enchantment. You lose life equal to its mana value.",
+     "text": "Destroy target creature or enchantment. You lose life equal to its mana value.",
      "type": "Sorcery",
      "types": [
       "Sorcery"
@@ -261506,7 +261816,7 @@
       "G",
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261524,10 +261834,10 @@
      "manaCost": "{2}{G}{U}",
      "identifiers": {
       "scryfallId": 5383,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Gemi and Nu, Cachemates",
-     "number": "198",
+     "number": "199",
      "power": "1",
      "rarity": "rare",
      "relatedCards": {
@@ -261597,6 +261907,51 @@
      "uuid": "Geometry Stabilizer_ERR"
     },
     {
+     "artist": "Casey Weeks",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "false",
+     "flavor": "A scream of liquid noise consumed Xeia's vision. The track, the finish line, the stands, all dissolved into a glitchy mass of red distortion. Her bones rattled and her blood howled.\n",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Glitch Out_ERR",
+     "imageName": "glitch out",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Legal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{X}{R}",
+     "identifiers": {
+      "scryfallId": 5508,
+      "multiverseId": 20260530
+     },
+     "name": "Glitch Out",
+     "number": "138",
+     "rarity": "common",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "Glitch Out deals X plus 1 damage to target creature.",
+     "type": "Sorcery",
+     "types": [
+      "Sorcery"
+     ],
+     "uuid": "Glitch Out_ERR"
+    },
+    {
      "artist": "Alexander Aronsson",
      "convertedManaCost": 5,
      "faceConvertedManaCost": 5,
@@ -261610,7 +261965,7 @@
       "B",
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261628,10 +261983,10 @@
      "manaCost": "{3}{B}{R}",
      "identifiers": {
       "scryfallId": 5385,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Glitchdrinker",
-     "number": "199",
+     "number": "200",
      "power": "4",
      "rarity": "uncommon",
      "relatedCards": {
@@ -261661,7 +262016,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261679,10 +262034,10 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5386,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Glitchlands Sentinel",
-     "number": "53",
+     "number": "52",
      "power": "2",
      "rarity": "common",
      "relatedCards": {
@@ -261774,10 +262129,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5388,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Go for Gold",
-     "number": "138",
+     "number": "139",
      "rarity": "common",
      "relatedCards": {
       "spellbook": []
@@ -261898,7 +262253,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261916,10 +262271,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5391,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Grip Pinch-Hitter",
-     "number": "139",
+     "number": "140",
      "power": "2",
      "rarity": "common",
      "relatedCards": {
@@ -261929,7 +262284,7 @@
       "Wolf",
       "Warrior"
      ],
-     "text": "Level up {1}{R} ({1}{R}: Put a level counter on this. Level up only as a sorcery.) [2/1]\n[level 2-5] Reach [5/4]\n[level 6+] Reach, trample [7/6]",
+     "text": "Level up {1}{R} ({1}{R}: Put a level counter on this as a sorcery.) [2/1]\n[level 2-5] Reach [5/4]\n[level 6+] Reach, trample [7/6]",
      "toughness": "1",
      "type": "Creature — Wolf Warrior",
      "types": [
@@ -261939,17 +262294,17 @@
     },
     {
      "artist": "Ludovic Sanson",
-     "convertedManaCost": 2,
-     "faceConvertedManaCost": 2,
-     "manaValue": 2,
-     "faceManaValue": 2,
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
      "colors": [
       "B"
      ],
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261964,10 +262319,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{1}{B}",
+     "manaCost": "{B}",
      "identifiers": {
       "scryfallId": 5392,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Grognard",
      "number": "100",
@@ -261980,8 +262335,8 @@
       "Human",
       "Cleric"
      ],
-     "text": "Level up {2}{B} ({2}{B}: Put a level counter on this. Level up only as a sorcery.) [2/2]\n[level 1-2] This creature gets +1/+1 for each creature and/or enchantment card in your graveyard. [2/2]\n[level 3+] This creature gets +1/+1 for each creature and/or enchantment card in all graveyards. [2/2]",
-     "toughness": "2",
+     "text": "This creature enters the battlefield tapped.\nLevel up {2}{B} ({2}{B}: Put a level counter on this as a sorcery.) [2/1]\n[level 1-2] This creature gets +1/+1 for each creature and/or enchantment card in your graveyard. [2/2]\n[level 3+] This creature gets +1/+1 for each creature and/or enchantment card in all graveyards. [2/2]",
+     "toughness": "1",
      "type": "Creature — Human Cleric",
      "types": [
       "Creature"
@@ -262000,7 +262355,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262018,10 +262373,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5393,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Groove Surfer",
-     "number": "140",
+     "number": "141",
      "power": "2",
      "rarity": "uncommon",
      "relatedCards": {
@@ -262096,7 +262451,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262114,7 +262469,7 @@
      "manaCost": "{1}{B}",
      "identifiers": {
       "scryfallId": 5395,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Heap Delver",
      "number": "102",
@@ -262127,7 +262482,7 @@
       "Human",
       "Rogue"
      ],
-     "text": "Level up {1}{B} ({1}{B}: Put a level counter on this. Level up only as a sorcery.) [1/3]\n[level 1-3] {B}, {T}: Surveil 1. [2/4]\n[level 4+] {B}, {T}: Surveil 2. [3/5]",
+     "text": "Level up {1}{B} ({1}{B}: Put a level counter on this as a sorcery.) [1/3]\n[level 1-2] {B}, {T}: Surveil 1. [2/4]\n[level 3+] {B}, {T}: Surveil 2. [3/5]",
      "toughness": "3",
      "type": "Creature — Human Rogue",
      "types": [
@@ -262241,7 +262596,7 @@
       "R",
       "W"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262259,10 +262614,10 @@
      "manaCost": "{2}{R}",
      "identifiers": {
       "scryfallId": 5398,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "High Rollers",
-     "number": "141",
+     "number": "142",
      "power": "3",
      "rarity": "uncommon",
      "relatedCards": {
@@ -262272,7 +262627,7 @@
       "Human",
       "Citizen"
      ],
-     "text": "Level up {2}{W} ({2}{W}: Put a level counter on this. Level up only as a sorcery.) [3/3]\n[level 1-2] Whenever you attack, target creature gets +2/+0 until end of turn. [4/4]\n[level 3+] Whenever you attack, target creature gets +5/+0 until end of turn. [5/5]",
+     "text": "Level up {2}{W} ({2}{W}: Put a level counter on this as a sorcery.) [3/3]\n[level 1-2] Whenever you attack, target creature gets +2/+0 until end of turn. [4/4]\n[level 3+] Whenever you attack, target creature gets +5/+0 until end of turn. [5/5]",
      "toughness": "3",
      "type": "Creature — Human Citizen",
      "types": [
@@ -262535,7 +262890,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262553,10 +262908,10 @@
      "manaCost": "{6}{R}{R}",
      "identifiers": {
       "scryfallId": 5404,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Infinite_Loop",
-     "number": "142",
+     "number": "143",
      "power": "10",
      "rarity": "rare",
      "relatedCards": {
@@ -262575,19 +262930,17 @@
     },
     {
      "artist": "Dimitri Chappuis",
-     "convertedManaCost": 2,
-     "faceConvertedManaCost": 2,
-     "manaValue": 2,
-     "faceManaValue": 2,
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
      "colors": [
-      "G",
       "U"
      ],
      "colorIdentity": [
-      "G",
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262602,14 +262955,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{G}{U}",
+     "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 5405,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Install Wizard",
-     "number": "200",
-     "power": "2",
+     "number": "53",
+     "power": "3",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -262618,8 +262971,8 @@
       "Human",
       "Wizard"
      ],
-     "text": "When this creature enters, cache the top card of your library face down. (Look at it, then exile it face down. Create a Memory enchantment token with “{2}, Sacrifice this:You may play the cached card this turn.”)\n{1}{G}{U}, Sacrifice a Memory: Draw a card. You may put a land card from your hand onto the battlefield. ",
-     "toughness": "2",
+     "text": "When this creature enters, cache the top card of your library face down. (Look at it, then exile it face down. Create a Memory enchantment token with “{2}, Sacrifice this:You may play the cached card this turn.”)\n{1}{U}, Sacrifice a Memory: Draw a card.",
+     "toughness": "4",
      "type": "Creature — Human Wizard",
      "types": [
       "Creature"
@@ -262638,7 +262991,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262656,10 +263009,10 @@
      "manaCost": "{3}{R}",
      "identifiers": {
       "scryfallId": 5406,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Inversion's Herald",
-     "number": "143",
+     "number": "144",
      "power": "4",
      "rarity": "common",
      "relatedCards": {
@@ -262983,7 +263336,7 @@
       "W",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263001,7 +263354,7 @@
      "manaCost": "{1}{W}{B}",
      "identifiers": {
       "scryfallId": 5413,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kaluthax, Dungeon Master",
      "number": "201",
@@ -263017,7 +263370,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "At the beginning of combat on your turn, put a level counter on another target creature you control. If it doesn't have level up, it gains level up {2} and “This creature gets +1/+1 for each level counter on it.” (The creature gains “{2}: Put a level counter on this as a sorcery.”)",
+     "text": "At the beginning of combat on your turn, put a level counter on target creature you control. If it doesn't have level up, it gains level up {2} and “This creature gets +1/+1 for each level counter on it.” (The creature gains “{2}: Put a level counter on this as a sorcery.”)",
      "toughness": "3",
      "type": "Legendary Creature — Skeleton Wizard",
      "types": [
@@ -263039,7 +263392,7 @@
       "W",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263057,7 +263410,7 @@
      "manaCost": "{1}{W/B}",
      "identifiers": {
       "scryfallId": 5414,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kaluthax's Challenger",
      "number": "223",
@@ -263070,7 +263423,7 @@
       "Bat",
       "Scout"
      ],
-     "text": "Level up {1}{W/B} ({1}{W/B}: Put a level counter on this. Level up only as a sorcery.) [2/2]\n[level 2-5] Lifelink [3/3]\n[level 6+] Flying, lifelink [4/4]",
+     "text": "Level up {1}{W/B} ({1}{W/B}: Put a level counter on this as a sorcery.) [2/2]\n[level 2-4] Lifelink [3/3]\n[level 5+] Flying, lifelink [4/4]",
      "toughness": "2",
      "type": "Creature — Bat Scout",
      "types": [
@@ -263551,7 +263904,7 @@
       "B",
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263569,7 +263922,7 @@
      "manaCost": "{2}{B/G}",
      "identifiers": {
       "scryfallId": 5423,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Lonesome Afterimage",
      "number": "224",
@@ -263580,11 +263933,11 @@
      },
      "subtypes": [
       "Elf",
-      "Shaman"
+      "Druid"
      ],
      "text": "When this creature enters, mill two cards.\n{2}{B/G}{B/G}, Exile this card from your graveyard: Return target creature or enchantment card from your graveyard to your hand.",
      "toughness": "3",
-     "type": "Creature — Elf Shaman",
+     "type": "Creature — Elf Druid",
      "types": [
       "Creature"
      ],
@@ -264025,7 +264378,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "“You put on a mask for play, a mask for war, a mask for love. Come to me if you find those masks difficult to remove.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264043,7 +264396,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5433,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Masksmith",
      "number": "178",
@@ -264054,11 +264407,11 @@
      },
      "subtypes": [
       "Elf",
-      "Shaman"
+      "Druid"
      ],
      "text": "{1}, Sacrifice this creature: Choose one —\n• Exile target artifact.\n• Exile target enchantment.\n• Exile target card from a graveyard.",
      "toughness": "2",
-     "type": "Creature — Elf Shaman",
+     "type": "Creature — Elf Druid",
      "types": [
       "Creature"
      ],
@@ -264168,17 +264521,17 @@
     },
     {
      "artist": "Aurore Folny",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264193,14 +264546,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{G}",
+     "manaCost": "{2}{G}{G}",
      "identifiers": {
       "scryfallId": 5436,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Menagerie Mechanic",
      "number": "181",
-     "power": "3",
+     "power": "4",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -264209,8 +264562,8 @@
       "Human",
       "Artificer"
      ],
-     "text": "Whenever this creature deals combat damage to a player, create an X/X colorless Construct artifact creature token, where X is 1 plus the number of counters on this creature.\n{1}, Sacrifice an artifact or enchantment: Put a +1/+1 counter on this creature. It gains trample until end of turn.",
-     "toughness": "4",
+     "text": "Whenever this creature deals combat damage to a player, create an X/X colorless Construct artifact creature token, where X is 1 plus the number of counters on this creature.\n{1}, Sacrifice an artifact or enchantment: Put a +1/+1 counter on this creature. It gains trample and indestructible until end of turn.",
+     "toughness": "5",
      "type": "Creature — Human Artificer",
      "types": [
       "Creature"
@@ -264381,7 +264734,7 @@
       "U",
       "W"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264399,7 +264752,7 @@
      "manaCost": "{2}{U}",
      "identifiers": {
       "scryfallId": 5440,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Mev's Holographist",
      "number": "56",
@@ -264412,7 +264765,7 @@
       "Elf",
       "Artificer"
      ],
-     "text": "When this creature enters, mill four cards. You may return a noncreature, nonland card milled this way to your hand.\n{1}{W}: This creature gets +1/+0 and gains first strike until end of turn.",
+     "text": "When this creature enters, tap target creature an opponent controls and put a stun counter on it.\n{X}{W}: Tap target creature with power X or less.",
      "toughness": "1",
      "type": "Creature — Elf Artificer",
      "types": [
@@ -264432,7 +264785,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "The Mirage Exposition sets the season's trends for fashion, architecture, food, music, and even weather.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264450,7 +264803,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5441,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Mirage Model",
      "number": "182",
@@ -264461,11 +264814,11 @@
      },
      "subtypes": [
       "Human",
-      "Shaman"
+      "Druid"
      ],
      "text": "{T}: Add {G}.\n{T}: Add {G}{G}. You can't spend this mana to cast spells.",
      "toughness": "1",
-     "type": "Creature — Human Shaman",
+     "type": "Creature — Human Druid",
      "types": [
       "Creature"
      ],
@@ -264500,7 +264853,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5442,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Misty Peak",
      "number": "262",
@@ -264547,7 +264900,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5442,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Misty Peak",
      "number": "262",
@@ -264779,7 +265132,7 @@
       "W",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264797,7 +265150,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5447,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Mystic of Returns",
      "number": "183",
@@ -264808,11 +265161,11 @@
      },
      "subtypes": [
       "Human",
-      "Shaman"
+      "Druid"
      ],
-     "text": "Level up {W/B} ({W/B}: Put a level counter on this. Level up only as a sorcery.) [2/3]\n[level 2-6] During each of your turns, you may play a land card from your graveyard. [3/4]\n[level 7+] During each of your turns, you may play a land and cast a permanent spell from your graveyard. [4/5]",
+     "text": "Level up {W/B} ({W/B}: Put a level counter on this as a sorcery.) [2/3]\n[level 2-6] During each of your turns, you may play a land card from your graveyard. [3/4]\n[level 7+] During each of your turns, you may play a land and cast a permanent spell from your graveyard. [4/5]",
      "toughness": "3",
-     "type": "Creature — Human Shaman",
+     "type": "Creature — Human Druid",
      "types": [
       "Creature"
      ],
@@ -265341,7 +265694,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265359,10 +265712,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5456,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Overwhelming Upload",
-     "number": "144",
+     "number": "145",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -265386,7 +265739,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265404,10 +265757,10 @@
      "manaCost": "{2}{R}{R}",
      "identifiers": {
       "scryfallId": 5457,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "PANIC()",
-     "number": "145",
+     "number": "146",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -265533,7 +265886,7 @@
       "B",
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265551,7 +265904,7 @@
      "manaCost": "{1}{B}{G}",
      "identifiers": {
       "scryfallId": 5460,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Piroia, Perennial Sacrifice",
      "number": "209",
@@ -265561,15 +265914,15 @@
       "spellbook": []
      },
      "subtypes": [
-      "Human",
-      "Shaman"
+      "Zombie",
+      "Warlock"
      ],
      "supertypes": [
       "Legendary"
      ],
      "text": "Deathtouch\nOnce during each of your turns, when you sacrifice a nontoken, nonland permanent, you may create a tapped token that's a copy of it.",
      "toughness": "2",
-     "type": "Legendary Creature — Human Shaman",
+     "type": "Legendary Creature — Zombie Warlock",
      "types": [
       "Creature"
      ],
@@ -265589,7 +265942,7 @@
       "U",
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265607,7 +265960,7 @@
      "manaCost": "{1}{W}",
      "identifiers": {
       "scryfallId": 5462,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Pixel Pixie",
      "number": "24",
@@ -265620,7 +265973,7 @@
       "Faerie",
       "Wizard"
      ],
-     "text": "Flying\nLevel up {U/R} ({U/R}: Put a level counter on this. Level up only as a sorcery.) [2/2]\n[level 2-4] Flying, prowess [3/3]\n[level 5+] Flying, prowess, prowess, prowess [4/4]",
+     "text": "Flying\nLevel up {U/R} ({U/R}: Put a level counter on this as a sorcery.) [2/2]\n[level 1-3] Flying, prowess [3/3]\n[level 4+] Flying, prowess, prowess, prowess [4/4]",
      "toughness": "2",
      "type": "Creature — Faerie Wizard",
      "types": [
@@ -266055,7 +266408,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5471,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Profane Grove",
      "number": "264",
@@ -266102,7 +266455,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5471,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Profane Grove",
      "number": "264",
@@ -266132,7 +266485,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "Who is pain a message from?\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -266150,10 +266503,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5472,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Profiler of Pain",
-     "number": "146",
+     "number": "147",
      "power": "1",
      "rarity": "rare",
      "relatedCards": {
@@ -266819,7 +267172,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -266837,10 +267190,10 @@
      "manaCost": "{R}",
      "identifiers": {
       "scryfallId": 5486,
-      "multiverseId": 20260330
+      "multiverseId": 20260530
      },
      "name": "Red-Hot Rider",
-     "number": "147",
+     "number": "148",
      "power": "1",
      "rarity": "rare",
      "relatedCards": {
@@ -267408,8 +267761,8 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
-     "flavor": "“Be small. Pack light. Leave nothing.”\n—Mev's Rules of Survival\n",
+     "designer": "false",
+     "flavor": "“Be small. Pack light. Leave nothing.”\n—Mev's Rules of Survival \n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "Rowhammer_ERR",
@@ -267426,10 +267779,10 @@
      "manaCost": "{7}{R}",
      "identifiers": {
       "scryfallId": 5498,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Rowhammer",
-     "number": "148",
+     "number": "149",
      "power": "5",
      "rarity": "uncommon",
      "relatedCards": {
@@ -267805,7 +268158,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -267823,10 +268176,10 @@
      "manaCost": "{4}{R}{R}",
      "identifiers": {
       "scryfallId": 5506,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Segmentation_Fault",
-     "number": "149",
+     "number": "150",
      "power": "7",
      "rarity": "common",
      "relatedCards": {
@@ -267934,102 +268287,6 @@
       "Land"
      ],
      "uuid": "Shimmering Lakefront_ERR"
-    },
-    {
-     "artist": "Casey Weeks",
-     "convertedManaCost": 1,
-     "faceConvertedManaCost": 1,
-     "manaValue": 1,
-     "faceManaValue": 1,
-     "colors": [
-      "R"
-     ],
-     "colorIdentity": [
-      "R"
-     ],
-     "designer": "DrChipmunk",
-     "flavor": "A scream of liquid noise consumed Xeia's vision. The track, the finish line, the stands, all dissolved into a glitchy mass of red distortion. Her bones rattled and her blood howled.\n",
-     "frameType": "normal",
-     "frameVersion": "2015",
-     "id": "Shock_ERR",
-     "imageName": "shock",
-     "layout": "normal",
-     "legalities": {
-      "revolution": "Legal",
-      "brawl": "Legal",
-      "eternal": "Legal",
-      "eternal-pauper": "Legal",
-      "planechase": "Legal",
-      "archaeologist": "Legal"
-     },
-     "manaCost": "{R}",
-     "identifiers": {
-      "scryfallId": 5508,
-      "multiverseId": 0
-     },
-     "name": "Shock",
-     "number": "150",
-     "rarity": "common",
-     "relatedCards": {
-      "spellbook": []
-     },
-     "text": "Shock deals 2 damage to any target.",
-     "type": "Instant",
-     "types": [
-      "Instant"
-     ],
-     "uuid": "Shock_ERR-0",
-     "otherFaceIds": [
-      "Shock_ERR-1"
-     ]
-    },
-    {
-     "artist": "Casey Weeks",
-     "convertedManaCost": 1,
-     "faceConvertedManaCost": 1,
-     "manaValue": 1,
-     "faceManaValue": 1,
-     "colors": [
-      "R"
-     ],
-     "colorIdentity": [
-      "R"
-     ],
-     "designer": "DrChipmunk",
-     "flavor": "A scream of liquid noise consumed Xeia's vision. The track, the finish line, the stands, all dissolved into a glitchy mass of red distortion. Her bones rattled and her blood howled.\n",
-     "frameType": "normal",
-     "frameVersion": "2015",
-     "id": "Shock_ERR",
-     "imageName": "shock",
-     "layout": "normal",
-     "legalities": {
-      "revolution": "Legal",
-      "brawl": "Legal",
-      "eternal": "Legal",
-      "eternal-pauper": "Legal",
-      "planechase": "Legal",
-      "archaeologist": "Legal"
-     },
-     "manaCost": "{R}",
-     "identifiers": {
-      "scryfallId": 5508,
-      "multiverseId": 0
-     },
-     "name": "Shock",
-     "number": "150",
-     "rarity": "common",
-     "relatedCards": {
-      "spellbook": []
-     },
-     "text": "Shock deals 2 damage to any target.",
-     "type": "Instant",
-     "types": [
-      "Instant"
-     ],
-     "uuid": "Shock_ERR-2",
-     "otherFaceIds": [
-      "Shock_ERR-3"
-     ]
     },
     {
      "artist": "Eiji Masumoto",
@@ -268603,7 +268860,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5521,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Stark Expanse",
      "number": "271",
@@ -268650,7 +268907,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5521,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Stark Expanse",
      "number": "271",
@@ -269176,7 +269433,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "Destruction feels so much better when you know it's final.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269194,7 +269451,7 @@
      "manaCost": "{3}{R}{R}",
      "identifiers": {
       "scryfallId": 5532,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Threadripper",
      "number": "151",
@@ -269204,12 +269461,12 @@
       "spellbook": []
      },
      "subtypes": [
-      "Jackal",
+      "Wolf",
       "Warlock"
      ],
      "text": "During your turn, this creature has first strike.\n{1}{R}, Discard this card: It deals 3 damage to target creature. If that creature would die this turn, exile it instead.",
      "toughness": "4",
-     "type": "Creature — Jackal Warlock",
+     "type": "Creature — Wolf Warlock",
      "types": [
       "Creature"
      ],
@@ -269330,7 +269587,7 @@
       "R",
       "W"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269348,7 +269605,7 @@
      "manaCost": "{R}{W}",
      "identifiers": {
       "scryfallId": 5535,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Toki, Celebrity Soldier",
      "number": "213",
@@ -269385,7 +269642,7 @@
       "R",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "“What's the point of living forever if no one knows your name?”\n—Vijkstra\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269403,7 +269660,7 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 5536,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Transgressive Trendsetter",
      "number": "154",
@@ -269414,11 +269671,12 @@
      },
      "subtypes": [
       "Human",
-      "Bard"
+      "Bard",
+      "Rebel"
      ],
      "text": "Menace\nCorrupt — When this creature enters, if it was cast and you control a permanent with greater mana value, add {B}{R}.",
      "toughness": "2",
-     "type": "Creature — Human Bard",
+     "type": "Creature — Human Bard Rebel",
      "types": [
       "Creature"
      ],
@@ -269717,17 +269975,17 @@
     },
     {
      "artist": "Vizlab Studios",
-     "convertedManaCost": 1,
-     "faceConvertedManaCost": 1,
-     "manaValue": 1,
-     "faceManaValue": 1,
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269742,14 +270000,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{X}{X}{G}",
+     "manaCost": "{2}{G}",
      "identifiers": {
       "scryfallId": 5543,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Untethered Daemon",
      "number": "195",
-     "power": "0",
+     "power": "2",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -269757,8 +270015,8 @@
      "subtypes": [
       "Plant"
      ],
-     "text": "When this creature enters, cache up to X target cards from your graveyard. (Exile them. For each of them, create a Memory enchantment token with “{2}, Sacrifice this: You may play the cached card this turn.”)\n{T}: Add {G}. Spend this mana only to activate abilities of Memories.",
-     "toughness": "4",
+     "text": "When this creature enters, return up to one permanent card from your graveyard to your hand. If you do, cache a card from your hand face down. (Exile it and create a Memory enchantment token with “{2}, Sacrifice this: You may play the cached card this turn.”)\n{T}: Add {G}.",
+     "toughness": "3",
      "type": "Enchantment Creature — Plant",
      "types": [
       "Enchantment",
@@ -270394,7 +270652,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5556,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Windbeaten Stones",
      "number": "275",
@@ -270441,7 +270699,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5556,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Windbeaten Stones",
      "number": "275",
@@ -270517,10 +270775,10 @@
     },
     {
      "artist": "iamagri",
-     "convertedManaCost": 2,
-     "faceConvertedManaCost": 2,
-     "manaValue": 2,
-     "faceManaValue": 2,
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
      "colors": [
       "U",
       "B"
@@ -270529,7 +270787,7 @@
       "U",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -270544,14 +270802,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{U}{B}",
+     "manaCost": "{2}{U}{B}",
      "identifiers": {
       "scryfallId": 5558,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Ys, Trace Talker",
      "number": "218",
-     "power": "2",
+     "power": "4",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -270563,8 +270821,8 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Whenever this creature attacks, exile up to one target creature card with mana value equal to 1 plus this creature's mana value from your graveyard. This creature becomes a copy of that card, except it has this ability.",
-     "toughness": "2",
+     "text": "Menace\nWhenever this creature attacks, exile up to one target creature card from your graveyard. This creature becomes a copy of that card, except it has this ability and menace.",
+     "toughness": "4",
      "type": "Legendary Creature — Elf Warlock",
      "types": [
       "Creature"
@@ -270676,7 +270934,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -270691,10 +270949,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{U}{U}",
+     "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5948,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Architect of the Intangible_PRO_ERR",
      "number": "300",
@@ -271054,7 +271312,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -271859,7 +272117,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -271877,7 +272135,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5930,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Masksmith_PRO_ERR",
      "number": "303",
@@ -271888,11 +272146,11 @@
      },
      "subtypes": [
       "Elf",
-      "Shaman"
+      "Druid"
      ],
      "text": "{1}, Sacrifice this creature: Choose one —\n• Exile target artifact.\n• Exile target enchantment.\n• Exile target card from a graveyard.",
      "toughness": "2",
-     "type": "Creature — Elf Shaman",
+     "type": "Creature — Elf Druid",
      "types": [
       "Creature"
      ],
@@ -271941,6 +272199,54 @@
       "Land"
      ],
      "uuid": "Meteoric Facade_PRO_ERR"
+    },
+    {
+     "artist": "celebi350300687",
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "false",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "PANIC()_PRO_ERR",
+     "imageName": "panic()_pro_err",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{2}{R}{R}",
+     "identifiers": {
+      "scryfallId": 6419,
+      "multiverseId": 20260530
+     },
+     "name": "PANIC()_PRO_ERR",
+     "number": "311",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Subroutine"
+     ],
+     "text": "(As this enters, insert it into one of your three programs. At your first main phase each turn, the next program runs all its Subroutines.)\nWhen this Subroutine enters, you may discard a card. When you do, it deals 4 damage to target creature or planeswalker.\nWhenever this Subroutine runs, create a 4/4 red Error creature token with menace.",
+     "type": "Enchantment — Subroutine",
+     "types": [
+      "Enchantment"
+     ],
+     "uuid": "PANIC()_PRO_ERR"
     },
     {
      "artist": "Art of Li",
@@ -272105,7 +272411,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273049,7 +273355,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273067,7 +273373,7 @@
      "manaCost": "{G}{U}",
      "identifiers": {
       "scryfallId": 5570,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Aonuma, Princely Traveler",
      "number": "168",
@@ -273083,7 +273389,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Whenever another nontoken permanent you control is returned to hand, you may create a token that's a copy of it. Do this only once each turn.\nEach creature card with mana value 3 or less in your hand has ninjutsu {G}{U}. ({G}{U}, Return an unblocked attacker you control to hand: Put that card onto the battlefield from your hand tapped and attacking.)",
+     "text": "Whenever another nontoken permanent you control is returned to hand, you may create a token that's a copy of it. Do this only once each turn.\nEach nonland card with mana value 3 or less in your hand has sneak {G}{U}. (You may cast them for {G}{U} if you also return an unblocked attacker you control to and during the declare blockers step. Creatures enter tapped and attacking.)",
      "toughness": "2",
      "type": "Legendary Creature — Avatar Ninja",
      "types": [
@@ -273104,7 +273410,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "Pipsqueak",
      "flavor": "“Aonuma gave up everything to begin the Shigane clan. We repay him with service.”\n",
      "frameType": "adventure",
      "frameVersion": "2015",
@@ -273122,7 +273428,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5571,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Aonuma's Students",
      "number": "129",
@@ -273211,7 +273517,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273229,7 +273535,7 @@
      "manaCost": "{G}",
      "identifiers": {
       "scryfallId": 5573,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Arushi, Shigane Heirloom",
      "number": "130",
@@ -273243,7 +273549,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Equipped creature gets +1/+1.\nNinjutsu abilities you activate cost {1} less to activate.\nWhenever a Ninja creature you control enters, you may attach Arushi to that creature.\nEquip {1}",
+     "text": "Equipped creature gets +1/+1.\nWhenever equipped creature deals combat damage to a player, draw a card.\nWhenever a creature you control enters, if it isn't your main phase, you may attach Arushi to that creature.\nEquip {3}",
      "type": "Legendary Artifact — Equipment",
      "types": [
       "Artifact"
@@ -273413,7 +273719,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273431,7 +273737,7 @@
      "manaCost": "{4}{W}{W}",
      "identifiers": {
       "scryfallId": 5577,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Auspicious Return",
      "number": "1",
@@ -273439,7 +273745,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "When this enchantment enters, if it was cast, return target creature card from your graveyard to the battlefield.\nAt the beginning of your upkeep, exile up to one target creature you control, then return that card to the battlefield under its owner's control.",
+     "text": "When this enchantment enters, if it was cast, return target creature card from your graveyard to the battlefield.\nAt the beginning of your end step, exile up to one target creature you control, then return that card to the battlefield under its owner's control.",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -274335,17 +274641,17 @@
     },
     {
      "artist": "Le Vuong",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -274356,19 +274662,19 @@
       "revolution": "Legal",
       "brawl": "Legal",
       "eternal": "Legal",
-      "eternal-pauper": "Illegal",
+      "eternal-pauper": "Legal",
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{1}{G}{G}",
+     "manaCost": "{3}{G}",
      "identifiers": {
       "scryfallId": 5596,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Brutal Throatcrusher",
      "number": "134",
-     "power": "4",
-     "rarity": "rare",
+     "power": "3",
+     "rarity": "common",
      "relatedCards": {
       "spellbook": []
      },
@@ -274376,8 +274682,8 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{G} ({2}{G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhen this creature enters, another target creature you control gains indestructible until end of turn. Untap it.",
-     "toughness": "4",
+     "text": "Sneak {2}{G} (You may cast this spell for {2}{G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhen this creature enters, put a +1/+1 counter on another target creature you control. It gains indestructible until end of turn.",
+     "toughness": "3",
      "type": "Creature — Human Ninja",
      "types": [
       "Creature"
@@ -274699,7 +275005,7 @@
       "W",
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "“The only mercy I give these demons is a swift death.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -274717,7 +275023,7 @@
      "manaCost": "{3}{W}{B}",
      "identifiers": {
       "scryfallId": 5603,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Commander Tachibana",
      "number": "177",
@@ -274733,7 +275039,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "If a creature you control attacking causes a triggered ability of a permanent you control to trigger, if that creature is attacking alone, that ability triggers two additional times.",
+     "text": "Exalted (Whenever a creature you control attacks alone, that creature gets +1/+1 until end of turn.)\nIf a creature you control attacking causes a triggered ability of a permanent you control to trigger, if that creature is attacking alone, that ability triggers two additional times.",
      "toughness": "4",
      "type": "Legendary Creature — Human Samurai",
      "types": [
@@ -275098,7 +275404,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275116,7 +275422,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5611,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Daring Shinobi",
      "number": "37",
@@ -275129,7 +275435,7 @@
       "Fox",
       "Ninja"
      ],
-     "text": "Ninjutsu {U} ({U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player or planeswalker, you may draw a card. If you do, discard a card unless this creature entered this turn.",
+     "text": "Sneak {U} (You may cast this spell for {U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player or planeswalker, you may draw a card. If you do, discard a card unless this creature entered this turn.",
      "toughness": "1",
      "type": "Creature — Fox Ninja",
      "types": [
@@ -275507,7 +275813,7 @@
       "W",
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275525,7 +275831,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5619,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Desolate Path",
      "number": "281",
@@ -275657,7 +275963,7 @@
       "W",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275675,7 +275981,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5622,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Distant Path",
      "number": "282",
@@ -276042,7 +276348,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "“Prosperity, now and forever.”\n—Imperial motto\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276060,7 +276366,7 @@
      "manaCost": "{4}{G}{U}",
      "identifiers": {
       "scryfallId": 5629,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Dynasty's Benediction",
      "number": "186",
@@ -276069,9 +276375,9 @@
       "spellbook": []
      },
      "text": "Draw four cards. You may put up to two land cards from your hand onto the battlefield tapped.\nCycling {G/U} ({G/U}, Discard this card: Draw a card.)",
-     "type": "Sorcery",
+     "type": "Instant",
      "types": [
-      "Sorcery"
+      "Instant"
      ],
      "uuid": "Dynasty's Benediction_KDT"
     },
@@ -276182,7 +276488,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "Provocative",
+     "designer": "Schwa77",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276200,7 +276506,7 @@
      "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 5632,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Elder Tattooist",
      "number": "8",
@@ -276268,10 +276574,10 @@
     },
     {
      "artist": "KOOka",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "W"
      ],
@@ -276282,7 +276588,7 @@
       "R",
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "adventure",
      "frameVersion": "2015",
@@ -276297,10 +276603,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{W}",
+     "manaCost": "{1}{W}",
      "identifiers": {
       "scryfallId": 5634,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Emperor Tzuhan",
      "number": "9",
@@ -276310,7 +276616,7 @@
       "type": "Sorcery — Adventure",
       "text": "You may pay 1 life rather than pay the cycling cost of cards you cycle this turn. *(Then exile this card. You may cast the creature later.)*"
      },
-     "power": "3",
+     "power": "1",
      "rarity": "mythic",
      "relatedCards": {
       "spellbook": []
@@ -276479,7 +276785,7 @@
       "B",
       "R"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276497,7 +276803,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5638,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Erosive Path",
      "number": "283",
@@ -276565,17 +276871,17 @@
     },
     {
      "artist": "Rio Sabda",
-     "convertedManaCost": 1,
-     "faceConvertedManaCost": 1,
-     "manaValue": 1,
-     "faceManaValue": 1,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "U"
      ],
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "“Your enemy will have trained all their life for a fight. You must make sure they never have a chance to draw their blades.”\n—Tsubasa Shigane\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276590,10 +276896,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{U}",
+     "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5640,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Expert Bladework",
      "number": "42",
@@ -276601,7 +276907,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Draw a card. The next ninjutsu ability you activate this turn costs {1} less to activate.",
+     "text": "Sneak {1}{U} (You may cast this spell for {1}{U} if you also return an unblocked attacker you control to hand during the declare blockers step.)\nDraw two cards. Then discard a card unless this spell's sneak cost was paid.",
      "type": "Instant",
      "types": [
       "Instant"
@@ -276610,10 +276916,10 @@
     },
     {
      "artist": "Shiranui",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "R",
       "G"
@@ -276622,12 +276928,12 @@
       "R",
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
-     "id": "Fablewoven Kitsune_KDT",
-     "imageName": "fablewoven kitsune",
+     "id": "Fablewoven Seishin_KDT",
+     "imageName": "fablewoven seishin",
      "layout": "normal",
      "legalities": {
       "revolution": "Legal",
@@ -276637,12 +276943,12 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{1}{R}{G}",
+     "manaCost": "{R}{G}",
      "identifiers": {
       "scryfallId": 5641,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
-     "name": "Fablewoven Kitsune",
+     "name": "Fablewoven Seishin",
      "number": "189",
      "power": "2",
      "rarity": "rare",
@@ -276650,16 +276956,16 @@
       "spellbook": []
      },
      "subtypes": [
-      "Fox",
+      "Wolf",
       "Shapeshifter"
      ],
-     "text": "Revered (This creature shares the following abilities with other creatures you control that have counters on them.)\nLandfall — Whenever a land you control enters, put a +1/+1 counter on this creature. Then if you control eight or more lands, double the number of +1/+1 counters on this creature.",
+     "text": "Revered (This creature shares the following abilities with other creatures you control that have counters on them.)\nLandfall — Whenever a land you control enters, put a +1/+1 counter on this creature. If this is the second time this ability has resolved this turn, this creature gains trample and haste until end of turn.",
      "toughness": "2",
-     "type": "Creature — Fox Shapeshifter",
+     "type": "Creature — Wolf Shapeshifter",
      "types": [
       "Creature"
      ],
-     "uuid": "Fablewoven Kitsune_KDT"
+     "uuid": "Fablewoven Seishin_KDT"
     },
     {
      "artist": "T D",
@@ -276714,7 +277020,7 @@
      "faceManaValue": 2,
      "colors": [],
      "colorIdentity": [],
-     "designer": "Provocative",
+     "designer": "Stasis",
      "flavor": "Chiseled here are the faces of the heroes who died in battle without a tale or legend to their name.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276732,7 +277038,7 @@
      "manaCost": "{2}",
      "identifiers": {
       "scryfallId": 5643,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Faces of the Faceless",
      "number": "263",
@@ -276997,7 +277303,7 @@
       "B",
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -277015,7 +277321,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5649,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Forlorn Path",
      "number": "284",
@@ -277193,7 +277499,7 @@
      "faceManaValue": 0,
      "colors": [],
      "colorIdentity": [],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -277211,7 +277517,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5653,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Gate to Fujinobe",
      "number": "285",
@@ -277222,7 +277528,7 @@
      "subtypes": [
       "Gate"
      ],
-     "text": "{T}: Add {C}.\n{2}, {T}: Add two mana of different colors.\n{4}, {T}: Look at the top X cards of your library, where X is the number of different color pairs among permanents you control that are exactly two colors. Put one of those cards into your hand and the rest on the bottom of your library in a random order.",
+     "text": "{T}: Add {C}.\n{2}, {T}: Add two mana of different colors.\n{3}, {T}: Look at the top X cards of your library, where X is the number of different color pairs among permanents you control that are exactly two colors. Put one of those cards into your hand and the rest on the bottom of your library in a random order.",
      "type": "Land — Gate",
      "types": [
       "Land"
@@ -279106,7 +279412,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "“Look at these craven fools, huddled in prayer. Who do they plead to? I have slain every god.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -279124,7 +279430,7 @@
      "manaCost": "{4}{B}{B}{B}",
      "identifiers": {
       "scryfallId": 5689,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kage, Cursed Conqueror",
      "number": "73",
@@ -279140,7 +279446,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Lifelink\nWhenever you pay life, draw seven cards.",
+     "text": "Lifelink\nWhen Kage enters, you may have target player's life total become 7. If you lost life this way, draw that many cards.",
      "toughness": "7",
      "type": "Legendary Creature — Demon Warrior",
      "types": [
@@ -279581,7 +279887,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -279599,7 +279905,7 @@
      "manaCost": "{3}{G}{U}",
      "identifiers": {
       "scryfallId": 5798,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kinscale Reckoner",
      "number": "206",
@@ -279612,7 +279918,7 @@
       "Dragon",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{G}{U} ({2}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may search your library for a land card, put it onto the battlefield tapped, then shuffle. That land becomes a 4/4 Dragon creature in addition to its other types.",
+     "text": "Sneak {2}{G}{U} (You may cast this spell for {2}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may search your library for a land card, put it onto the battlefield tapped, then shuffle. That land becomes a 4/4 Dragon creature in addition to its other types.",
      "toughness": "4",
      "type": "Creature — Dragon Ninja",
      "types": [
@@ -280548,7 +280854,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -280559,19 +280865,19 @@
       "revolution": "Legal",
       "brawl": "Legal",
       "eternal": "Legal",
-      "eternal-pauper": "Legal",
+      "eternal-pauper": "Illegal",
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
      "manaCost": "{2}{G}",
      "identifiers": {
       "scryfallId": 5716,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Master of Stances",
      "number": "141",
      "power": "3",
-     "rarity": "common",
+     "rarity": "rare",
      "relatedCards": {
       "spellbook": []
      },
@@ -280579,7 +280885,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{G} ({2}{G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhen this creature enters, creatures you control gain trample until end of turn.",
+     "text": "Sneak {1}{G} (You may cast this spell for {1}{G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nThis spell can't be countered.\nCreature spells you cast can't be countered.",
      "toughness": "3",
      "type": "Creature — Human Ninja",
      "types": [
@@ -280696,7 +281002,7 @@
       "R",
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -280714,7 +281020,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5720,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Meandering Path",
      "number": "287",
@@ -280947,7 +281253,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -280965,7 +281271,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5725,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Mirageform Shinobi",
      "number": "142",
@@ -280978,7 +281284,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {G} ({G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, put a +1/+1 counter on target creature you control that doesn't have a +1/+1 counter on it.",
+     "text": "Sneak {G} (You may cast this spell for {G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, put a +1/+1 counter on target creature you control that doesn't have a +1/+1 counter on it.",
      "toughness": "1",
      "type": "Creature — Human Ninja",
      "types": [
@@ -281000,7 +281306,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281018,7 +281324,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 5726,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Mist-Draped Delver",
      "number": "212",
@@ -281031,7 +281337,7 @@
       "Horror",
       "Ninja"
      ],
-     "text": "Ninjutsu {1}{G}{U} ({1}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may search your library for a basic land card, put it onto the battlefield tapped, then shuffle.",
+     "text": "Sneak {1}{G}{U} (You may cast this spell for {1}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may search your library for a basic land card, put it onto the battlefield tapped, then shuffle.",
      "toughness": "2",
      "type": "Creature — Horror Ninja",
      "types": [
@@ -281149,7 +281455,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281167,7 +281473,7 @@
      "manaCost": "{2}{U}",
      "identifiers": {
       "scryfallId": 5729,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Moonblade Ninja",
      "number": "50",
@@ -281180,7 +281486,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{U} ({2}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhen this creature enters, you may return another creature you control to its owner's hand.",
+     "text": "Sneak {1}{U} (You may cast this spell for {1}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhen this creature enters, you may return another creature you control to its owner's hand. If you do, surveil 2.",
      "toughness": "1",
      "type": "Creature — Human Ninja",
      "types": [
@@ -281384,7 +281690,7 @@
       "U",
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281402,7 +281708,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5734,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Murky Path",
      "number": "288",
@@ -281419,17 +281725,17 @@
     },
     {
      "artist": "Diana Martinez",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "U"
      ],
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281444,14 +281750,14 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{U}",
+     "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5736,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Natori Skyblade",
      "number": "51",
-     "power": "2",
+     "power": "1",
      "rarity": "rare",
      "relatedCards": {
       "spellbook": []
@@ -281460,7 +281766,7 @@
       "Bird",
       "Ninja"
      ],
-     "text": "Ninjutsu {3}{U}{U} ({3}{U}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nFlying\nWhenever this creature deals combat damage to a player, create a token that's a copy of target attacking creature you control that entered this turn.",
+     "text": "Sneak {U} (You may cast this spell for {U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nFlying\nUnblocked attacking creatures you control get +1/+0.",
      "toughness": "2",
      "type": "Creature — Bird Ninja",
      "types": [
@@ -281584,7 +281890,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281602,11 +281908,11 @@
      "manaCost": "{G}{G}{U}{U}",
      "identifiers": {
       "scryfallId": 5739,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Nimble Mentor",
      "number": "214",
-     "power": "4",
+     "power": "3",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -281615,8 +281921,8 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{G}{U} ({2}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nYou may pay {0} rather than pay the ninjutsu cost of the first ninjutsu ability you activate each turn.",
-     "toughness": "4",
+     "text": "Flash\nFlying\nWhen this creature enters, if it was cast, you may exile a creature, instant, or sorcery card with mana value 2 or less from your hand or graveyard. If you do, copy it. You may cast the copy without paying its mana cost.",
+     "toughness": "3",
      "type": "Creature — Human Ninja",
      "types": [
       "Creature"
@@ -282463,17 +282769,17 @@
     },
     {
      "artist": "Lightwing Academy",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "saga",
      "frameVersion": "2015",
@@ -282488,10 +282794,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{G}",
+     "manaCost": "{3}{G}",
      "identifiers": {
       "scryfallId": 5757,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Portal to the Spirit Realm",
      "number": "146",
@@ -282502,7 +282808,7 @@
      "subtypes": [
       "Saga"
      ],
-     "text": "Time loop (As this Saga enters and after your draw step, add a lore counter. Remove them all after III.)\nI — Create a 1/1 green Spirit creature token.\nII — Put a +1/+1 counter on target creature you control.\nIII — Put a +1/+1 counter on each creature you control with a +1/+1 counter on it.",
+     "text": "Time loop (As this Saga enters and after your draw step, add a lore counter. Remove them all after III.)\nI, II — You may sacrifice a creature. If you do, search your library for a creature card with mana value equal to 1 plus the sacrificed creature's mana value, put it onto the battlefield, then shuffle.\nIII — Until end of turn, double up to one target creature's power and toughness and it gains trample.\n​",
      "type": "Enchantment — Saga",
      "types": [
       "Enchantment"
@@ -282523,7 +282829,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "Zangy",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -282541,7 +282847,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 5758,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Precognitive Combatant",
      "number": "221",
@@ -282554,7 +282860,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {3}{G}{U} ({3}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may put a creature card with mana value X or less that you own from outside the game onto the battlefield, where X is the amount of combat damage that has been dealt to that player this turn.",
+     "text": "Sneak {3}{G}{U} (You may cast this spell for {3}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may put a creature card with mana value X or less that you own from outside the game onto the battlefield, where X is the amount of combat damage that has been dealt to that player this turn.",
      "toughness": "3",
      "type": "Creature — Human Ninja",
      "types": [
@@ -283192,8 +283498,8 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
-     "flavor": "",
+     "designer": "false",
+     "flavor": "“A dance is no different than a fight.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "Ribbon Dancer_KDT",
@@ -283210,11 +283516,11 @@
      "manaCost": "{3}{G}",
      "identifiers": {
       "scryfallId": 5772,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Ribbon Dancer",
      "number": "150",
-     "power": "1",
+     "power": "0",
      "rarity": "uncommon",
      "relatedCards": {
       "spellbook": []
@@ -283223,8 +283529,8 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {2}{G} ({2}{G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nThis creature enters with three +1/+1 counters on it.\nWhenever another creature you control enters, you may move a +1/+1 counter from this creature onto that creature.",
-     "toughness": "1",
+     "text": "Sneak {1}{G} (You may cast this spell for {1}{G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nThis creature enters with three +1/+1 counters on it.\nWhenever this creature deals combat damage to a player, you may remove a counter from it. If you do, draw a card.",
+     "toughness": "0",
      "type": "Creature — Human Ninja",
      "types": [
       "Creature"
@@ -283292,7 +283598,7 @@
       "U",
       "R"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -283310,7 +283616,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5774,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Rousing Path",
      "number": "291",
@@ -283749,17 +284055,17 @@
     },
     {
      "artist": "han yijie",
-     "convertedManaCost": 8,
-     "faceConvertedManaCost": 8,
-     "manaValue": 8,
-     "faceManaValue": 8,
+     "convertedManaCost": 6,
+     "faceConvertedManaCost": 6,
+     "manaValue": 6,
+     "faceManaValue": 6,
      "colors": [
       "U"
      ],
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "The dancer often imitates the falling petals, letting the wind guide her movements.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -283774,10 +284080,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{6}{U}{U}",
+     "manaCost": "{4}{U}{U}",
      "identifiers": {
       "scryfallId": 5784,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Sakura Dance",
      "number": "56",
@@ -283785,7 +284091,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Whenever you discard a nonland card, copy it. You may cast the copy without paying its mana cost.",
+     "text": "Once each turn, when you discard a nonland card, you may copy it. You may cast the copy without paying its mana cost.\nCycling {2} ({2}, Discard this card: Draw a card.)",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -284095,7 +284401,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284113,7 +284419,7 @@
      "manaCost": "{G}{G/U}{U}",
      "identifiers": {
       "scryfallId": 5791,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Secrecy",
      "number": "255",
@@ -284121,7 +284427,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Whenever this enchantment or another nonland, nontoken permanent you control enters, if it wasn't cast, draw a card. You may put a land card from your hand onto the battlefield tapped.\nCreatures you control with power or toughness 1 or less can't be blocked.",
+     "text": "Whenever you cast a creature spell, if it isn't your main phase, draw a card. You may put a land card from your hand onto the battlefield tapped.\nWhenever you attack, untap up to two target lands you control.",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -284249,7 +284555,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284267,7 +284573,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 5794,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Shigane Clan Head",
      "number": "226",
@@ -284280,7 +284586,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "At the beginning of your end step, create a 1/1 blue Ninja creature token with “This creature can't be blocked by creatures with greater power.”\nWhenever you activate a ninjutsu ability for the first time each turn, untap up to two target lands you control.",
+     "text": "At the beginning of your end step, create a 1/1 blue Ninja creature token with “This creature can't be blocked by creatures with greater power.”\nWhenever you cast a spell for its sneak cost for the first time each turn, untap up to two target lands you control.",
      "toughness": "2",
      "type": "Creature — Human Ninja",
      "types": [
@@ -284300,7 +284606,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "“None dare oppose me.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284318,7 +284624,7 @@
      "manaCost": "{5}{G}",
      "identifiers": {
       "scryfallId": 5795,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Shigane Cyclone",
      "number": "152",
@@ -284331,7 +284637,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {4}{G} ({4}{G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)",
+     "text": "Sneak {4}{G} (You may cast this spell for {4}{G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nTrample",
      "toughness": "6",
      "type": "Creature — Human Ninja",
      "types": [
@@ -284351,7 +284657,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284369,7 +284675,7 @@
      "manaCost": "{5}{G}{G}",
      "identifiers": {
       "scryfallId": 5796,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Shigane Elder",
      "number": "153",
@@ -284382,7 +284688,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {6}{G}. This ability costs {1} less to activate for each attacking creature you control. ({6}{G}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nTrample",
+     "text": "Sneak {6}{G} (You may cast this spell for {6}{G} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nThis spell costs {X} less to cast, where X is the number of creatures that have attacked this turn.\nTrample",
      "toughness": "7",
      "type": "Creature — Human Ninja",
      "types": [
@@ -284811,7 +285117,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284829,7 +285135,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5806,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Sodden Path",
      "number": "293",
@@ -285895,17 +286201,17 @@
     },
     {
      "artist": "qing ying",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "U"
      ],
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -285920,10 +286226,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{U}",
+     "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 5828,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "The God-Tree Chimes",
      "number": "43",
@@ -285934,7 +286240,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Whenever you cycle a card, draw a card.\nCycling {2}{U} ({2}{U}, Discard this card: Draw a card.)\nWhen you cycle this card, copy target triggered ability you control. You may choose new targets for the copy.",
+     "text": "Once each turn, when you cycle a card, you may draw a card.\nCycling {2}{U} ({2}{U}, Discard this card: Draw a card.)\nWhen you cycle this card, copy target triggered ability you control. You may choose new targets for the copy.",
      "type": "Legendary Enchantment",
      "types": [
       "Enchantment"
@@ -286000,7 +286306,7 @@
       "G",
       "W"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286018,7 +286324,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5830,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Thicketed Path",
      "number": "294",
@@ -286096,7 +286402,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286114,7 +286420,7 @@
      "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 5832,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Threadweaver Shinobi",
      "number": "59",
@@ -286127,7 +286433,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {1}{U} ({1}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nIf you would draw a card except the first one you draw in each of your draw steps, draw two cards instead.",
+     "text": "Sneak {1}{U} (You may cast this spell for {1}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nIf you would draw a card except the first one you draw in each of your draw steps, draw two cards instead.",
      "toughness": "2",
      "type": "Creature — Human Ninja",
      "types": [
@@ -286250,7 +286556,7 @@
       "R",
       "W"
      ],
-     "designer": "Provocative",
+     "designer": "Purplemurasaki",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286268,7 +286574,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5835,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Torrid Path",
      "number": "295",
@@ -286297,7 +286603,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "tallplaneswalker",
      "frameVersion": "2015",
@@ -286316,7 +286622,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 5836,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Tsubasa Shigane",
      "number": "234",
@@ -286330,7 +286636,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Ninjutsu {1}{G}{U} ({1}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nAs long as Tsubasa Shigane entered during combat this turn, he's a 4/4 Ninja creature with hexproof and you may activate his loyalty abilities any time you could cast an instant.\n[+1]: Up to one other target creature gains indestructible until end of turn.\n[-1]: Double another target creature's power until end of turn.\n[-2]: Return target creature to its owner's hand.",
+     "text": "Sneak {1}{G}{U} (You may cast this spell for {1}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step.)\nAs long as Tsubasa Shigane entered during combat this turn, he's a 3/3 Ninja creature with hexproof and you may activate his loyalty abilities any time you could cast an instant.\n[+1]: Up to one other target creature gains indestructible until end of turn. Untap it.\n[-2]: Draw a card. Then you may put a creature with mana value 2 or less from your hand onto the battlefield. If Tsubasa Shigane is attacking, it enters tapped and attacking.\n[-2]: Return target creature to its owner's hand.",
      "type": "Legendary Planeswalker — Tsubasa",
      "types": [
       "Planeswalker"
@@ -286349,7 +286655,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286367,7 +286673,7 @@
      "manaCost": "{2}{U}",
      "identifiers": {
       "scryfallId": 5837,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Twilight Agent",
      "number": "60",
@@ -286380,7 +286686,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {1}{U} ({1}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may have it become a copy of another target creature, except it's a Ninja in addition to its other types.",
+     "text": "Sneak {1}{U} (You may cast this spell for {1}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may have it become a copy of another target creature, except it's a Ninja in addition to its other types.",
      "toughness": "2",
      "type": "Creature — Human Ninja",
      "types": [
@@ -287543,7 +287849,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -287561,7 +287867,7 @@
      "manaCost": "{G}{U}",
      "identifiers": {
       "scryfallId": 6275,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Aonuma, Princely Traveler_PRO_KDT",
      "number": "309",
@@ -287577,7 +287883,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Whenever another nontoken permanent you control is returned to hand, you may create a token that's a copy of it. Do this only once each turn.\nEach creature card with mana value 3 or less in your hand has ninjutsu {G}{U}. ({G}{U}, Return an unblocked attacker you control to hand: Put that card onto the battlefield from your hand tapped and attacking.)",
+     "text": "Whenever another nontoken permanent you control is returned to hand, you may create a token that's a copy of it. Do this only once each turn.\nEach nonland card with mana value 3 or less in your hand has sneak {G}{U}. (You may cast them for {G}{U} if you also return an unblocked attacker you control to and during the declare blockers step. Creatures enter tapped and attacking.)",
      "toughness": "2",
      "type": "Legendary Creature — Avatar Ninja",
      "types": [
@@ -287890,7 +288196,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "Provocative",
+     "designer": "Schwa77",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -287908,7 +288214,7 @@
      "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 5945,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Elder Tattooist_PRO_KDT",
      "number": "321",
@@ -287984,7 +288290,7 @@
      "faceManaValue": 2,
      "colors": [],
      "colorIdentity": [],
-     "designer": "Provocative",
+     "designer": "Stasis",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288232,7 +288538,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288250,7 +288556,7 @@
      "manaCost": "{4}{B}{B}{B}",
      "identifiers": {
       "scryfallId": 6281,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kage, Cursed Conqueror_PRO_KDT",
      "number": "304",
@@ -288266,7 +288572,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Lifelink\nWhenever you pay life, draw seven cards.",
+     "text": "Lifelink\nWhen Kage enters, you may have target player's life total become 7. If you lost life this way, draw that many cards.",
      "toughness": "7",
      "type": "Legendary Creature — Demon Warrior",
      "types": [
@@ -288286,7 +288592,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288304,7 +288610,7 @@
      "manaCost": "{4}{B}{B}{B}",
      "identifiers": {
       "scryfallId": 6766,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Kage, Cursed Conqueror (Decree)",
      "number": "327",
@@ -288320,7 +288626,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Lifelink\nWhenever you pay life, draw seven cards.",
+     "text": "Lifelink\nWhen Kage enters, you may have target player's life total become 7. If you lost life this way, draw that many cards.",
      "toughness": "7",
      "type": "Legendary Creature — Demon Warrior",
      "types": [
@@ -288781,7 +289087,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "Zangy",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288799,7 +289105,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 6283,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Precognitive Combatant_PRO_KDT",
      "number": "325",
@@ -288812,7 +289118,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {3}{G}{U} ({3}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may put a creature card with mana value X or less that you own from outside the game onto the battlefield, where X is the amount of combat damage that has been dealt to that player this turn.",
+     "text": "Sneak {3}{G}{U} (You may cast this spell for {3}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may put a creature card with mana value X or less that you own from outside the game onto the battlefield, where X is the amount of combat damage that has been dealt to that player this turn.",
      "toughness": "3",
      "type": "Creature — Human Ninja",
      "types": [
@@ -288869,18 +289175,18 @@
     },
     {
      "artist": "Wenoing Yan",
-     "convertedManaCost": 8,
-     "faceConvertedManaCost": 8,
-     "manaValue": 8,
-     "faceManaValue": 8,
+     "convertedManaCost": 6,
+     "faceConvertedManaCost": 6,
+     "manaValue": 6,
+     "faceManaValue": 6,
      "colors": [
       "U"
      ],
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
-     "flavor": "The dancer often imitates the falling petals, letting the wind guide her movements.\n",
+     "designer": "false",
+     "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
      "id": "Sakura Dance_PRO_KDT",
@@ -288894,10 +289200,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{6}{U}{U}",
+     "manaCost": "{4}{U}{U}",
      "identifiers": {
       "scryfallId": 6284,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Sakura Dance_PRO_KDT",
      "number": "322",
@@ -288905,7 +289211,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Whenever you discard a nonland card, copy it. You may cast the copy without paying its mana cost.",
+     "text": "Once each turn, when you discard a nonland card, you may copy it. You may cast the copy without paying its mana cost.\nCycling {2}({2}, Discard this card: Draw a card.)",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -288926,7 +289232,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288944,7 +289250,7 @@
      "manaCost": "{G}{G/U}{U}",
      "identifiers": {
       "scryfallId": 6285,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Secrecy_PRO_KDT",
      "number": "320",
@@ -288952,7 +289258,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Whenever this enchantment or another nonland, nontoken permanent you control enters, if it wasn't cast, draw a card. You may put a land card from your hand onto the battlefield tapped.\nCreatures you control with power or toughness 1 or less can't be blocked.",
+     "text": "Whenever you cast a creature spell, if it isn't your main phase, draw a card. You may put a land card from your hand onto the battlefield tapped.\nWhenever you attack, untap up to two target lands you control.",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -289229,7 +289535,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289247,7 +289553,7 @@
      "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 6286,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Threadweaver Shinobi_PRO_KDT",
      "number": "303",
@@ -289260,7 +289566,7 @@
       "Human",
       "Ninja"
      ],
-     "text": "Ninjutsu {1}{U} ({1}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nIf you would draw a card except the first one you draw in each of your draw steps, draw two cards instead.",
+     "text": "Sneak {1}{U} (You may cast this spell for {1}{U} if you also return an unblocked attacker you control to hand during the declare blockers step. It enters tapped and attacking.)\nIf you would draw a card except the first one you draw in each of your draw steps, draw two cards instead.",
      "toughness": "2",
      "type": "Creature — Human Ninja",
      "types": [
@@ -289282,7 +289588,7 @@
       "G",
       "U"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "tallplaneswalker",
      "frameVersion": "2015",
@@ -289301,7 +289607,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 6287,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Tsubasa Shigane_PRO_KDT",
      "number": "315",
@@ -289315,7 +289621,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Ninjutsu {1}{G}{U} ({1}{G}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nAs long as Tsubasa Shigane entered during combat this turn, he's a 4/4 Ninja creature with hexproof and you may activate his loyalty abilities any time you could cast an instant.\n[+1]: Up to one other target creature gains indestructible until end of turn.\n[-1]: Double another target creature's power until end of turn.\n[-2]: Return target creature to its owner's hand.",
+     "text": "Sneak {1}{G}{U} (You may cast this spell for {1}{G}{U} if you also return an unblocked attacker you control to hand during the declare blockers step.)\nAs long as Tsubasa Shigane entered during combat this turn, he's a 3/3 Ninja creature with hexproof and you may activate his loyalty abilities any time you could cast an instant.\n[+1]: Up to one other target creature gains indestructible until end of turn. Untap it.\n[-2]: Draw a card. Then you may put a creature with mana value 2 or less from your hand onto the battlefield. If Tsubasa Shigane is attacking, it enters tapped and attacking.\n[-2]: Return target creature to its owner's hand.",
      "type": "Legendary Planeswalker — Tsubasa",
      "types": [
       "Planeswalker"
@@ -289794,17 +290100,17 @@
     },
     {
      "artist": "Kazaki360",
-     "convertedManaCost": 2,
-     "faceConvertedManaCost": 2,
-     "manaValue": 2,
-     "faceManaValue": 2,
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
      "colors": [
       "W"
      ],
      "colorIdentity": [
       "W"
      ],
-     "designer": "Zangy",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289819,10 +290125,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{1}{W}",
+     "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 5958,
-      "multiverseId": 20260330
+      "multiverseId": 20260530
      },
      "name": "Advance of the Sainted March",
      "number": "2",
@@ -293663,7 +293969,7 @@
      "manaCost": "{U}{B}",
      "identifiers": {
       "scryfallId": 6034,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Destructive Ambition",
      "number": "210",
@@ -295518,7 +295824,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 6072,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Gilded Court",
      "number": "294",
@@ -296301,7 +296607,7 @@
      "manaCost": "{1}{B}{B}",
      "identifiers": {
       "scryfallId": 6088,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Guardian of Ashen Oaths",
      "number": "97",
@@ -297739,7 +298045,7 @@
      "manaCost": "{5}{U}{R}",
      "identifiers": {
       "scryfallId": 6116,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Mass Conjuration",
      "number": "238",
@@ -301697,7 +302003,7 @@
      "manaCost": "{U}{U}{R}{R}",
      "identifiers": {
       "scryfallId": 6197,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Snow on Petals",
      "number": "240",
@@ -306175,6 +306481,57 @@
      "uuid": "Uplifting Chorus_PRO_TWI"
     },
     {
+     "artist": "Diana Franco",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "B"
+     ],
+     "colorIdentity": [
+      "B"
+     ],
+     "designer": "Zangy",
+     "flavor": "Wrenching bones and gnashing teeth\nBeware the one that creeps beneath\n",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Vardo's Scalpel_PRO_TWI",
+     "imageName": "vardo's scalpel_pro_twi",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{B}",
+     "identifiers": {
+      "scryfallId": 7435,
+      "multiverseId": 20260530
+     },
+     "name": "Vardo's Scalpel_PRO_TWI",
+     "number": "351",
+     "power": "2",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Zombie",
+      "Assassin"
+     ],
+     "text": "Menace\nWhenever Vardo's Scalpel attacks, it deals 2 damage to you.",
+     "toughness": "2",
+     "type": "Creature — Zombie Assassin",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Vardo's Scalpel_PRO_TWI"
+    },
+    {
      "artist": "Ognjen Sporin",
      "convertedManaCost": 3,
      "faceConvertedManaCost": 3,
@@ -306269,8 +306626,8 @@
      "uuid": "Witchery_PRO_TWI"
     }
    ],
-   "baseSetSize": 344,
-   "totalSetSize": 344,
+   "baseSetSize": 345,
+   "totalSetSize": 345,
    "cardsphereSetId": 20,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -310213,7 +310570,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "Scribbl",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -310231,7 +310588,7 @@
      "manaCost": "{2}{R}{R}",
      "identifiers": {
       "scryfallId": 6521,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Darkstar Severance",
      "number": "125",
@@ -310239,7 +310596,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "When Darkstar Severance enters, create a Chart token. (It has “{2}, Sacrifice this artifact: Reveal cards from the top of your library until you reveal a land card. Put it into your hand and the rest on the bottom in a random order.”)\nAt the beginning of combat on your turn, sacrifice a nonland permanent, then create a 3/1 red Elemental creature token with trample and haste.",
+     "text": "When Darkstar Severance enters, create a Chart token. (It has “{2}, Sacrifice this artifact: Reveal cards from the top of your library until you reveal a land card. Put it into your hand and the rest on the bottom in a random order.”)\nAt the beginning of your first main phase, sacrifice a nonland, non-Elemental permanent, then create a 3/1 red Elemental creature token with trample and haste.",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -330690,7 +331047,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "Matt",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -330708,7 +331065,7 @@
      "manaCost": "{1}{G}{G}",
      "identifiers": {
       "scryfallId": 6973,
-      "multiverseId": 20260330
+      "multiverseId": 20260530
      },
      "name": "Hope's Trail Ranger",
      "number": "218",
@@ -330722,7 +331079,7 @@
       "Soldier",
       "Ranger"
      ],
-     "text": "Vigilance, reach\nConcord — At the beginning of combat on your turn, put a +1/+1 counter on target creature you control. If there are four or more card types among permanents you control, put a +1/+1 counter on each creature you control instead.",
+     "text": "Vigilance, reach\nConcord — At the beginning of combat on your turn, put a +1/+1 counter on target creature you control. If there are four or more card types among permanents you control, instead put a +1/+1 counter on each nontoken creature you control.",
      "toughness": "2",
      "type": "Creature — Human Soldier Ranger",
      "types": [
@@ -337965,17 +338322,17 @@
     },
     {
      "artist": "Daarken",
-     "convertedManaCost": 4,
-     "faceConvertedManaCost": 4,
-     "manaValue": 4,
-     "faceManaValue": 4,
+     "convertedManaCost": 5,
+     "faceConvertedManaCost": 5,
+     "manaValue": 5,
+     "faceManaValue": 5,
      "colors": [
       "G"
      ],
      "colorIdentity": [
       "G"
      ],
-     "designer": "Matt",
+     "designer": "false",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -337990,10 +338347,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{3}{G}",
+     "manaCost": "{4}{G}",
      "identifiers": {
       "scryfallId": 6961,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "The Harvesttide Procession",
      "number": "216",
@@ -343570,7 +343927,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7199,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Flooded Morass",
      "number": "256",
@@ -343618,7 +343975,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7200,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Flourishing Crevasse",
      "number": "257",
@@ -344057,7 +344414,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7209,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Frostfire Geysers",
      "number": "259",
@@ -344105,7 +344462,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7210,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Fungal Mire",
      "number": "260",
@@ -344245,7 +344602,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7213,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Gloomcover Steppe",
      "number": "261",
@@ -344294,7 +344651,7 @@
      "manaCost": "{X}{B}",
      "identifiers": {
       "scryfallId": 7214,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Go for the Gut",
      "number": "91",
@@ -344635,7 +344992,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7221,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Heart of the Glade",
      "number": "262",
@@ -345072,7 +345429,7 @@
      "manaCost": "{1}{B}",
      "identifiers": {
       "scryfallId": 7231,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Hymn of the Overseer",
      "number": "96",
@@ -345898,7 +346255,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7247,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Lavatorn Fields",
      "number": "265",
@@ -346318,7 +346675,7 @@
      "manaCost": "{B}",
      "identifiers": {
       "scryfallId": 7254,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Listen In",
      "number": "99",
@@ -346470,7 +346827,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7257,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Lush Oasis",
      "number": "266",
@@ -346564,7 +346921,7 @@
      "manaCost": "{6}{R}{R}",
      "identifiers": {
       "scryfallId": 7259,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Make a Break for It",
      "number": "126",
@@ -348015,7 +348372,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7289,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Planar Archives",
      "number": "60",
@@ -348059,7 +348416,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7290,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Pool of Light",
      "number": "267",
@@ -348155,7 +348512,7 @@
      "manaCost": "{1}",
      "identifiers": {
       "scryfallId": 7292,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Prized Possession",
      "number": "251",
@@ -348787,7 +349144,7 @@
      "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 7306,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Rooftop Observer",
      "number": "62",
@@ -350850,7 +351207,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7344,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Spiraling Canyon",
      "number": "270",
@@ -351766,7 +352123,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7363,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Swift-Step Robber",
      "number": "71",
@@ -351957,7 +352314,7 @@
      "manaCost": "{8}",
      "identifiers": {
       "scryfallId": 7367,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Tesh, Fragmented Founder",
      "number": "1",
@@ -353426,7 +353783,7 @@
      "manaCost": "{G}{U}",
      "identifiers": {
       "scryfallId": 7394,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Voice of the Old Grove",
      "number": "220",
@@ -353784,7 +354141,7 @@
      "manaCost": "{2}{G}{G}",
      "identifiers": {
       "scryfallId": 7401,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Waylen, Bloodhunter",
      "number": "183",
@@ -354183,7 +354540,7 @@
      "manaCost": "{1}{B}",
      "identifiers": {
       "scryfallId": 7449,
-      "multiverseId": 20260404
+      "multiverseId": 20260530
      },
      "name": "Exultant Shepherd_PRO_VLR",
      "number": "304",
@@ -354230,7 +354587,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7463,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Forgotten Foundation_PRO_VLR",
      "number": "301",
@@ -354275,7 +354632,7 @@
      "manaCost": "{G}",
      "identifiers": {
       "scryfallId": 7451,
-      "multiverseId": 20260404
+      "multiverseId": 20260530
      },
      "name": "Shape the Pattern_PRO_VLR",
      "number": "305",
@@ -354320,7 +354677,7 @@
      "manaCost": "{X}{W}{W}",
      "identifiers": {
       "scryfallId": 7452,
-      "multiverseId": 20260404
+      "multiverseId": 20260530
      },
      "name": "Solemn Procession_PRO_VLR",
      "number": "303",
@@ -354365,10 +354722,10 @@
      "manaCost": "{R}",
      "identifiers": {
       "scryfallId": 7474,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Strangle_PRO_VLR",
-     "number": "299",
+     "number": "288",
      "rarity": "special",
      "relatedCards": {
       "spellbook": []
@@ -354379,6 +354736,57 @@
       "Sorcery"
      ],
      "uuid": "Strangle_PRO_VLR"
+    },
+    {
+     "artist": "Oldgun-K",
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
+     "colors": [
+      "W"
+     ],
+     "colorIdentity": [
+      "W"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Sunset Sentries_PRO_VLR",
+     "imageName": "sunset sentries_pro_vlr",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Legal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{2}{W}",
+     "identifiers": {
+      "scryfallId": 7475,
+      "multiverseId": 20260530
+     },
+     "name": "Sunset Sentries_PRO_VLR",
+     "number": "281",
+     "power": "2",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Human",
+      "Rebel"
+     ],
+     "text": "This spell costs {1} less to cast for each spell you've cast this turn.\nWhen this creature enters, draw a card.",
+     "toughness": "2",
+     "type": "Creature — Human Rebel",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Sunset Sentries_PRO_VLR"
     },
     {
      "artist": "Matheus Bartz",
@@ -354410,10 +354818,10 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7476,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Swift-Step Robber_PRO_VLR",
-     "number": "298",
+     "number": "284",
      "power": "2",
      "rarity": "special",
      "relatedCards": {
@@ -354458,10 +354866,10 @@
      "manaCost": "{8}",
      "identifiers": {
       "scryfallId": 7477,
-      "multiverseId": 20260501
+      "multiverseId": 20260530
      },
      "name": "Tesh, Fragmented Founder_PRO_VLR",
-     "number": "297",
+     "number": "278",
      "rarity": "special",
      "relatedCards": {
       "spellbook": []
@@ -354478,6 +354886,59 @@
       "Planeswalker"
      ],
      "uuid": "Tesh, Fragmented Founder_PRO_VLR"
+    },
+    {
+     "artist": "Guilherme Santana",
+     "convertedManaCost": 3,
+     "faceConvertedManaCost": 3,
+     "manaValue": 3,
+     "faceManaValue": 3,
+     "colors": [
+      "R",
+      "W"
+     ],
+     "colorIdentity": [
+      "R",
+      "W"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Valiant Firebrand_PRO_VLR",
+     "imageName": "valiant firebrand_pro_vlr",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{R}{W}",
+     "identifiers": {
+      "scryfallId": 7480,
+      "multiverseId": 20260530
+     },
+     "name": "Valiant Firebrand_PRO_VLR",
+     "number": "298",
+     "power": "4",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Human",
+      "Rebel"
+     ],
+     "text": "Creature tokens can't block.\nWhenever you attack, you may discard a card. If you do, draw a card.\nWhenever you discard a creature card, you may exile that card from your graveyard. If you do, you may play that card this turn.",
+     "toughness": "3",
+     "type": "Creature — Human Rebel",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Valiant Firebrand_PRO_VLR"
     },
     {
      "artist": "Yunior Susanto",
@@ -354509,10 +354970,10 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 7481,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Vie's Lieutenant_PRO_VLR",
-     "number": "300",
+     "number": "290",
      "power": "2",
      "rarity": "special",
      "relatedCards": {
@@ -354531,8 +354992,8 @@
      "uuid": "Vie's Lieutenant_PRO_VLR"
     }
    ],
-   "baseSetSize": 290,
-   "totalSetSize": 290,
+   "baseSetSize": 292,
+   "totalSetSize": 292,
    "cardsphereSetId": 23,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -358315,6 +358776,51 @@
      "uuid": "Bind in Silence_REV"
     },
     {
+     "artist": "Anato Finnstark",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal-renegade",
+     "frameVersion": "2015",
+     "id": "Blade Flourish_REV",
+     "imageName": "blade flourish_rev",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{R}",
+     "identifiers": {
+      "scryfallId": 7488,
+      "multiverseId": 0
+     },
+     "name": "Blade Flourish_REV",
+     "number": "113",
+     "rarity": "mythic",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "Blade Flourish deals 2 damage to any target. Excess damage dealt to a creature or planeswalker this way is dealt to its controller instead.",
+     "type": "Instant",
+     "types": [
+      "Instant"
+     ],
+     "uuid": "Blade Flourish_REV"
+    },
+    {
      "artist": "Dorje Bellbrook",
      "convertedManaCost": 3,
      "faceConvertedManaCost": 3,
@@ -359221,10 +359727,10 @@
     },
     {
      "artist": "Feimo",
-     "convertedManaCost": 3,
-     "faceConvertedManaCost": 3,
-     "manaValue": 3,
-     "faceManaValue": 3,
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
      "colors": [
       "W"
      ],
@@ -359235,7 +359741,7 @@
       "R",
       "G"
      ],
-     "designer": "Provocative",
+     "designer": "false",
      "flavor": "",
      "frameType": "adventure-renegade",
      "frameVersion": "2015",
@@ -359250,10 +359756,10 @@
       "planechase": "Legal",
       "archaeologist": "Legal"
      },
-     "manaCost": "{2}{W}",
+     "manaCost": "{1}{W}",
      "identifiers": {
       "scryfallId": 5909,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Emperor Tzuhan_REV",
      "number": "82",
@@ -359263,7 +359769,7 @@
       "type": "Sorcery — Adventure",
       "text": "You may pay 1 life rather than pay the cycling cost of cards you cycle this turn.*(Then exile this card. You may cast the creature later.)*"
      },
-     "power": "3",
+     "power": "1",
      "rarity": "mythic",
      "relatedCards": {
       "spellbook": []
@@ -360071,6 +360577,53 @@
       "Artifact"
      ],
      "uuid": "Keening Belltower_REV"
+    },
+    {
+     "artist": "Toni Infante",
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
+     "colors": [
+      "U",
+      "R"
+     ],
+     "colorIdentity": [
+      "U",
+      "R"
+     ],
+     "designer": "Scribbl",
+     "flavor": "",
+     "frameType": "normal-renegade",
+     "frameVersion": "2015",
+     "id": "Lunar Awe_REV",
+     "imageName": "lunar awe_rev",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{U}{R}",
+     "identifiers": {
+      "scryfallId": 7489,
+      "multiverseId": 0
+     },
+     "name": "Lunar Awe_REV",
+     "number": "111",
+     "rarity": "mythic",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "Lunar Awe deals 3 damage to any target. If a permanent is dealt damage this way, counter all activated and triggered abilities from that source and it loses all abilities until end of turn.",
+     "type": "Instant",
+     "types": [
+      "Instant"
+     ],
+     "uuid": "Lunar Awe_REV"
     },
     {
      "artist": "Qinni",
@@ -361917,6 +362470,51 @@
      "uuid": "Severin, Sparkmind_REV"
     },
     {
+     "artist": "Asur Misoa",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "G"
+     ],
+     "colorIdentity": [
+      "G"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal-renegade",
+     "frameVersion": "2015",
+     "id": "Shape the Pattern_REV",
+     "imageName": "shape the pattern_rev",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{G}",
+     "identifiers": {
+      "scryfallId": 7490,
+      "multiverseId": 0
+     },
+     "name": "Shape the Pattern_REV",
+     "number": "112",
+     "rarity": "mythic",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "Search your library for a basic land card. If you're ancient, instead search your library for a creature or land card. Reveal that card, put it into your hand, then shuffle. (You're ancient as long as you have eight or more total lands in play or in your graveyard.)",
+     "type": "Sorcery",
+     "types": [
+      "Sorcery"
+     ],
+     "uuid": "Shape the Pattern_REV"
+    },
+    {
      "artist": "Liiga Smilshkalne",
      "convertedManaCost": 2,
      "faceConvertedManaCost": 2,
@@ -362979,7 +363577,7 @@
       "R",
       "B"
      ],
-     "designer": "DrChipmunk",
+     "designer": "false",
      "flavor": "What's the point of living forever if no one knows your name?\n",
      "frameType": "normal-renegade",
      "frameVersion": "2015",
@@ -362997,7 +363595,7 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 6265,
-      "multiverseId": 0
+      "multiverseId": 20260530
      },
      "name": "Transgressive Trendsetter_REV",
      "number": "92",
@@ -363008,11 +363606,12 @@
      },
      "subtypes": [
       "Human",
-      "Bard"
+      "Bard",
+      "Rebel"
      ],
      "text": "Menace\nCorrupt — When this creature enters, if it was cast and you control a permanent with greater mana value, add {B}{R}.",
      "toughness": "2",
-     "type": "Creature — Human Bard",
+     "type": "Creature — Human Bard Rebel",
      "types": [
       "Creature"
      ],
@@ -363451,7 +364050,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 6324,
-      "multiverseId": 20260431
+      "multiverseId": 20260530
      },
      "name": "Windbeaten Stones_REV",
      "number": "98",
@@ -363617,8 +364216,8 @@
      "uuid": "Yaeji, Resplendent Idol_REV"
     }
    ],
-   "baseSetSize": 116,
-   "totalSetSize": 116,
+   "baseSetSize": 119,
+   "totalSetSize": 119,
    "cardsphereSetId": 0,
    "isFoilOnly": false,
    "isOnlineOnly": false,
