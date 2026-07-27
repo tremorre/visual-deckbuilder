@@ -73,6 +73,10 @@ const STATE = {
   format: 'standard',   // 'standard' | 'eternal' | 'range' | 'voyager'
   rangeStart: null,     // set code (only meaningful when format === 'range')
   rangeEnd: null,       // set code (only meaningful when format === 'range')
+  formatLock: null,     // locked search-filter string (e.g. "f:eternal r:c") | null.
+                        // While set, it's ANDed into every search and into isLegal,
+                        // effectively defining a custom format for the current deck.
+                        // Saved into deck payloads and restored on deck load.
   // Per-dataset stash. On dataset switch we snapshot the outgoing dataset's
   // full working state (zones + loaded-deck pointer + dirty baseline) here,
   // and restore it when the user returns. This makes each dataset feel like
@@ -340,6 +344,8 @@ function wireDragTrash() {
   await loadTags();
 
   wireSearch();
+  wireFormatLock();
+  syncFormatLockUI();
   wireZones();
   wireToolbar();
   wirePileSort();
@@ -454,6 +460,7 @@ function consolidateCanonicals(cards, byName) {
 // (the underlying integer ids are reassigned by parseAllSetsJson, so we
 // can't trust the old numbers).
 function applyCardData(data) {
+  LOCK_CACHE = null;
   const oldById = STATE.byId;
   const newById = new Map();
   const newByName = new Map();
@@ -585,6 +592,7 @@ function loadPrefs() {
       }
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
       if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
+      if (typeof obj.formatLock === 'string' && obj.formatLock) STATE.formatLock = obj.formatLock;
       if (obj.theme === 'light' || obj.theme === 'dark') STATE.theme = obj.theme;
       // searchPanel intentionally not restored — every fresh load boots into
       // the main pane in dropdown mode, regardless of where the prior
@@ -601,6 +609,7 @@ function savePrefs() {
       format: STATE.format,
       rangeStart: STATE.rangeStart,
       rangeEnd: STATE.rangeEnd,
+      formatLock: STATE.formatLock,
       theme: STATE.theme,
     }));
   } catch (e) {
@@ -1724,6 +1733,43 @@ function cmcBucket(card) {
   return { key: String(n), label: String(n), sortVal: n };
 }
 
+// Locked format filter ("f:eternal r:c" → eternal pauper). The lock is a
+// normal search query that gets ANDed into every search and into isLegal,
+// so it defines a de-facto custom format for the current deck.
+//
+// The parse is cached because isLegal runs per card per render. The cache
+// keys on (text, dataset): tag predicates capture the dataset at parse
+// time, so a dataset switch must reparse. applyCardData also drops the
+// cache directly (set-relative predicates like set>=X read set order that
+// a data refresh can change).
+let LOCK_CACHE = null; // { text, dataset, parsed } | null
+
+function getFormatLock() {
+  // The lock is a deckbuilding concept; the tagger ignores it entirely so
+  // a lock left over from the deckbuilder can't filter tagging searches.
+  if (STATE.tagMode) return null;
+  const text = STATE.formatLock;
+  if (!text) return null;
+  const ds = currentDataset();
+  if (!LOCK_CACHE || LOCK_CACHE.text !== text || LOCK_CACHE.dataset !== ds) {
+    LOCK_CACHE = { text, dataset: ds, parsed: parseQuery(text) };
+  }
+  return LOCK_CACHE.parsed.error ? null : LOCK_CACHE.parsed;
+}
+
+function lockMatches(card) {
+  const lock = getFormatLock();
+  if (!lock) return true;
+  return facesMatch(card, lock.predicate);
+}
+
+function setFormatLock(text) {
+  STATE.formatLock = (typeof text === 'string' && text.trim()) ? text.trim() : null;
+  LOCK_CACHE = null;
+  savePrefs();
+  syncFormatLockUI();
+}
+
 // Is the card legal in the currently-selected format?
 //
 // Legality is canonical-based: a printing is legal iff *any* printing of
@@ -1731,7 +1777,22 @@ function cmcBucket(card) {
 // reprint-only sets like REV ride along with the legality of their
 // canonical, even though REV itself isn't a selectable range bound — if
 // Forest is legal in Standard, every Forest_<SET> printing is legal too.
+//
+// With a locked filter active, the card must also match the lock; and if
+// the lock itself names a format (f:/legal:/banned:), the lock replaces
+// the base-format check entirely, same as those operators do in a search.
 function isLegal(card) {
+  if (!card) return true;
+  const lock = getFormatLock();
+  if (lock) {
+    if (!facesMatch(card, lock.predicate)) return false;
+    if (lock.overridesFormat) return true;
+  }
+  return isLegalBase(card);
+}
+
+// Base-format legality only (the format dropdown), ignoring any lock.
+function isLegalBase(card) {
   if (!card) return true;
   // Voyager is its own dataset; whatever is loaded IS the Voyager pool, so
   // every card is legal within it. Revolution-family legalities don't apply.
@@ -3475,6 +3536,66 @@ function wireSearch() {
   }
 }
 
+// Padlock button in the search bar: locking freezes the current query as
+// the deck's format filter (see STATE.formatLock). While locked, the empty
+// search box shows the filter in its placeholder and the button is lit.
+function syncFormatLockUI() {
+  if (STATE.tagMode) return;  // lock is inert in the tagger (see getFormatLock)
+  const btn = document.getElementById('btn-search-lock');
+  const input = document.getElementById('search');
+  const locked = !!STATE.formatLock;
+  if (btn) {
+    btn.classList.toggle('active', locked);
+    btn.dataset.title = locked
+      ? 'Format filter locked: ' + STATE.formatLock
+        + '\nApplies to every search and decides card legality. Click to unlock.'
+      : 'Lock the current search as this deck’s format filter, e.g. "f:eternal r:c" for Eternal Pauper.'
+        + '\nA locked filter applies to every search and decides card legality.';
+  }
+  if (input) {
+    input.placeholder = locked ? '🔒 ' + STATE.formatLock : 'e.g. t:creature';
+  }
+}
+
+function wireFormatLock() {
+  const btn = document.getElementById('btn-search-lock');
+  const input = document.getElementById('search');
+  if (!btn || !input) return;
+  btn.addEventListener('click', () => {
+    if (STATE.formatLock) {
+      // Unlock: hand the filter back to the search box for tweaking,
+      // unless the user already typed something new there.
+      if (!input.value.trim()) input.value = STATE.formatLock;
+      setFormatLock(null);
+      runSearch(input.value);
+      renderAll();
+      input.focus();
+      return;
+    }
+    const text = input.value.trim();
+    if (!text) {
+      const errEl = document.getElementById('search-error');
+      if (errEl) {
+        errEl.textContent = 'Type a filter to lock, e.g. f:eternal r:c';
+        errEl.classList.remove('hidden');
+      }
+      input.focus();
+      return;
+    }
+    const parsed = parseQuery(text);
+    if (parsed.error) {
+      STATE.search.error = parsed.error;
+      renderSearchError();
+      input.focus();
+      return;
+    }
+    setFormatLock(text);
+    input.value = '';
+    runSearch('');
+    renderAll();
+  });
+}
+
 // Threshold above which the dropdown stays hidden. Broad queries
 // (`t:creature` etc.) are meant to be browsed in panel mode, which renders
 // every match. STATE.search.results stores the full uncapped list — counts
@@ -3518,13 +3639,20 @@ function runSearch(q) {
     return;
   }
   const predicate = parsed.predicate;
+  const lock = getFormatLock();
 
   const seenCanon = new Set();
   const items = [];
   for (const c of STATE.cards) {
-    // Format-operator queries override the global isLegal toggle; otherwise
-    // results stay restricted to the toggle's format just like before.
-    if (!parsed.overridesFormat && !isLegal(c)) continue;
+    // A locked filter applies to every search unconditionally — a query's
+    // own f:/legal: operator can override the base format toggle (below)
+    // but never escapes the lock; unlock to search outside it.
+    if (lock && !facesMatch(c, lock.predicate)) continue;
+    // Format-operator queries (in the query or the lock) override the
+    // global isLegal toggle; otherwise results stay restricted to the
+    // toggle's format just like before.
+    const baseOverridden = parsed.overridesFormat || (lock && lock.overridesFormat);
+    if (!baseOverridden && !isLegalBase(c)) continue;
     if (seenCanon.has(c.canonical)) continue;
     // Face-level matching: a page card has two faces — the creature main
     // and the page spell. A query must match *one complete face* to hit;
@@ -6482,6 +6610,7 @@ function saveDeckToStorage(name, opts) {
     format: STATE.format,
     rangeStart: STATE.rangeStart,
     rangeEnd: STATE.rangeEnd,
+    formatLock: STATE.formatLock,
     folder,
     tags,
     plans,
@@ -6541,8 +6670,11 @@ function loadDeckFromStorage(name) {
     STATE.rangeEnd = payload.rangeEnd || null;
     savePrefs();
     syncFormatUI();
-    runSearch(document.getElementById('search').value);
   }
+  // The deck's locked filter (or its absence) replaces whatever lock was
+  // active — legality follows the loaded deck's format definition.
+  setFormatLock(typeof payload.formatLock === 'string' ? payload.formatLock : null);
+  runSearch(document.getElementById('search').value);
   renderAll();
   resetHistory();
   markDeckClean();
@@ -6798,7 +6930,9 @@ function deckIsEmpty() {
 
 // Serialize zone state to a stable string for dirty-checking. Uses card names
 // in pile order (same representation as saveDeckToStorage) so uid differences
-// don't create false positives.
+// don't create false positives. The locked format filter is part of the
+// snapshot because it saves with the deck — changing it counts as an
+// unsaved change.
 function snapshotDeck() {
   const zones = {};
   for (const z of ['main', 'sanctum', 'side', 'maybe']) {
@@ -6807,7 +6941,7 @@ function snapshotDeck() {
       return c ? c.name : null;
     }));
   }
-  return JSON.stringify(zones);
+  return JSON.stringify({ zones, formatLock: STATE.formatLock });
 }
 
 function markDeckClean() {

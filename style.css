@@ -204,7 +204,7 @@ header {
 
 #search {
   width: 100%;
-  padding: 6px 60px 6px 10px;
+  padding: 6px 82px 6px 10px;
   font-size: 14px;
   background: var(--bg-input);
   color: var(--text-strong);
@@ -369,6 +369,42 @@ body.search-active .toolbar {
   font-family: ui-monospace, "SF Mono", monospace;
   font-size: 10px;
 }
+/* Padlock button: lives inside .search-wrap, left of the help button.
+   Lit (accent) while a format filter is locked. */
+.search-lock-btn {
+  position: absolute;
+  right: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  transition: opacity 0.12s, background 0.12s, color 0.12s, border-color 0.12s;
+}
+.search-lock-btn:hover {
+  opacity: 1;
+  background: var(--bg-button-hover);
+  color: var(--text-secondary);
+}
+.search-lock-btn.active {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.search-lock-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* Help button: lives inside .search-wrap, just left of the panel toggle. */
 .search-help-btn {
   position: absolute;
@@ -1806,6 +1842,7 @@ body.tag-mode .toolbar > button:not(.format-dropdown-btn),
 body.tag-mode .toolbar .deck-btn-group,
 body.tag-mode .tag-hidden-format,
 body.tag-mode #btn-search-toggle,
+body.tag-mode #btn-search-lock,
 body.tag-mode .floating-actions #btn-clear-imgs {
   display: none !important;
 }
