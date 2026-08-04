@@ -1,10 +1,8 @@
-/* Revolution Deckbuilder styles */
 
 :root {
   --card-width: 130px;
-  --card-height: 181px;  /* card aspect 488/680 ≈ 0.718 */
+  --card-height: 181px;
 
-  /* Elevation backgrounds (deepest → lightest) */
   --bg-base:            #1a1a1c;
   --bg-1:               #1e1e22;
   --bg-2:               #232328;
@@ -19,14 +17,12 @@
   --bg-zone-focused:    #23272d;
   --bg-trash:           var(--bg-button);
 
-  /* Borders */
   --border-subtle:      #2a2a2e;
   --border-weak:        #2c2c30;
   --border:             #333;
   --border-strong:      #444;
   --border-stronger:    #555;
 
-  /* Text */
   --text:               #e6e6e6;
   --text-strong:        #fff;
   --text-secondary:     #ddd;
@@ -35,7 +31,6 @@
   --text-faint:         #777;
   --text-on-accent:     #fff;
 
-  /* Accent (interactive blue) */
   --accent:             #6ab0ff;
   --accent-bg:          #2d4666;
   --accent-bg-hover:    #355380;
@@ -43,7 +38,6 @@
   --accent-chip-border: #3a5878;
   --accent-chip-text:   #cfe1f5;
 
-  /* Semantic */
   --selected-gold:      #e8b838;
   --danger:             #ff7777;
   --danger-hover:       #ffaaaa;
@@ -57,7 +51,6 @@
   --error-border:       #a44;
   --error-text:         #f8baba;
 
-  /* Card slot + misc */
   --card-slot-border:   #000;
   --cmc-blue:           #66a;
   --mana-readable:      #c5c5c5;
@@ -66,7 +59,6 @@
   --code-bg:            #111;
   --code-text:          #cce;
 
-  /* Shadows / overlays */
   --shadow-dropdown:    0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-slot:        0 1px 4px rgba(0, 0, 0, 0.5);
   --shadow-modal:       0 12px 48px rgba(0, 0, 0, 0.7);
@@ -76,7 +68,6 @@
   --backdrop:           rgba(0, 0, 0, 0.6);
   --drag-overlay:       rgba(106, 176, 255, 0.05);
 
-  /* Mana symbols (calibrated for dark background) */
   --mana-w: #f8e8a8;
   --mana-u: #87b8e8;
   --mana-b: #b48bd8;
@@ -153,7 +144,6 @@
   --backdrop:           rgba(30, 30, 40, 0.35);
   --drag-overlay:       rgba(41, 104, 201, 0.08);
 
-  /* Mana symbols (darker so they're readable on a light background) */
   --mana-w: #9a7a1a;
   --mana-u: #1c5aa8;
   --mana-b: #5a2a9a;
@@ -177,9 +167,6 @@ html, body {
   overflow: hidden;
 }
 body {
-  /* Flex column so <main> fills exactly the remaining vertical space below
-     the (wrap-able) header, instead of relying on a hard-coded header
-     height that breaks as soon as the toolbar wraps to two rows. */
   display: flex;
   flex-direction: column;
 }
@@ -214,9 +201,6 @@ header {
 }
 #search:focus { border-color: var(--accent); }
 
-/* Overlay toggle inside the search input, right edge. Switches the search
-   between dropdown (default) and "panel" mode — results rendered as card
-   tiles in the pile pane. */
 .search-toggle {
   position: absolute;
   right: 4px;
@@ -260,9 +244,6 @@ header {
   background: var(--bg-search-results);
   border: 1px solid var(--border-stronger);
   border-radius: 3px;
-  /* Scrollable: a broad scryfall-style query (t:creature, o:trample) can
-     return hundreds of hits. max-height is a viewport fraction so it grows
-     on tall monitors and stays usable on laptops. */
   max-height: 70vh;
   overflow-y: auto;
   z-index: 100;
@@ -369,8 +350,6 @@ body.search-active .toolbar {
   font-family: ui-monospace, "SF Mono", monospace;
   font-size: 10px;
 }
-/* Padlock button: lives inside .search-wrap, left of the help button.
-   Lit (accent) while a format filter is locked. */
 .search-lock-btn {
   position: absolute;
   right: 56px;
@@ -405,7 +384,6 @@ body.search-active .toolbar {
   height: 13px;
 }
 
-/* Help button: lives inside .search-wrap, just left of the panel toggle. */
 .search-help-btn {
   position: absolute;
   right: 34px;
@@ -431,7 +409,6 @@ body.search-active .toolbar {
   border-color: var(--accent);
 }
 
-/* Search-syntax docs modal: wider than the default modal, scrollable body. */
 .search-help-content {
   min-width: 560px;
   width: 720px;
@@ -469,53 +446,34 @@ body.search-active .toolbar {
   font-weight: 600;
   color: var(--text-primary);
 }
-.search-help-body h4 code { font-size: 12px; }
-.search-help-body dl {
-  margin: 0;
-  display: grid;
-  grid-template-columns: minmax(140px, max-content) 1fr;
-  column-gap: 12px;
-  row-gap: 4px;
-  align-items: baseline;
+.search-help-body h4 code {
+  font-size: 12px;
+  background: none;
+  color: inherit;
+  padding: 0;
 }
-.search-help-body dt {
+.search-help-body .tokens {
   margin: 0;
-  white-space: nowrap;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 5px;
 }
-.search-help-body dt code {
+.search-help-body .tokens li { margin: 0; }
+.search-help-body code {
   background: var(--code-bg);
   color: var(--code-text);
   padding: 1px 5px;
   border-radius: 2px;
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
   font-size: 11px;
+  white-space: nowrap;
 }
-.search-help-body dd {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.search-help-body dd code {
-  background: var(--code-bg);
-  color: var(--code-text);
-  padding: 0 4px;
-  border-radius: 2px;
-  font-family: ui-monospace, "SF Mono", Consolas, monospace;
-  font-size: 11px;
-}
-.search-help-body .help-note {
+.search-help-body .help-legend {
   margin: 6px 0 0;
   font-size: 11px;
   color: var(--text-muted);
-  font-style: italic;
-}
-.search-help-body .help-note code {
-  font-style: normal;
-  background: var(--code-bg);
-  color: var(--code-text);
-  padding: 0 4px;
-  border-radius: 2px;
-  font-family: ui-monospace, "SF Mono", Consolas, monospace;
-  font-size: 11px;
 }
 
 .toolbar {
@@ -605,8 +563,6 @@ button.danger:hover { background: var(--danger-bg); }
   margin-top: 4px;
 }
 
-/* Sort-mode dropdown (pile-sort bar). Mirrors the format dropdown's open/close
-   pattern but is smaller and anchors left-aligned under its trigger. */
 .sort-dropdown {
   position: relative;
   display: inline-block;
@@ -644,21 +600,11 @@ button.danger:hover { background: var(--danger-bg); }
 
 main {
   display: grid;
-  /* 280px at rest, but capped as a fraction of the viewport so it can't claim
-     an ever-larger share. Browser zoom (Ctrl +) narrows the CSS-px viewport,
-     which would otherwise leave the fixed sidebar hogging space; the vw cap
-     lets it shrink instead, so the zoom lands on the pile/search images. The
-     200px floor keeps deck-list rows readable at heavy zoom. */
   grid-template-columns: clamp(200px, 22vw, 280px) 1fr;
-  /* Fills whatever vertical space the header doesn't use. min-height: 0 is
-     required so that .zones / .piles-pane can shrink and own their own
-     scroll instead of overflowing the body. */
   flex: 1;
   min-height: 0;
 }
 
-/* Zones (left sidebar) — main is never truncated. The whole sidebar scrolls;
-   each zone sizes to its content. */
 .zones {
   display: flex;
   flex-direction: column;
@@ -685,7 +631,7 @@ main {
 
 .zone > header {
   position: sticky;
-  top: 28px; /* leave room for the sticky sort-bar above */
+  top: 28px;
   z-index: 2;
   display: flex;
   justify-content: space-between;
@@ -707,9 +653,6 @@ main {
   color: var(--text-muted);
 }
 .zone.focused .zone-count { color: var(--text-on-accent); opacity: 0.8; }
-/* Deck-validity flag: count badge goes red when the zone violates a rule
-   (main < 60, side > 15, sanctum > 7, or sanctum has ineligible cards).
-   Hover exposes the specific reason via the element's title. */
 .zone .zone-count.invalid {
   color: var(--danger, #e04040);
   font-weight: 600;
@@ -718,15 +661,10 @@ main {
   color: var(--danger, #e04040);
   opacity: 1;
 }
-/* Sanctum is Voyager-only; hide the zone + its add-to-zone button when
-   not in Voyager mode. Data-plumbing iteration sites still include sanctum
-   so a stashed Voyager deck survives toggles, but the user can't interact
-   with it in Revolution mode. */
 body:not(.voyager-mode) .zone-sanctum-host,
 body:not(.voyager-mode) .sanctum-only { display: none; }
 
 .zone-list {
-  /* No internal scroll — the whole sidebar scrolls instead. */
   padding: 2px 0;
   font-size: 11px;
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
@@ -798,7 +736,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   padding: 2px 8px;
 }
 
-/* Pile area (right pane) */
 .piles-pane {
   display: flex;
   flex-direction: column;
@@ -834,22 +771,11 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  /* align-content: flex-start packs wrapped rows at the top of the pane.
-     The flex default (stretch) divides the pane's vertical space evenly
-     across however many rows wrapped, which produced enormous gaps any
-     time the deck only filled 1–2 rows. */
   align-content: flex-start;
-  /* Horizontal spacing between piles is provided by .pile-gap drop targets
-     so they're hit-testable; the gap divs are 14px wide and act as the
-     visible separator. Row gaps wrap normally. */
   column-gap: 0;
   row-gap: 14px;
 }
 
-/* Drop target between two piles. Splices a new pile in at that exact slot
-   when a card is dropped here. A faint vertical bar is visible at rest so
-   users can spot the drop targets; it brightens while a drag is in flight
-   and fully lights up on hover-during-drag. */
 .pile-gap {
   width: 14px;
   min-height: 40px;
@@ -887,7 +813,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   flex-shrink: 0;
 }
 
-/* Make the entire vertical span of the pile clickable as a drop target */
 .pile.drag-over {
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
@@ -937,8 +862,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   z-index: 20;
 }
 
-/* Rubber-band region-select rectangle, drawn while the user drags on the
-   empty background of the pile pane. */
 .region-select {
   position: fixed;
   z-index: 50;
@@ -959,7 +882,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   pointer-events: none;
 }
 
-/* Overlay action buttons (+ / − / ↔) anchored to the top-right of each card slot */
 .slot-buttons {
   position: absolute;
   top: 3px;
@@ -967,7 +889,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   display: flex;
   gap: 2px;
   z-index: 5;
-  /* don't capture drag — but children still receive clicks */
   pointer-events: none;
 }
 .slot-btn {
@@ -987,7 +908,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   transition: opacity 0.12s, background 0.12s;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
-/* On devices with a mouse, hide buttons until the card is hovered. */
 @media (hover: hover) {
   .slot-btn { opacity: 0; pointer-events: none; }
   .pile .card-slot:hover .slot-btn { opacity: 0.85; pointer-events: auto; }
@@ -998,9 +918,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   border-color: var(--accent);
 }
 
-/* Version-swap button (lotus icon, bottom-right of a card slot). Opens a
-   floating chip strip of available printings for the card; clicking a chip
-   replaces this copy's printing (and any selected copies of the same card). */
 .version-btn {
   pointer-events: auto;
   position: absolute;
@@ -1036,8 +953,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   fill: currentColor;
 }
 
-/* Floating printing picker. Appended to body with fixed positioning so it
-   escapes the card slot's overflow:hidden and the pile pane's scroll. */
 .version-picker {
   position: fixed;
   z-index: 300;
@@ -1074,9 +989,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   color: var(--text-on-accent);
 }
 
-/* Transparent flip button centered on a DFC card slot. Stays invisible at
-   rest; a faint icon fades in while the user hovers the slot, and brightens
-   on direct hover so it's clear the button is clickable. */
 .flip-btn {
   position: absolute;
   top: 50%;
@@ -1114,7 +1026,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 .flip-btn:hover .flip-icon {
   opacity: 1;
 }
-/* Subtle persistent hint that the slot is currently showing the back face. */
 .pile .card-slot.flipped {
   outline: 2px solid rgba(255, 204, 102, 0.6);
   outline-offset: -2px;
@@ -1124,8 +1035,6 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   width: var(--card-width);
 }
 
-/* Wrapper keeps a pile-gap and its pile in the same flex child so they
-   never split across wrapped rows. */
 .pile-wrapper {
   display: flex;
   flex-shrink: 0;
@@ -1137,19 +1046,12 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   outline-offset: -2px;
 }
 
-/* Synthetic "Search" zone. Header-only — no list of cards beneath; clicking
-   the header switches the pile pane to show live search results. */
 .zone-search > header { border-bottom: none; }
 
-/* Search-mode pile container: results are standalone tiles (no between-pile
-   drop targets), so we restore horizontal spacing via column-gap instead of
-   the pile-gap drop-target spacers used in the deck panes. */
 .piles.search-mode { column-gap: 14px; }
 
 .hidden { display: none !important; }
 
-/* Generic modal: backdrop + centred content. Currently only used by the
-   paste-import dialog but generic enough to reuse. */
 .modal {
   position: fixed;
   inset: 0;
@@ -1233,7 +1135,6 @@ button.primary {
 .modal-buttons button.primary:hover,
 button.primary:hover { background: var(--accent-bg-hover); }
 
-/* Deck button group — wraps a button and its dropdown together */
 .deck-btn-group {
   position: relative;
   display: flex;
@@ -1241,7 +1142,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   align-items: center;
 }
 
-/* Dropdown panels that appear below Save / Decks buttons */
 .deck-dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -1255,7 +1155,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .deck-dropdown.hidden { display: none; }
 
-/* Save-name dropdown */
 #save-name-dropdown {
   padding: 8px 10px;
   display: flex;
@@ -1285,9 +1184,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   padding: 3px 10px;
 }
 
-/* Decks list dropdown.
-   NOTE: do NOT anchor this from the right edge of its button. That
-   placement has been explicitly rejected — don't reintroduce it. */
 #decks-dropdown {
   min-width: 0;
   max-width: 340px;
@@ -1324,7 +1220,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .decks-league-link:hover { color: var(--text-secondary); background: var(--bg-row-hover-strong); }
 
-/* Folder headers */
 .deck-folder-header {
   display: flex;
   align-items: center;
@@ -1358,9 +1253,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
 }
-/* Only the inline rename / tag editors need to wrap (name + folder input, or
-   name + chip editor). The non-editing row must stay single-line so its
-   intrinsic width forces the dropdown wide enough for name + 3 icons. */
 .saved-deck-row.editing { flex-wrap: wrap; }
 .saved-deck-row.indent { padding-left: 22px; }
 .saved-deck-row:last-child { border-bottom: none; }
@@ -1375,9 +1267,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   text-overflow: ellipsis;
 }
 .saved-deck-row .deck-action { flex-shrink: 0; }
-/* Inline rename inputs size to their own content (field-sizing) and don't
-   grow/shrink, so each shows its full value; flex-wrap on .editing rows
-   drops the second input onto a new line when they can't share one. */
 .saved-deck-row .deck-name-input,
 .saved-deck-row .deck-folder-input {
   flex: 0 0 auto;
@@ -1415,7 +1304,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   font-style: italic;
 }
 
-/* Tag chips on rows (read-only display) */
 .deck-row-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1448,7 +1336,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .deck-tag-chip .chip-x:hover { color: var(--danger); }
 
-/* Inline chip editor (used for both row tag edit and save-dialog tags) */
 .tag-chip-editor {
   display: flex;
   flex-wrap: wrap;
@@ -1477,7 +1364,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   padding: 1px 2px;
 }
 
-/* Folder edit popover */
 .folder-edit-popover {
   flex: 1 1 100%;
   display: flex;
@@ -1512,7 +1398,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .folder-edit-popover input:focus { outline: none; border-color: var(--accent); }
 
-/* Save dialog — folder/tags fields */
 .save-meta-field {
   display: flex;
   flex-direction: column;
@@ -1537,10 +1422,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 #save-deck-folder:focus { outline: none; border-color: var(--accent); }
 
-/* Always-rendered drag preview img. Must be in the viewport with non-zero
-   rendered size for setDragImage to work (Firefox refuses off-screen / hidden
-   elements). Sits behind the page background via z-index:-1 so the user never
-   sees it, but at full opacity so the drag ghost isn't washed out. */
 #drag-img {
   position: fixed;
   top: 0;
@@ -1552,8 +1433,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   z-index: -1;
 }
 
-/* Custom drag ghost — replaces the native browser ghost which scales
-   unpredictably on HiDPI screens and forces ~50% opacity. */
 .drag-ghost {
   position: fixed;
   pointer-events: none;
@@ -1562,7 +1441,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
 }
 
-/* Floating card preview shown on hover in the deck list */
 #card-preview {
   position: fixed;
   pointer-events: none;
@@ -1578,7 +1456,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
   display: block;
 }
 
-/* Mana symbol coloring (subtle inline) */
 .mana-w { color: var(--mana-w); }
 .mana-u { color: var(--mana-u); }
 .mana-b { color: var(--mana-b); }
@@ -1588,7 +1465,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 .mana-i { color: var(--mana-i); }
 .mana-v { color: var(--mana-v); }
 
-/* Drag-to-delete trash can — shown when dragging 2+ cards */
 .drag-trash {
   position: fixed;
   bottom: 24px;
@@ -1647,13 +1523,7 @@ button.primary:hover { background: var(--accent-bg-hover); }
   color: var(--text-secondary);
 }
 
-/* --------------------------------------------------------------------- */
-/* Sideboard plans                                                       */
-/* --------------------------------------------------------------------- */
 
-/* Deck/plan title centered in the piles-pane header row. Absolutely
-   positioned so it's centered relative to the pane, independent of the
-   zone title on the left and the pile-sort controls on the right. */
 .piles-header { position: relative; }
 .deck-title-bar {
   position: absolute;
@@ -1696,7 +1566,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .plan-exit:hover { color: var(--danger); }
 
-/* Rows under the currently-loaded deck in the decks dropdown. */
 .saved-deck-row.loaded {
   background: var(--bg-row-hover, rgba(127,127,127,0.08));
 }
@@ -1769,9 +1638,6 @@ button.primary:hover { background: var(--accent-bg-hover); }
 }
 .saved-plan-row.create-plan-row.disabled:hover { color: var(--text-dim); }
 
-/* Maybe zone is locked while a plan is active. Aside lanes, search add-maybe
-   buttons, and any existing "move to maybeboard" affordance dim + block
-   interaction. */
 body.plan-active .zone[data-zone="maybe"] {
   opacity: 0.5;
   filter: grayscale(0.4);
@@ -1783,7 +1649,6 @@ body.plan-active .zone[data-zone="maybe"] header::after {
   opacity: 0.7;
 }
 
-/* Stale-plans confirmation modal list */
 .stale-plans-list {
   list-style: none;
   padding: 0;
@@ -1805,7 +1670,6 @@ body.plan-active .zone[data-zone="maybe"] header::after {
 .stale-plan-name { font-weight: 600; color: var(--text-secondary); }
 .stale-plan-diff { color: var(--text-muted); font-size: 11px; font-family: var(--font-mono, monospace); }
 
-/* Plan-name prompt modal input */
 #plan-name-modal input {
   width: 100%;
   background: var(--bg-input);
@@ -1823,16 +1687,6 @@ body.plan-active .zone[data-zone="maybe"] header::after {
   border-color: var(--accent);
 }
 
-/* ---------------------------------------------------------------------------
- * Tagging tool (static/tags.html — body.tag-mode)
- *
- * The same DOM scaffolding as the deckbuilder with:
- *   - .tag-zones sidebar visible, .zones sidebar hidden
- *   - every deck-only toolbar item hidden (they're kept in the DOM as stubs
- *     so app.js's wiring doesn't blow up on null.addEventListener)
- *   - piles pane always on in search-panel mode
- *   - tag-btn slot buttons (transparent) instead of +/square/arrow/?
- * --------------------------------------------------------------------------- */
 
 body.tag-mode .zones,
 body.tag-mode .sort-bar,
@@ -1847,17 +1701,10 @@ body.tag-mode .floating-actions #btn-clear-imgs {
   display: none !important;
 }
 
-/* The stock CSS hides the search-hints band when the input isn't focused,
- * and hides the toolbar whenever the search-active body class is on. In
- * tag mode we want the hints persistently visible (they're the only place
- * the user sees the tag-specific keybindings) and the format toolbar
- * shouldn't vanish just because the search input has focus. */
 body.tag-mode .tag-search-hints { display: flex !important; }
 body.tag-mode.search-active .toolbar,
 body.tag-mode .search-wrap:focus-within ~ .toolbar { display: flex !important; }
 
-/* The stub modals from tags.html have no <h3> content; keep them hidden even
- * if another code path toggles `.hidden` off. */
 body.tag-mode .modal { display: none !important; }
 
 body.tag-mode main {
@@ -1885,9 +1732,8 @@ body.tag-mode .toolbar {
   border-color: var(--accent);
 }
 
-/* Tag sidebar — mirrors .zones so tag sections feel like deck zones. */
 .tag-zones {
-  display: none;  /* only shown in tag mode */
+  display: none;
   flex-direction: column;
   background: var(--bg-1);
   border-right: 1px solid var(--border);
@@ -1925,7 +1771,6 @@ button.tag-sidebar-title {
 button.tag-sidebar-title:hover { color: var(--text-secondary); }
 button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
 
-/* All-tags list view in the piles pane. */
 .tag-list-view {
   display: flex;
   flex-direction: column;
@@ -1994,17 +1839,11 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   outline-offset: -2px;
 }
 
-/* Navigation tab that returns the pile pane to search results. Sits above
- * the "Tags" sidebar header — sticky would collide with the top:0
- * sidebar-header below it, so this one scrolls with the list. */
 .tag-search-tab > header {
   position: static;
   border-top: 1px solid var(--border);
 }
 
-/* Transparent tag-mode tile buttons. Same 20x20 footprint as the deck-add
- * buttons but with a lower-contrast fill — they're the primary affordance
- * in tag mode, not a busy badge. */
 .slot-btn.tag-btn {
   background: rgba(20, 40, 70, 0.35);
   border-color: rgba(255, 255, 255, 0.25);
@@ -2018,7 +1857,6 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   cursor: default;
 }
 
-/* Popover for tag entry. Fixed-position so it floats over the piles pane. */
 .tag-popover {
   position: fixed;
   z-index: 60;
@@ -2058,11 +1896,6 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   padding: 0 3px;
 }
 
-/* Chip strip overlaid on each tag-mode tile. Clicking a chip removes that
- * tag from the card. Hidden by default on hover-capable devices (matches
- * .slot-buttons / .version-btn) so the card text stays readable while
- * scanning the grid; the strip fades in on tile hover, and the floating
- * card preview shows the unobstructed art at the same time. */
 .card-tag-chips {
   position: absolute;
   left: 4px;
@@ -2105,9 +1938,6 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   border-color: var(--danger, #e04040);
 }
 
-/* ---------------------------------------------------------------------------
-   League decks page (league.html)
-   --------------------------------------------------------------------------- */
 .league-page {
   background: var(--bg-base);
   color: var(--text);
@@ -2115,15 +1945,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   margin: 0;
   min-height: 100vh;
 }
-/* Flex (not grid) so the header degrades predictably as it narrows (e.g.
-   under zoom): the left cluster — back link, title, season button — is
-   flex-shrink:0 and never wraps or compresses, while the search box and the
-   status text to its right absorb all the shrink, truncating before the
-   header is ever forced onto a second line. */
 .league-header {
   display: flex;
-  flex-wrap: nowrap;   /* override the generic `header { flex-wrap: wrap }` —
-                          this header shrinks its contents, it never wraps */
+  flex-wrap: nowrap;
+
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
@@ -2133,7 +1958,6 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   top: 0;
   z-index: 10;
 }
-/* Left cluster: fixed, protected from shrinking. */
 .league-back,
 .league-title,
 .league-season-dropdown { flex: 0 0 auto; }
@@ -2157,13 +1981,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Season selector — a left-side dropdown next to the title. Reuses the
-   .sort-dropdown shell but bumps the font to header size and left-anchors
-   the menu (the menu's default right:0 would push it off the title). */
 .league-season-dropdown .sort-dropdown-btn {
   font-size: 13px;
   padding: 5px 10px;
-  white-space: nowrap;   /* the month/year label stays on one line, always */
+  white-space: nowrap;
 }
 .league-season-dropdown .sort-dropdown-menu {
   right: auto;
@@ -2171,13 +1992,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   max-height: 60vh;
   overflow-y: auto;
 }
-/* Right cluster begins here. margin-left:auto eats the free space so the
-   search box + toolbar sit at the right edge when the header is wide; when
-   it narrows that free space is consumed first, then these items shrink. */
 .league-search-wrap {
   margin-left: auto;
-  flex: 0 1 320px;   /* up to 320px, but allowed to shrink toward 0 */
-  min-width: 0;      /* let the input clip its text instead of forcing width */
+  flex: 0 1 320px;
+  min-width: 0;
 }
 .league-search-wrap input {
   width: 100%;
@@ -2197,7 +2015,7 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   align-items: center;
   gap: 8px;
   flex: 0 1 auto;
-  min-width: 0;      /* permit the status text inside to truncate */
+  min-width: 0;
 }
 .league-status {
   font-size: 12px;
@@ -2205,17 +2023,10 @@ button.tag-sidebar-title.active { color: var(--accent, #6ea8ff); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;      /* this is the first thing to give way */
+  min-width: 0;
 }
 .league-status.error { color: var(--danger); }
-/* Refresh never shrinks or wraps — only the status text beside it does. */
 .league-toolbar #league-refresh { flex: 0 0 auto; white-space: nowrap; }
-/* Override the global `main { display: grid; grid-template-columns: 280px 1fr }`
-   from the deckbuilder. On the league page, .league-main holds either the list
-   view (which wants the full page width) or the detail view (which sets up its
-   own 280px+1fr grid via .league-deckbuilder-clone). Without this override the
-   visible section gets pinned to the 280px grid column, leaving most of the
-   page empty. */
 main.league-main {
   display: flex;
   flex-direction: column;
@@ -2223,26 +2034,18 @@ main.league-main {
   min-height: 0;
 }
 main.league-main > section { min-width: 0; }
-/* The deckbuilder pins html/body to 100vh with overflow:hidden because each
-   pane scrolls internally. The league list page wants the document itself
-   to scroll when the list overflows the viewport. */
 html:has(body.league-page),
 body.league-page {
   height: auto;
   min-height: 100vh;
   overflow: auto;
 }
-/* Detail view restores the deckbuilder's "no document scroll" model — its
-   inner panes do the scrolling. body.league-page-detail toggles this. */
 body.league-page.detail-active,
 html:has(body.league-page.detail-active) {
   height: 100vh;
   overflow: hidden;
 }
 
-/* List sort bar: small chip-style dropdown above the list, modeled on the
-   deckbuilder's pile-sort dropdown. The active button label rotates as the
-   user picks a primary; previously-chosen primaries fall to tiebreakers. */
 .league-list-controls {
   max-width: 1500px;
   margin: 0 auto 8px;
@@ -2302,21 +2105,17 @@ html:has(body.league-page.detail-active) {
   font-style: italic;
 }
 
-/* List view.
-   The list is the grid container; each row uses subgrid so columns line up
-   across rows. Without subgrid each row's grid was independent and column
-   widths drifted from row to row — visually there were no columns. */
 .league-list {
   display: grid;
   grid-template-columns:
-    fit-content(220px)   /* author */
-    fit-content(360px)   /* deck name */
-    auto                 /* record */
-    auto                 /* color pips */
-    fit-content(380px)   /* identifying cards */
-    auto                 /* copy button */
-    1fr;                 /* spacer — soaks up leftover row width on the right */
-  gap: 4px 12px;          /* row-gap column-gap */
+    fit-content(220px)
+    fit-content(360px)
+    auto
+    auto
+    fit-content(380px)
+    auto
+    1fr;
+  gap: 4px 12px;
   max-width: 1500px;
   margin: 0 auto;
 }
@@ -2379,9 +2178,6 @@ html:has(body.league-page.detail-active) {
 }
 .league-pips.colorless { opacity: 0.6; }
 .league-pips i.ms { font-size: 13px; line-height: 1; }
-/* `.ms-cost` already gives WUBRG icons their disc-and-symbol look from the
-   mana font itself; no extra background needed. The colorless icon doesn't
-   ship with a disc, so give it a faint one to match. */
 .league-pips i.ms-c.ms-cost {
   background: var(--mana-c);
   color: #222;
@@ -2406,9 +2202,6 @@ html:has(body.league-page.detail-active) {
   grid-column: 1 / -1;
 }
 
-/* Identifying-card badges: two card *names* per row (not images — they're
-   not readable at row scale). Hovering one pops the existing card-preview
-   so the user still gets the visual. */
 .league-id-cards {
   display: inline-flex;
   gap: 10px;
@@ -2433,8 +2226,6 @@ html:has(body.league-page.detail-active) {
   cursor: default;
 }
 
-/* Decklist hover popup. Anchored at the row's right edge by default; the JS
-   may flip its alignment if it would clip the viewport. */
 .league-decklist-popup {
   position: fixed;
   z-index: 60;
@@ -2488,10 +2279,6 @@ html:has(body.league-page.detail-active) {
   font-size: 10px;
 }
 
-/* Detail view: deck-viewer pane mirrors the deckbuilder's
-   .zones + .piles-pane layout, so the deck-shaped UI users know from
-   the editor renders the same way here. The page-level detail header
-   sits above it (back / deck title / meta / copy). */
 .league-detail-header {
   display: flex;
   align-items: center;
@@ -2547,17 +2334,12 @@ html:has(body.league-page.detail-active) {
   color: var(--text-dim);
   font-style: italic;
 }
-/* The deckbuilder-clone wrapper recreates the deckbuilder's main grid
-   (280px aside + 1fr pane) so the league deck viewer inherits the same
-   .zones / .piles-pane / .pile / .card-slot styling. The body/main
-   layout for the league page is column-flex, not the deckbuilder's full
-   grid, so we have to set this up explicitly here. */
 .league-deckbuilder-clone {
   display: grid;
   grid-template-columns: 280px 1fr;
   flex: 1;
   min-height: 0;
-  height: calc(100vh - 56px /* page header */ - 50px /* detail header */);
+  height: calc(100vh - 56px   - 50px  );
   overflow: hidden;
 }
 #league-detail-view {
@@ -2567,19 +2349,13 @@ html:has(body.league-page.detail-active) {
   min-height: 0;
 }
 .league-deckbuilder-clone .zone > header {
-  /* The clone has no sort-bar above zones, so the zone header doesn't need
-     to leave 28px of room for one. Override the deckbuilder default. */
   top: 0;
 }
 .league-deckbuilder-clone .zones { padding-top: 0; }
 .league-page .pile.no-drop {
-  /* Faint hint that you can't drop a card from another zone here */
   cursor: not-allowed;
 }
 
-/* Hover preview for piles in the league viewer. Reuses the deckbuilder's
-   --shadow-preview but is its own DOM node since the deckbuilder's #card-preview
-   isn't on this page. */
 .league-card-preview {
   position: fixed;
   z-index: 50;
@@ -2614,14 +2390,7 @@ html:has(body.league-page.detail-active) {
 .league-toast.fade-out { opacity: 0; }
 
 @media (max-width: 720px) {
-  /* At an extreme narrow (heavy zoom / very small window) the header still
-     stays on one line; we just drop the sync-time status entirely rather
-     than leave a clipped sliver competing with the search box. */
   .league-status { display: none; }
-  /* On narrow viewports we hide the id-cards and pips columns to fit, so
-     the shared list grid + subgrid stops being a fit. Fall back to a
-     non-grid list and per-row layout so rows can size independently and
-     wrap their own content cleanly. */
   .league-list { display: flex; flex-direction: column; }
   .league-deck-row {
     grid-template-columns: minmax(80px, 1fr) minmax(120px, 2fr) auto auto;
@@ -2632,9 +2401,6 @@ html:has(body.league-page.detail-active) {
   .league-deck-row .league-pips { display: none; }
 }
 
-/* Tag aliases — sidebar subtitle, all-tags row, popover editor, toast.
- * Aliases are the "alternate names that resolve to one canonical" feature;
- * see addTagAlias / aliasesForTag in app.js. */
 .tag-list-row .tag-list-aliases {
   font-size: 11px;
   color: var(--text-muted);
@@ -2647,10 +2413,6 @@ html:has(body.league-page.detail-active) {
 }
 .tag-list-row:hover .tag-list-aliases { color: var(--text-on-accent); opacity: 0.85; }
 
-/* Per-tag pencil button on each sidebar tag section. Sits inside the
- * section header between the title and count. Hidden until hover so it
- * doesn't clutter the sidebar at rest, then fades in for the row the
- * cursor is on. */
 .tag-zone > header .tag-zone-edit {
   background: transparent;
   border: 1px solid transparent;

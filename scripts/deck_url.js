@@ -1,63 +1,6 @@
-// Deck-URL codec. Compresses a Revolution-format decklist into a short
-// base64url string suitable for sharing as `#d=…`. Matches the Python
-// reference encoder in scratch/url_deck/encode_v3.py byte-for-byte; if you
-// change the scheme here, change it there too.
-//
-// ════════════════════════════════════════════════════════════════════
-// FORMAT FROZEN — version 1, locked 2026-05-07.
-//
-// Do not change the bit layout, MAIN_CODES/APP_CODES, the pool
-// definition (legal AND NOT unplayable), or staples.txt without
-// coordinating a version bump. Doing so breaks every URL ever shared.
-//
-// The pool is built from cards.frozen.json — a write-once snapshot of the
-// fields buildPool reads, taken from the cards.json that was current at
-// format-freeze. The LIVE cards.json must NOT feed the pool (a card update
-// would reindex it). The live file is fetched only to bridge renamed/new
-// printing names onto frozen slots. Regenerate the snapshot only with
-// scratch/url_deck/gen_frozen_pool.py, and never after launch.
-//
-// Regression tests: scratch/url_deck/verify_frozen.mjs (frozen input is
-// faithful), scratch/url_deck/test_freeze.py (Python reference byte-stable),
-// scratch/url_deck/test_url_backcompat.mjs (corpus URLs unchanged across a
-// card update). JS↔Python parity: scratch/url_deck/verify_js.mjs.
-// ════════════════════════════════════════════════════════════════════
-//
-// Stream layout (bits):
-//   [front pad: 0..7 zero bits + 1 marker]   makes total byte-aligned
-//   [8: version=1]
-//   [5: color mask, WUBRG]
-//   [6: n_staples_picked]                  count for staple segment
-//   [4: k1] [4: k2]                        Rice k for each segment
-//   [5: basic-presence mask P/I/S/M/F]
-//   [for each present basic: 4 main + 3 side]
-//   [staple seg: n_staples × (Rice(k1) gap + Huffman count)]
-//   [rest seg: (Rice(k2) gap + Huffman count) × repeat, terminated by EOS
-//              or end-of-bytes if no appendix]
-//   [optional appendix: 13-bit absolute full-pool index + Huffman count,
-//     repeats until end-of-bytes]
-//
-// Pool: only cards with legalities['revolution']==='Legal' on at least one
-// printing. Frozen at format-launch from cards.frozen.json's legalities field.
-// Within the legal pool, two segments:
-//   1. staples (cards listed in static/staples.txt) in canonical (set, num)
-//   2. remaining legal cards in canonical order
-// Each segment gets its own Rice k optimized for its gap density.
-//
-// staples.txt is part of the format spec — frozen at launch. Editing it
-// breaks all previously-encoded URLs. The labeling app (static/label.html)
-// is the supported way to draft additions before format-freeze.
 (function () {
   'use strict';
 
-  // Encoder always emits v2. The decoder accepts both v1 and v2, dispatching
-  // to a version-specific pool so URLs shared from the pre-v2 deckbuilder
-  // continue to round-trip. v1 ≡ single-pass bare-name strip + no basic
-  // overflow in the appendix (the broken EOS encoder lived here, but its
-  // output is still bit-readable when the appendix's first bit happens to be
-  // `1` — the cases where it isn't were never decodable to begin with).
-  // v2 ≡ multi-pass strip (so `Foo_PRO_KDT` collapses to bare `Foo`) + basics
-  // appended to fullCanonical at indices N..N+4 for overflow + EOS rice pad.
   const VERSION = 2;
   const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'];
   const COLOR_BIT = { W: 1, U: 2, B: 4, R: 8, G: 16 };
@@ -65,9 +8,6 @@
   const BASIC_BIT = { Plains: 1, Island: 2, Swamp: 4, Mountain: 8, Forest: 16 };
   const EOS = 'EOS';
 
-  // Canonical Huffman codes derived from the rev_26_05 corpus (104 decks,
-  // 2371 in-pool entries, 6 appendix-using decks). See build_huffman.py.
-  // Symbols are "main,side" pair strings; EOS is the appendix sentinel.
   const MAIN_CODES = {
     '3,0': '00',
     '4,0': '01',
@@ -108,8 +48,6 @@
     return [parseInt(k.slice(0, i), 10), parseInt(k.slice(i + 1), 10)];
   }
 
-  // ------------------------------------------------------------------------
-  // Mana cost parsing — mirrors league.js parseManaCost / Python parse_mana_cost.
 
   function parseManaCost(cost) {
     const out = [];
@@ -168,29 +106,14 @@
     return out;
   }
 
-  // ------------------------------------------------------------------------
-  // Card pool — load cards.frozen.json + staples.txt. Cached after first build.
 
-  // Cached pool per version (v1 for legacy decode, v2 for encode + decode).
   const _poolPromises = new Map();
 
-  // Builds the canonical card data structures the encoder/decoder share.
-  // The legal-pool is the gap-stream's universe; the full-pool is used by
-  // the appendix for 13-bit absolute indices so any card can still be encoded.
   function buildPool(data, staples, unplayable, version) {
     const info = new Map();
     const lookup = new Map();
-    // (set|number) → bare for every frozen printing. Lets the encoder bridge a
-    // live card whose NAME changed (a rename) but whose coordinates didn't back
-    // to its frozen pool slot. Names move; (set, number) is the stable identity.
     const bareBySetNum = new Map();
     const sets = Object.keys(data).sort();
-    // Bare-name strip semantics differ by version. v1 strips one trailing
-    // `_<ALNUM>` only — leaves phantom bares like `Foo_PRO` when the actual
-    // printing is `Foo_PRO_KDT`. v2 strips repeatedly, honouring every
-    // cards.json set code AND `_PRO` (matching app.js's canonicalName) so
-    // every printing of a card lands at the same pool index and produces the
-    // same URL.
     const allSetCodes = new Set(Object.keys(data));
     function stripBareV1(name) {
       const m = /^(.*)_([A-Z0-9]+)$/.exec(name);
@@ -230,12 +153,6 @@
             manaCost: c.manaCost || '',
             text: c.text || '',
             legal: isLegalPrinting,
-            // The cards.json printing name first encountered for this bare.
-            // Used as the decoder's output name so alt-art / set-only printings
-            // (e.g. `Swamp Romantic_DOV`, whose stripped bare `Swamp Romantic`
-            // matches no `STATE.byName` key) re-import cleanly. For bares whose
-            // first printing is the base name (no `_SET`/parens/word suffix),
-            // firstName == bare so output is unchanged from the pre-fix codec.
             firstName: full,
           });
           lookup.set(bare, bare);
@@ -253,21 +170,12 @@
       if (ia.set !== ib.set) return ia.set < ib.set ? -1 : 1;
       return numKey(ia.num).localeCompare(numKey(ib.num));
     });
-    // v2 only: append the 5 basic names at indices N..N+4 so the appendix
-    // can encode basic overflows (>15 main or >7 side per basic — the
-    // header's 4+3-bit counts top out there). In v1 there are no
-    // basic-overflow appendix entries (and the pool has no slot for them),
-    // so basics live only in the header.
     const nonBasicFullLen = fullCanonical.length;
     if (version === 2) {
       for (const b of BASIC_NAMES) fullCanonical.push(b);
     }
     const fullNameIndex = new Map();
     fullCanonical.forEach((b, i) => fullNameIndex.set(b, i));
-    // The gap-coded legal pool excludes freeze-time illegal cards AND
-    // user-marked unplayable cards (still encode via appendix on rare picks).
-    // Only the non-basic prefix participates — basics live at the tail of
-    // fullCanonical purely for appendix overflow indexing.
     const legalCanonical = fullCanonical.slice(0, nonBasicFullLen).filter(
       b => info.get(b).legal && !unplayable.has(b));
     const legalNameIndex = new Map();
@@ -276,10 +184,6 @@
              info, lookup, staples, nonBasicFullLen, bareBySetNum, allSetCodes };
   }
 
-  // Live-data bridge: indices come from the frozen pool, but display names and
-  // new-printing resolution must track the CURRENT cards.json so a card renamed
-  // upstream (e.g. Silent → Shimmering Lakefront) still encodes into its frozen
-  // slot and decodes back to a name the live deckbuilder can import.
   function buildLiveBridge(data) {
     const liveByName = new Set();
     const liveNameBySetNum = new Map();
@@ -311,12 +215,6 @@
     return out;
   }
 
-  // Rename ledger (static/renames.txt): one "old => current" per line,
-  // append-only. Records cards whose NAME vanished upstream (upstream data has
-  // no stable id), so decode can recover the current importable name and encode
-  // can find the frozen slot. Chains: A=>B plus B=>C resolves A through to C.
-  // Authoritative — consulted before the (set,num) heuristic. Does NOT affect
-  // pool indices or the encoded bitstream, so appending never breaks a URL.
   function parseRenames(text) {
     const fwd = new Map(); const back = new Map();
     if (!text) return { fwd, back };
@@ -334,35 +232,28 @@
     return { fwd, back };
   }
 
-  // Walk a vanished frozen name forward along the rename chain to the first
-  // name the live data still has. null if the chain dead-ends off-live (e.g. a
-  // card that was later removed).
   function renameToLive(name, fwd, liveByName) {
     let cur = name; const seen = new Set([cur]);
     while (fwd.has(cur)) {
       cur = fwd.get(cur);
-      if (seen.has(cur)) break; // cycle guard
+      if (seen.has(cur)) break;
       seen.add(cur);
       if (liveByName && liveByName.has(cur)) return cur;
     }
     return null;
   }
 
-  // Walk a live deck-card name backward along the rename chain to the first
-  // name the frozen pool owns; returns that frozen bare, or null.
   function renameToFrozen(name, back, lookup) {
     let cur = name; const seen = new Set([cur]);
     while (back.has(cur)) {
       cur = back.get(cur);
-      if (seen.has(cur)) break; // cycle guard
+      if (seen.has(cur)) break;
       seen.add(cur);
       if (lookup.has(cur)) return lookup.get(cur);
     }
     return null;
   }
 
-  // Sort key for card numbers: pad numeric prefix to fixed width so "10"
-  // sorts after "2", and append the alpha suffix so "162a" < "162b".
   function numKey(n) {
     const s = String(n || '');
     const m = /^(\d+)([A-Za-z]*)$/.exec(s);
@@ -373,8 +264,6 @@
   async function ensurePool(version) {
     if (_poolPromises.has(version)) return _poolPromises.get(version);
     const p = (async () => {
-      // Pool indices come from the FROZEN snapshot (cards.frozen.json); the
-      // live cards.json is fetched only to bridge renamed/new printing names.
       const [frozenResp, liveResp, staplesResp, unplayableResp, renamesResp] = await Promise.all([
         fetch('cards.frozen.json', { cache: 'force-cache' }),
         fetch('cards.json', { cache: 'force-cache' }).catch(() => null),
@@ -398,9 +287,6 @@
     return p;
   }
 
-  // ------------------------------------------------------------------------
-  // Color identity (deck-level): producible ∩ required, hybrids resolved by
-  // producibility. Both main and side included.
 
   function isBasic(name) {
     const i = (name || '').indexOf('_');
@@ -448,35 +334,21 @@
         const [a, b] = pip.colors;
         if (!(mask & COLOR_BIT[a]) && !(mask & COLOR_BIT[b])) return false;
       }
-      // phyrexian / monohybrid / generic always payable
     }
     return true;
   }
 
-  // Resolve a live deck-card name to its frozen pool bare. Order matters:
-  // direct frozen lookup wins, so the 57 crossover cards that legitimately
-  // carry a "(Flavor)" / "(SETCODE)" suffix in the frozen pool keep mapping to
-  // themselves and the later heuristics never touch them.
   function resolveCanon(name, pool) {
     const { lookup, info, bareBySetNum, liveSetNumByName, liveByName,
             allSetCodes, renameBack } = pool;
     const head = name.split('_')[0];
-    // 1. Unchanged printing names (and every frozen bare/full name).
     let c = lookup.get(name) || lookup.get(head);
     if (c) return c;
-    // 1b. Authoritative rename ledger: walk the live name back to a frozen bare.
     if (renameBack) {
       const b = renameToFrozen(name, renameBack, lookup)
              || renameToFrozen(head, renameBack, lookup);
       if (b) return b;
     }
-    // 2. Rename: the live name shares (set, number) with a frozen printing —
-    //    but only if that frozen printing's name has itself VANISHED upstream
-    //    (a genuine in-place rename of this slot). If the frozen name still
-    //    exists live, the slot was merely renumbered and `name` is a different
-    //    or brand-new card that slid into the reused number; bridging it onto
-    //    the frozen slot would encode the wrong card. Leave it unresolved so a
-    //    genuinely new card is dropped (and surfaced) rather than mis-encoded.
     const sn = (liveSetNumByName && (liveSetNumByName.get(name) || liveSetNumByName.get(head)));
     if (sn && bareBySetNum.has(sn)) {
       const fbare = bareBySetNum.get(sn);
@@ -484,9 +356,6 @@
       const fn = (e && e.firstName) || fbare;
       if (!liveByName || (!liveByName.has(fbare) && !liveByName.has(fn))) return fbare;
     }
-    // 3. New "(SETCODE)" reprint of a card already in the pool, e.g.
-    //    "Exorcist of Errors (IWH)" → base "Exorcist of Errors". Only fires for
-    //    names that missed (1), so it never collapses an existing frozen bare.
     const m = /^(.*) \(([0-9A-Z]+)\)$/.exec(head);
     if (m && allSetCodes && allSetCodes.has(m[2])) {
       const base = lookup.get(m[1]);
@@ -495,8 +364,6 @@
     return null;
   }
 
-  // ------------------------------------------------------------------------
-  // Bit writer / reader
 
   class BitWriter {
     constructor() { this.bits = []; }
@@ -513,8 +380,6 @@
     if (k) bw.w(value & ((1 << k) - 1), k);
   }
 
-  // Pack a bit array with front-pad framing so the result is byte-aligned.
-  // Pad layout: (0..7 zero bits) + (1 marker bit) + bits.
   function bitsToBytesWithFrontPad(bits) {
     const pad = (7 - bits.length % 8 + 8) % 8;
     const total = pad + 1 + bits.length;
@@ -526,12 +391,11 @@
       pos++;
     }
     for (let i = 0; i < pad; i++) put(0);
-    put(1); // marker
+    put(1);
     for (const b of bits) put(b);
     return out;
   }
 
-  // base64url encode (no padding).
   function bytesToBase64url(bytes) {
     let bin = '';
     for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
@@ -547,10 +411,7 @@
     return out;
   }
 
-  // ------------------------------------------------------------------------
-  // Encode
 
-  // entries: [{ name, main, side }]   — name is the cards.json suffixed canonical form
   async function encode(entries) {
     const pool = await ensurePool(VERSION);
     const { legalCanonical, legalNameIndex, fullNameIndex,
@@ -581,8 +442,6 @@
     }
     const mask = computeDeckMask(maskInputs, info, lookup);
 
-    // Filter the legal pool by the deck color mask, then split into staple
-    // and rest segments (canonical order within each).
     const stapleSeg = []; const restSeg = [];
     for (let i = 0; i < legalCanonical.length; i++) {
       const name = legalCanonical[i];
@@ -594,12 +453,10 @@
     newPool.forEach((legalIdx, segPos) => legalToSegPos.set(legalIdx, segPos));
     const nStapleInPool = stapleSeg.length;
 
-    // Partition picks across (staple, rest, appendix).
     const seg1 = []; const seg2 = []; const appendix = [];
     for (const nb of nonbasic) {
       const legalIdx = legalNameIndex.has(nb.canon) ? legalNameIndex.get(nb.canon) : -1;
       if (legalIdx < 0 || !legalToSegPos.has(legalIdx)) {
-        // Off-color or freeze-time-illegal — go to appendix using full-pool index.
         appendix.push([fullNameIndex.get(nb.canon), nb.main, nb.side]);
         continue;
       }
@@ -607,11 +464,6 @@
       const entry = [pos, nb.main, nb.side];
       (pos < nStapleInPool ? seg1 : seg2).push(entry);
     }
-    // Basic overflow: header bits cap each basic at 15 main / 7 side; emit
-    // the remainder via appendix entries using the per-basic full-pool index
-    // (placed at nonBasicFullLen + basicIndex when the pool was built).
-    // Each appendix entry carries up to 4 main or 4 side via the Huffman
-    // pair table — chunk overflow into the biggest pair that fits.
     for (let i = 0; i < BASIC_NAMES.length; i++) {
       const b = BASIC_NAMES[i];
       let mOver = Math.max(0, basics[b][0] - 15);
@@ -634,7 +486,6 @@
     seg2.sort((a, b) => a[0] - b[0]);
     appendix.sort((a, b) => a[0] - b[0]);
 
-    // Per-segment optimal Rice k.
     function gapsOf(picks, start) {
       const g = []; let prev = start - 1;
       for (const p of picks) { g.push(p[0] - prev - 1); prev = p[0]; }
@@ -653,7 +504,6 @@
     const k1 = g1.length ? bestK(g1) : 0;
     const k2 = g2.length ? bestK(g2) : 0;
 
-    // Emit.
     const bw = new BitWriter();
     bw.w(VERSION, 8);
     bw.w(mask, 5);
@@ -684,13 +534,6 @@
       prev = idx;
     }
     if (appendix.length) {
-      // The decoder reads each rest entry as rice(gap)+huffman(sym); when it
-      // hits EOS it switches to the appendix. Naively writing just the 9-bit
-      // EOS code lets the decoder's rice consume the first `1` (unary
-      // terminator) and re-read the remaining 8 ones + the appendix's first
-      // bit as the 9-bit code `111111110` (= sym '1,3'), missing EOS.
-      // Pad with a discarded rice gap of 0 so rice consumes the padding and
-      // huffman reads the full EOS code.
       rice(bw, 0, k2);
       bw.writeBits(MAIN_CODES[EOS]);
       for (const [fullIdx, m, s] of appendix) {
@@ -707,8 +550,6 @@
              appendixCount: appendix.length, unresolved };
   }
 
-  // ------------------------------------------------------------------------
-  // Decode
 
   class BitReader {
     constructor(bytes) {
@@ -743,14 +584,14 @@
     let maxLen = 0;
     for (const sym of Object.keys(codes)) {
       const bits = codes[sym];
-      table.set(parseInt(bits, 2) | (1 << bits.length), sym); // tag with sentinel bit
+      table.set(parseInt(bits, 2) | (1 << bits.length), sym);
       if (bits.length > maxLen) maxLen = bits.length;
     }
     return { table, maxLen };
   }
 
   function huffmanDecodeOne(br, hd) {
-    let val = 1; // sentinel bit
+    let val = 1;
     for (let L = 1; L <= hd.maxLen; L++) {
       val = (val << 1) | br.bits[br.pos++];
       if (hd.table.has(val)) return hd.table.get(val);
@@ -762,7 +603,7 @@
     const bytes = base64urlToBytes(b64);
     const br = new BitReader(bytes);
     while (br.bits[br.pos] === 0) br.pos++;
-    br.pos++; // marker
+    br.pos++;
     const version = br.read(8);
     if (version !== 1 && version !== 2) {
       throw new Error('unknown deck-URL version: ' + version);
@@ -770,31 +611,14 @@
     const pool = await ensurePool(version);
     const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen,
             lookup, liveByName, liveNameBySetNum, renameFwd } = pool;
-    // Output the frozen pool's first printing name for each bare (which fixes
-    // round-trip for bares like `Swamp Romantic` that aren't real printings).
-    // But if that name no longer exists in the live data — because the card was
-    // renamed upstream — emit the current name at the same (set, number) so the
-    // decoded deck still imports. Unchanged cards keep their exact old output.
-    //
-    // The (set, number) fallback is only trustworthy when the slot's current
-    // occupant is a name NO other frozen slot owns. Upstream renumbers whole
-    // sets (a card inserted mid-set shifts every later number), so a frozen
-    // name's old slot can be reoccupied by a DIFFERENT, pre-existing pool card
-    // (e.g. frozen `Shock`@ERR150 → live `Segmentation_Fault`, which is really
-    // frozen ERR149 shifted down one). Substituting that would silently import
-    // the wrong card. So only accept an occupant that is itself new to the pool
-    // (a genuine in-place rename); otherwise keep the old name, which imports as
-    // a visible unknown rather than a plausible-but-wrong card.
     const claimedByPool = (nm) =>
       !!nm && (lookup.has(nm) || lookup.has(nm.split('_')[0]));
     const nameOut = (bare) => {
       const e = info.get(bare);
       const fn = (e && e.firstName) || bare;
       if (!liveByName || liveByName.has(fn)) return fn;
-      // Authoritative rename ledger first: follow fn's chain to a live name.
       const led = renameFwd && renameToLive(fn, renameFwd, liveByName);
       if (led) return led;
-      // Guarded (set,num) fallback for renames not (yet) in the ledger.
       const sn = e && (e.set + '|' + e.num);
       const cand = sn && liveNameBySetNum && liveNameBySetNum.get(sn);
       if (cand && !claimedByPool(cand)) return cand;
@@ -814,7 +638,6 @@
       }
     }
 
-    // Reconstruct the same filtered + segmented pool the encoder used.
     const stapleSeg = []; const restSeg = [];
     for (let i = 0; i < legalCanonical.length; i++) {
       const name = legalCanonical[i];
@@ -828,7 +651,6 @@
     const appHd = buildHuffmanTable(APP_CODES);
 
     const cards = {};
-    // Read exactly nStaplesPicked from the staple segment.
     let prev = -1;
     for (let i = 0; i < nStaplesPicked; i++) {
       const gap = riceRead(br, k1);
@@ -839,7 +661,6 @@
       cards[nameOut(legalCanonical[legalIdx])] = { main: m, side: s };
       prev = segPos;
     }
-    // Rest segment: keep reading until EOS or end of bits.
     let appendixStarts = false;
     prev = nStapleInPool - 1;
     while (br.remaining() > 0) {
@@ -865,9 +686,6 @@
         } catch (e) { break; }
         const [m, s] = parsePair(sym);
         if (fullIdx >= nonBasicFullLen) {
-          // Basic-overflow entry: accumulate onto the basics counter so the
-          // header's (clamped) main/side and any number of overflow entries
-          // sum to the original count.
           const name = fullCanonical[fullIdx];
           basics[name][0] += m;
           basics[name][1] += s;
@@ -880,6 +698,5 @@
     return { version, mask, basics, cards };
   }
 
-  // Public API.
   window.DeckUrl = { encode, decode, _ensurePool: ensurePool };
 })();

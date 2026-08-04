@@ -1,10 +1,3 @@
-# Cards the format-codec should treat as 'unplayable' — they get pushed
-# out of the gap-stream pool entirely (encoded via appendix on the rare
-# deck that contains them). Same freeze policy as staples.txt: editing
-# this file invalidates previously-encoded URLs.
-#
-# Edit via the labeling app at /label.html (not by hand if avoidable).
-
 Armored Raptor
 Catch Your Breath
 Center of Attention

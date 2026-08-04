@@ -113382,7 +113382,7 @@
      "manaCost": "{1}{R}",
      "identifiers": {
       "scryfallId": 2537,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Cinderhorn Calf_KSV",
      "number": "130",
@@ -113395,7 +113395,7 @@
       "Minotaur",
       "Warrior"
      ],
-     "text": "Cinderhorn Calf can't block\n{1}{R}: Cinderhorn Calf gains menace until end of turn.",
+     "text": "Cinderhorn Calf can't block.\n{1}{R}: Cinderhorn Calf gains menace until end of turn.",
      "toughness": "1",
      "type": "Creature — Minotaur Warrior",
      "types": [
@@ -234149,7 +234149,7 @@
      "manaCost": "{2}{G}",
      "identifiers": {
       "scryfallId": 4842,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Zeno, Planar Engineer",
      "number": "156",
@@ -234165,7 +234165,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "Whenever a counter is put on another creature you control, you may put a counter of the same kind on Zeno. Then if there are no other counters of that kind on Zeno, draw a card. Do this only once each turn.",
+     "text": "Once each turn, when a counter is put on another creature you control, you may put a counter of that kind on Zeno. Draw a card if it's the only counter of that kind on Zeno.",
      "toughness": "3",
      "type": "Legendary Artifact Creature — Human Artificer",
      "types": [
@@ -256658,7 +256658,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257204,7 +257204,7 @@
      "manaCost": "{X}{X}{B}",
      "identifiers": {
       "scryfallId": 5290,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "BORROW()",
      "number": "83",
@@ -257282,7 +257282,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257435,7 +257435,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257585,7 +257585,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "Daemons remember what users forget.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257736,7 +257736,7 @@
       "G",
       "W"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "User's best friend.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -257928,7 +257928,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "              I am the users' dreams given will. <\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258382,7 +258382,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "Exceptionals seek out errors for fun, art, or just because they're told not to.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258595,7 +258595,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5317,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Clearwater Grotto",
      "number": "246",
@@ -258642,7 +258642,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5317,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Clearwater Grotto",
      "number": "246",
@@ -258672,7 +258672,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "“If it can run, I can follow.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -258916,7 +258916,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259120,7 +259120,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259264,7 +259264,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259366,7 +259366,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259518,7 +259518,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259569,7 +259569,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "In the sea of grief, Gemi could make out users. She could feel the tragic sensation reflecting and amplifying off them.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259617,7 +259617,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259668,7 +259668,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "The Decryption is a branching tree of puzzles all over the Archives. Those that reach an end point must add a new puzzle to the chain.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259719,7 +259719,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "The self is data, and data can be overwritten.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -259809,7 +259809,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "“If you hear voices, don't answer.”\n—Mev's Rules of Survival \n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260007,7 +260007,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260159,7 +260159,7 @@
       "B",
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260608,7 +260608,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260653,7 +260653,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -260862,7 +260862,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "> The daemons told me you were dying.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261438,7 +261438,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "Toki joined Catch to fight errors. She never thought she might have to remove another user.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261816,7 +261816,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261918,7 +261918,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "A scream of liquid noise consumed Xeia's vision. The track, the finish line, the stands, all dissolved into a glitchy mass of red distortion. Her bones rattled and her blood howled.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -261965,7 +261965,7 @@
       "B",
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262016,7 +262016,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262253,7 +262253,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262304,7 +262304,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262322,7 +262322,7 @@
      "manaCost": "{B}",
      "identifiers": {
       "scryfallId": 5392,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Grognard",
      "number": "100",
@@ -262335,8 +262335,8 @@
       "Human",
       "Cleric"
      ],
-     "text": "This creature enters the battlefield tapped.\nLevel up {2}{B} ({2}{B}: Put a level counter on this as a sorcery.) [2/1]\n[level 1-2] This creature gets +1/+1 for each creature and/or enchantment card in your graveyard. [2/2]\n[level 3+] This creature gets +1/+1 for each creature and/or enchantment card in all graveyards. [2/2]",
-     "toughness": "1",
+     "text": "This creature enters the battlefield tapped.\nLevel up {2}{B} ({2}{B}: Put a level counter on this. Level up only as a sorcery.) [2/2]\n[level 1-2] This creature gets +1/+1 for each creature and/or enchantment card in your graveyard. [2/2]\n[level 3+] This creature gets +1/+1 for each creature and/or enchantment card in all graveyards. [2/2]",
+     "toughness": "2",
      "type": "Creature — Human Cleric",
      "types": [
       "Creature"
@@ -262355,7 +262355,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262451,7 +262451,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262596,7 +262596,7 @@
       "R",
       "W"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262890,7 +262890,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262940,7 +262940,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -262991,7 +262991,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263336,7 +263336,7 @@
       "W",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263392,7 +263392,7 @@
       "W",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -263904,7 +263904,7 @@
       "B",
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264378,7 +264378,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "“You put on a mask for play, a mask for war, a mask for love. Come to me if you find those masks difficult to remove.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264531,7 +264531,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264734,7 +264734,7 @@
       "U",
       "W"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264785,7 +264785,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "The Mirage Exposition sets the season's trends for fashion, architecture, food, music, and even weather.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -264853,7 +264853,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5442,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Misty Peak",
      "number": "262",
@@ -264900,7 +264900,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5442,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Misty Peak",
      "number": "262",
@@ -265132,7 +265132,7 @@
       "W",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265694,7 +265694,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265739,7 +265739,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265886,7 +265886,7 @@
       "B",
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -265942,7 +265942,7 @@
       "U",
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -266408,7 +266408,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5471,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Profane Grove",
      "number": "264",
@@ -266455,7 +266455,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5471,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Profane Grove",
      "number": "264",
@@ -266485,7 +266485,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "Who is pain a message from?\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -267172,7 +267172,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -267761,7 +267761,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "“Be small. Pack light. Leave nothing.”\n—Mev's Rules of Survival \n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -268158,7 +268158,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -268860,7 +268860,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5521,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Stark Expanse",
      "number": "271",
@@ -268907,7 +268907,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5521,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Stark Expanse",
      "number": "271",
@@ -269433,7 +269433,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "Destruction feels so much better when you know it's final.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269587,7 +269587,7 @@
       "R",
       "W"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269642,7 +269642,7 @@
       "R",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "“What's the point of living forever if no one knows your name?”\n—Vijkstra\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -269985,7 +269985,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -270652,7 +270652,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5556,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Windbeaten Stones",
      "number": "275",
@@ -270699,7 +270699,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5556,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Windbeaten Stones",
      "number": "275",
@@ -270787,7 +270787,7 @@
       "U",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -270934,7 +270934,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -271312,7 +271312,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -272117,7 +272117,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -272212,7 +272212,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -272411,7 +272411,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273355,7 +273355,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273428,7 +273428,7 @@
      "manaCost": "{1}{G}",
      "identifiers": {
       "scryfallId": 5571,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Aonuma's Students",
      "number": "129",
@@ -273517,7 +273517,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -273719,7 +273719,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -274651,7 +274651,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275005,7 +275005,7 @@
       "W",
       "B"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“The only mercy I give these demons is a swift death.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275404,7 +275404,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -275773,8 +275773,8 @@
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
-     "id": "Demonic Reposession_KDT",
-     "imageName": "demonic reposession",
+     "id": "Demonic Repossession_KDT",
+     "imageName": "demonic repossession",
      "layout": "normal",
      "legalities": {
       "revolution": "Legal",
@@ -275787,9 +275787,9 @@
      "manaCost": "{4}{B}{R}",
      "identifiers": {
       "scryfallId": 5618,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
-     "name": "Demonic Reposession",
+     "name": "Demonic Repossession",
      "number": "183",
      "rarity": "common",
      "relatedCards": {
@@ -275800,7 +275800,7 @@
      "types": [
       "Sorcery"
      ],
-     "uuid": "Demonic Reposession_KDT"
+     "uuid": "Demonic Repossession_KDT"
     },
     {
      "artist": "LU LIN",
@@ -275831,7 +275831,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5619,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Desolate Path",
      "number": "281",
@@ -275981,7 +275981,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5622,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Distant Path",
      "number": "282",
@@ -276348,7 +276348,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“Prosperity, now and forever.”\n—Imperial motto\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276506,7 +276506,7 @@
      "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 5632,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Elder Tattooist",
      "number": "8",
@@ -276588,7 +276588,7 @@
       "R",
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "adventure",
      "frameVersion": "2015",
@@ -276803,7 +276803,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5638,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Erosive Path",
      "number": "283",
@@ -276881,7 +276881,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“Your enemy will have trained all their life for a fight. You must make sure they never have a chance to draw their blades.”\n—Tsubasa Shigane\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -276928,7 +276928,7 @@
       "R",
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -277038,7 +277038,7 @@
      "manaCost": "{2}",
      "identifiers": {
       "scryfallId": 5643,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Faces of the Faceless",
      "number": "263",
@@ -277321,7 +277321,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5649,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Forlorn Path",
      "number": "284",
@@ -277499,7 +277499,7 @@
      "faceManaValue": 0,
      "colors": [],
      "colorIdentity": [],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -279412,7 +279412,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“Look at these craven fools, huddled in prayer. Who do they plead to? I have slain every god.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -279887,7 +279887,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -280854,7 +280854,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281020,7 +281020,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5720,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Meandering Path",
      "number": "287",
@@ -281253,7 +281253,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281306,7 +281306,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281455,7 +281455,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281708,7 +281708,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5734,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Murky Path",
      "number": "288",
@@ -281735,7 +281735,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -281890,7 +281890,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -282779,7 +282779,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "saga",
      "frameVersion": "2015",
@@ -282847,7 +282847,7 @@
      "manaCost": "{1}{G}{U}",
      "identifiers": {
       "scryfallId": 5758,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Precognitive Combatant",
      "number": "221",
@@ -283498,7 +283498,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“A dance is no different than a fight.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -283616,7 +283616,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5774,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Rousing Path",
      "number": "291",
@@ -284065,7 +284065,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "The dancer often imitates the falling petals, letting the wind guide her movements.\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284401,7 +284401,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284555,7 +284555,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284606,7 +284606,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "“None dare oppose me.”\n",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -284657,7 +284657,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -285135,7 +285135,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5806,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Sodden Path",
      "number": "293",
@@ -286211,7 +286211,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286324,7 +286324,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5830,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Thicketed Path",
      "number": "294",
@@ -286402,7 +286402,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -286574,7 +286574,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 5835,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Torrid Path",
      "number": "295",
@@ -286603,7 +286603,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "tallplaneswalker",
      "frameVersion": "2015",
@@ -286655,7 +286655,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -287849,7 +287849,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288214,7 +288214,7 @@
      "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 5945,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Elder Tattooist_PRO_KDT",
      "number": "321",
@@ -288538,7 +288538,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -288592,7 +288592,7 @@
      "colorIdentity": [
       "B"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289185,7 +289185,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289232,7 +289232,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289535,7 +289535,7 @@
      "colorIdentity": [
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -289588,7 +289588,7 @@
       "G",
       "U"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "tallplaneswalker",
      "frameVersion": "2015",
@@ -290110,7 +290110,7 @@
      "colorIdentity": [
       "W"
      ],
-     "designer": "false",
+     "designer": "Zangy",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -293560,7 +293560,7 @@
      "manaCost": "{3}{W}{W}",
      "identifiers": {
       "scryfallId": 6026,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Dawnhymn Herald",
      "number": "13",
@@ -293969,7 +293969,7 @@
      "manaCost": "{U}{B}",
      "identifiers": {
       "scryfallId": 6034,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Destructive Ambition",
      "number": "210",
@@ -295824,7 +295824,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 6072,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Gilded Court",
      "number": "294",
@@ -296607,7 +296607,7 @@
      "manaCost": "{1}{B}{B}",
      "identifiers": {
       "scryfallId": 6088,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Guardian of Ashen Oaths",
      "number": "97",
@@ -298045,7 +298045,7 @@
      "manaCost": "{5}{U}{R}",
      "identifiers": {
       "scryfallId": 6116,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Mass Conjuration",
      "number": "238",
@@ -302003,7 +302003,7 @@
      "manaCost": "{U}{U}{R}{R}",
      "identifiers": {
       "scryfallId": 6197,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Snow on Petals",
      "number": "240",
@@ -305190,6 +305190,57 @@
      "uuid": "Zealforged Pathfinder_TWI"
     },
     {
+     "artist": "Yutthaphong Kaewsuk",
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
+     "colors": [
+      "W"
+     ],
+     "colorIdentity": [
+      "W"
+     ],
+     "designer": "Zangy",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Aegis of Grace_PRO_TWI",
+     "imageName": "aegis of grace_pro_twi",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{2}{W}{W}",
+     "identifiers": {
+      "scryfallId": 6425,
+      "multiverseId": 20260631
+     },
+     "name": "Aegis of Grace_PRO_TWI",
+     "number": "334",
+     "power": "4",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Angel",
+      "Knight"
+     ],
+     "text": "Flying, lifelink\nPrevent all damage that would be dealt to battles you protect.\nYou, battles you control, and other creatures you control have hexproof.",
+     "toughness": "4",
+     "type": "Creature — Angel Knight",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Aegis of Grace_PRO_TWI"
+    },
+    {
      "artist": "Marcello Chall",
      "convertedManaCost": 4,
      "faceConvertedManaCost": 4,
@@ -306626,8 +306677,8 @@
      "uuid": "Witchery_PRO_TWI"
     }
    ],
-   "baseSetSize": 345,
-   "totalSetSize": 345,
+   "baseSetSize": 346,
+   "totalSetSize": 346,
    "cardsphereSetId": 20,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -310570,7 +310621,7 @@
      "colorIdentity": [
       "R"
      ],
-     "designer": "false",
+     "designer": "Scribbl",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -311591,7 +311642,7 @@
      "manaCost": "{R}",
      "identifiers": {
       "scryfallId": 6540,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Emblazoned Prophet",
      "number": "130",
@@ -311604,7 +311655,7 @@
       "Human",
       "Shaman"
      ],
-     "text": "Menace\nWhenever Emblazoned Prophet attacks, it deals 1 damage to the player or permanent it's attacking for each spell you've cast this turn.",
+     "text": "Whenever Emblazoned Prophet attacks, it deals 1 damage to defending player for each spell you've cast this turn.\n{4}{R}: Exile the top four cards of your library. You may cast a spell exiled this way with mana value 3 or less without paying its mana cost. Activate only as a sorcery.",
      "toughness": "1",
      "type": "Creature — Human Shaman",
      "types": [
@@ -318087,7 +318138,7 @@
      "manaCost": "{1}{W}",
      "identifiers": {
       "scryfallId": 6671,
-      "multiverseId": 0
+      "multiverseId": 20260605
      },
      "name": "Qaraz Monument",
      "number": "25",
@@ -318095,7 +318146,7 @@
      "relatedCards": {
       "spellbook": []
      },
-     "text": "Whenever Qaraz Monument or another enchantment you control enters, put a charge counter on Qaraz Monument.\nWhenever an artifact you control enters, remove a charge counter from Qaraz Monument. If you do, draw a card and it becomes a 3/3 Elemental enchantment creature with flying until end of turn. ",
+     "text": "Whenever Qaraz Monument or another enchantment you control enters, put a charge counter on Qaraz Monument.\nOnce each turn, when an artifact you control enters, you may remove a charge counter from Qaraz Monument. If you do, draw a card and it becomes a 3/3 Elemental enchantment creature with flying until end of turn. ",
      "type": "Enchantment",
      "types": [
       "Enchantment"
@@ -318970,7 +319021,7 @@
      "manaCost": "{2}{W}",
      "identifiers": {
       "scryfallId": 6689,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Sarsupei Houndmaster",
      "number": "28",
@@ -318983,7 +319034,7 @@
       "Moonfolk",
       "Cleric"
      ],
-     "text": "When Sarsupei Houndmaster enters, put a -1/-1 counter on target creature you control.\n{1}{W}, Remove a -1/-1 counter from Sarsupei Houndmaster: Create a 2/2 black Hound creature token. Activate only as a sorcery.",
+     "text": "When Sarsupei Houndmaster enters, put a -1/-1 counter on target creature you control.\n{1}{W}, Remove a -1/-1 counter from Sarsupei Houndmaster: Create a 2/2 black Dog creature token. Activate only as a sorcery.",
      "toughness": "3",
      "type": "Creature — Moonfolk Cleric",
      "types": [
@@ -320744,7 +320795,7 @@
      "manaCost": "{X}{U}{U}",
      "identifiers": {
       "scryfallId": 6725,
-      "multiverseId": 0
+      "multiverseId": 20260631
      },
      "name": "Tamiyo, Sun-Seeking",
      "number": "74",
@@ -320758,7 +320809,7 @@
      "supertypes": [
       "Legendary"
      ],
-     "text": "[+1]: For each loyalty counter on Tamiyo, target player mills two cards.\n[+1]: For every two loyalty counters on Tamiyo, up to one target creature gets -2/-0 until your next turn.\n[+1]: For every three loyalty counters on Tamiyo, target player draws a card.",
+     "text": "[+1]: Target player mills two cards for every loyalty counter on Tamiyo.\n[+1]: Draw a card for every two loyalty counters on Tamiyo. If you drew one or more cards this way, discard a card.\n[+1]: Tap target creature. Put a stun counter on it for every three counters on Tamiyo.",
      "type": "Legendary Planeswalker — Tamiyo",
      "types": [
       "Planeswalker"
@@ -331047,7 +331098,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Matt",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -338332,7 +338383,7 @@
      "colorIdentity": [
       "G"
      ],
-     "designer": "false",
+     "designer": "Matt",
      "flavor": "",
      "frameType": "normal",
      "frameVersion": "2015",
@@ -340480,6 +340531,57 @@
      "uuid": "Collected Thoughts_PRO_IWH"
     },
     {
+     "artist": "Azid Faizi",
+     "convertedManaCost": 2,
+     "faceConvertedManaCost": 2,
+     "manaValue": 2,
+     "faceManaValue": 2,
+     "colors": [
+      "G"
+     ],
+     "colorIdentity": [
+      "G",
+      "R"
+     ],
+     "designer": "Matt",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Darkthicket Howler_PRO_IWH",
+     "imageName": "darkthicket howler_pro_iwh",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{1}{G}",
+     "identifiers": {
+      "scryfallId": 7484,
+      "multiverseId": 20260631
+     },
+     "name": "Darkthicket Howler_PRO_IWH",
+     "number": "316",
+     "power": "2",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Wolf"
+     ],
+     "text": "{T}: Add {R} or {G}.\n{1}, {T}: Whenever target savage creature you control deals combat damage to a player this turn, draw a card. Activate only as a sorcery. (A creature is savage if it's transformed or has power greater than its base power.)",
+     "toughness": "3",
+     "type": "Creature — Wolf",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Darkthicket Howler_PRO_IWH"
+    },
+    {
      "artist": "Chengwei Pan",
      "convertedManaCost": 3,
      "faceConvertedManaCost": 3,
@@ -340622,8 +340724,8 @@
      "uuid": "Teeming Secrets_PRO_IWH"
     }
    ],
-   "baseSetSize": 353,
-   "totalSetSize": 353,
+   "baseSetSize": 354,
+   "totalSetSize": 354,
    "cardsphereSetId": 22,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -343927,7 +344029,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7199,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Flooded Morass",
      "number": "256",
@@ -343975,7 +344077,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7200,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Flourishing Crevasse",
      "number": "257",
@@ -344414,7 +344516,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7209,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Frostfire Geysers",
      "number": "259",
@@ -344462,7 +344564,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7210,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Fungal Mire",
      "number": "260",
@@ -344602,7 +344704,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7213,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Gloomcover Steppe",
      "number": "261",
@@ -344651,7 +344753,7 @@
      "manaCost": "{X}{B}",
      "identifiers": {
       "scryfallId": 7214,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Go for the Gut",
      "number": "91",
@@ -344992,7 +345094,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7221,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Heart of the Glade",
      "number": "262",
@@ -345429,7 +345531,7 @@
      "manaCost": "{1}{B}",
      "identifiers": {
       "scryfallId": 7231,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Hymn of the Overseer",
      "number": "96",
@@ -346255,7 +346357,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7247,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Lavatorn Fields",
      "number": "265",
@@ -346675,7 +346777,7 @@
      "manaCost": "{B}",
      "identifiers": {
       "scryfallId": 7254,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Listen In",
      "number": "99",
@@ -346827,7 +346929,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7257,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Lush Oasis",
      "number": "266",
@@ -346921,7 +347023,7 @@
      "manaCost": "{6}{R}{R}",
      "identifiers": {
       "scryfallId": 7259,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Make a Break for It",
      "number": "126",
@@ -348372,7 +348474,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7289,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Planar Archives",
      "number": "60",
@@ -348416,7 +348518,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7290,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Pool of Light",
      "number": "267",
@@ -348512,7 +348614,7 @@
      "manaCost": "{1}",
      "identifiers": {
       "scryfallId": 7292,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Prized Possession",
      "number": "251",
@@ -349144,7 +349246,7 @@
      "manaCost": "{3}{U}",
      "identifiers": {
       "scryfallId": 7306,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Rooftop Observer",
      "number": "62",
@@ -350344,7 +350446,7 @@
      "manaCost": "{2}{R}{G}",
      "identifiers": {
       "scryfallId": 7330,
-      "multiverseId": 20260401
+      "multiverseId": 20260631
      },
      "name": "Shroudwarder Phoenix",
      "number": "207",
@@ -350356,7 +350458,7 @@
      "subtypes": [
       "Phoenix"
      ],
-     "text": "Flying, trample, haste\nAt the beginning of combat on your turn, if you've cast a spell with mana value 4 or greater this turn, you may return this card from your graveyard to the battlefield tapped and attacking with a finality counter on it. (If a creature with a finality counter on it would die, exile it instead.)",
+     "text": "Flying, trample, haste\nAt the beginning of combat on your turn, if you've cast a spell with mana value 4 or greater this turn, you may return this card from your graveyard to the battlefield with a finality counter on it. (If a creature with a finality counter on it would die, exile it instead.)",
      "toughness": "2",
      "type": "Creature — Phoenix",
      "types": [
@@ -351207,7 +351309,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 7344,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Spiraling Canyon",
      "number": "270",
@@ -352123,7 +352225,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7363,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Swift-Step Robber",
      "number": "71",
@@ -352314,7 +352416,7 @@
      "manaCost": "{8}",
      "identifiers": {
       "scryfallId": 7367,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Tesh, Fragmented Founder",
      "number": "1",
@@ -353783,7 +353885,7 @@
      "manaCost": "{G}{U}",
      "identifiers": {
       "scryfallId": 7394,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Voice of the Old Grove",
      "number": "220",
@@ -354141,7 +354243,7 @@
      "manaCost": "{2}{G}{G}",
      "identifiers": {
       "scryfallId": 7401,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Waylen, Bloodhunter",
      "number": "183",
@@ -354603,6 +354705,57 @@
      "uuid": "Forgotten Foundation_PRO_VLR"
     },
     {
+     "artist": "Danil Luzin",
+     "convertedManaCost": 5,
+     "faceConvertedManaCost": 5,
+     "manaValue": 5,
+     "faceManaValue": 5,
+     "colors": [
+      "B"
+     ],
+     "colorIdentity": [
+      "B"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "League of Their Own_PRO_VLR",
+     "imageName": "league of their own_pro_vlr",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{3}{B}{B}",
+     "identifiers": {
+      "scryfallId": 7469,
+      "multiverseId": 20260631
+     },
+     "name": "League of Their Own_PRO_VLR",
+     "number": "287",
+     "power": "5",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Human",
+      "Mercenary"
+     ],
+     "text": "Menace\nWhenever this creature enters or attacks, exile up to one target card from a graveyard. If a creature card is exiled this way, you gain 3 life. If a land card is exiled this way, you create a Treasure token. If a noncreature, nonland card is exiled this way, draw a card.",
+     "toughness": "5",
+     "type": "Creature — Human Mercenary",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "League of Their Own_PRO_VLR"
+    },
+    {
      "artist": "Adrian Kubiak",
      "convertedManaCost": 1,
      "faceConvertedManaCost": 1,
@@ -354646,6 +354799,56 @@
       "Sorcery"
      ],
      "uuid": "Shape the Pattern_PRO_VLR"
+    },
+    {
+     "artist": "7Nulls",
+     "convertedManaCost": 1,
+     "faceConvertedManaCost": 1,
+     "manaValue": 1,
+     "faceManaValue": 1,
+     "colors": [
+      "G"
+     ],
+     "colorIdentity": [
+      "G"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Shroudpiercer_PRO_VLR",
+     "imageName": "shroudpiercer_pro_vlr",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{G}",
+     "identifiers": {
+      "scryfallId": 7473,
+      "multiverseId": 20260631
+     },
+     "name": "Shroudpiercer_PRO_VLR",
+     "number": "293",
+     "power": "1",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Horror"
+     ],
+     "text": "Deathtouch\nWhen this creature enters, surveil 1.\n{1}{G}, Exile this card from your graveyard: Surveil 1.",
+     "toughness": "1",
+     "type": "Creature — Horror",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Shroudpiercer_PRO_VLR"
     },
     {
      "artist": "fluorescence911",
@@ -354818,7 +355021,7 @@
      "manaCost": "{1}{U}",
      "identifiers": {
       "scryfallId": 7476,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Swift-Step Robber_PRO_VLR",
      "number": "284",
@@ -354866,7 +355069,7 @@
      "manaCost": "{8}",
      "identifiers": {
       "scryfallId": 7477,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Tesh, Fragmented Founder_PRO_VLR",
      "number": "278",
@@ -354886,6 +355089,51 @@
       "Planeswalker"
      ],
      "uuid": "Tesh, Fragmented Founder_PRO_VLR"
+    },
+    {
+     "artist": "Francisco Badilla",
+     "convertedManaCost": 4,
+     "faceConvertedManaCost": 4,
+     "manaValue": 4,
+     "faceManaValue": 4,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "CovetedPeacock",
+     "flavor": "",
+     "frameType": "normal",
+     "frameVersion": "2015",
+     "id": "Unending Unrest_PRO_VLR",
+     "imageName": "unending unrest_pro_vlr",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{2}{R}{R}",
+     "identifiers": {
+      "scryfallId": 7479,
+      "multiverseId": 20260631
+     },
+     "name": "Unending Unrest_PRO_VLR",
+     "number": "289",
+     "rarity": "special",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "text": "As this enchantment enters, choose a creature type.\nWhenever a creature you control of the chosen type enters, it deals damage equal to its power to any target.",
+     "type": "Enchantment",
+     "types": [
+      "Enchantment"
+     ],
+     "uuid": "Unending Unrest_PRO_VLR"
     },
     {
      "artist": "Guilherme Santana",
@@ -354992,8 +355240,8 @@
      "uuid": "Vie's Lieutenant_PRO_VLR"
     }
    ],
-   "baseSetSize": 292,
-   "totalSetSize": 292,
+   "baseSetSize": 295,
+   "totalSetSize": 295,
    "cardsphereSetId": 23,
    "isFoilOnly": false,
    "isOnlineOnly": false,
@@ -359234,6 +359482,57 @@
      "uuid": "Cogwork Harvester_REV"
     },
     {
+     "artist": "冬灯",
+     "convertedManaCost": 9,
+     "faceConvertedManaCost": 9,
+     "manaValue": 9,
+     "faceManaValue": 9,
+     "colors": [
+      "R"
+     ],
+     "colorIdentity": [
+      "R"
+     ],
+     "designer": "Matt",
+     "flavor": "",
+     "frameType": "normal-renegade",
+     "frameVersion": "2015",
+     "id": "Cordelia's Ripper_REV",
+     "imageName": "cordelia's ripper_rev",
+     "layout": "normal",
+     "legalities": {
+      "revolution": "Legal",
+      "brawl": "Legal",
+      "eternal": "Legal",
+      "eternal-pauper": "Illegal",
+      "planechase": "Legal",
+      "archaeologist": "Legal"
+     },
+     "manaCost": "{7}{R}{R}",
+     "identifiers": {
+      "scryfallId": 7491,
+      "multiverseId": 0
+     },
+     "name": "Cordelia's Ripper_REV",
+     "number": "114",
+     "power": "3",
+     "rarity": "mythic",
+     "relatedCards": {
+      "spellbook": []
+     },
+     "subtypes": [
+      "Vampire",
+      "Berserker"
+     ],
+     "text": "This spell costs {1} less to cast for each instant, sorcery, and/or Vampire card in your graveyard.\nFlying, haste\nWhenever this creature attacks, it deals 2 damage to any target.",
+     "toughness": "4",
+     "type": "Creature — Vampire Berserker",
+     "types": [
+      "Creature"
+     ],
+     "uuid": "Cordelia's Ripper_REV"
+    },
+    {
      "artist": "Eliot Baum and Viv Tanner",
      "convertedManaCost": 3,
      "faceConvertedManaCost": 3,
@@ -359741,7 +360040,7 @@
       "R",
       "G"
      ],
-     "designer": "false",
+     "designer": "Provocative",
      "flavor": "",
      "frameType": "adventure-renegade",
      "frameVersion": "2015",
@@ -363577,7 +363876,7 @@
       "R",
       "B"
      ],
-     "designer": "false",
+     "designer": "DrChipmunk",
      "flavor": "What's the point of living forever if no one knows your name?\n",
      "frameType": "normal-renegade",
      "frameVersion": "2015",
@@ -364050,7 +364349,7 @@
      "manaCost": "",
      "identifiers": {
       "scryfallId": 6324,
-      "multiverseId": 20260530
+      "multiverseId": 20260631
      },
      "name": "Windbeaten Stones_REV",
      "number": "98",
@@ -364216,8 +364515,8 @@
      "uuid": "Yaeji, Resplendent Idol_REV"
     }
    ],
-   "baseSetSize": 119,
-   "totalSetSize": 119,
+   "baseSetSize": 120,
+   "totalSetSize": 120,
    "cardsphereSetId": 0,
    "isFoilOnly": false,
    "isOnlineOnly": false,

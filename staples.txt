@@ -1,13 +1,3 @@
-# Format-codec staple list. Cards in this list go into the dense first segment
-# of the URL gap stream. Frozen at format-launch — changing it breaks all
-# previously-encoded URLs.
-#
-# Seeded by: gen_staples.py K=10
-# Source: Jan-Mar 2026 corpus, 256 decks; deck-count >= 10; legalities['revolution']=='Legal' on some printing.
-# 146 cards.
-#
-# Edit freely — one bare card name per line. Use the labeling app (static/label.html)
-# for guided review of new-set cards.
 Twilight Ambush
 Gilded Court
 Contest Coordinator

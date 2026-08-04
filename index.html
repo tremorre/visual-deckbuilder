@@ -6,7 +6,6 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="icon" type="image/webp" href="favicon.webp">
 <script>
-  // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
   try {
     var raw = localStorage.getItem('rev-deckbuilder-prefs-v1');
     if (raw) {
@@ -220,153 +219,190 @@
 
       <section>
         <h4>Booleans</h4>
-        <dl>
-          <dt><code>a b</code> · <code>a AND b</code></dt><dd>Both match.</dd>
-          <dt><code>a OR b</code></dt><dd>At least one matches.</dd>
-          <dt><code>NOT a</code> · <code>-a</code></dt><dd>Negate the next atom.</dd>
-          <dt><code>(a b)</code></dt><dd>Parentheses group atoms.</dd>
-        </dl>
+        <ul class="tokens">
+          <li><code>a b</code></li>
+          <li><code>a AND b</code></li>
+          <li><code>a OR b</code></li>
+          <li><code>NOT a</code></li>
+          <li><code>-a</code></li>
+          <li><code>(a b)</code></li>
+        </ul>
       </section>
 
       <section>
         <h4>Name and text</h4>
-        <dl>
-          <dt><code>foo</code></dt><dd>Bareword: case-insensitive substring of card name.</dd>
-          <dt><code>name:foo</code></dt><dd>Substring of card name (equivalent to bareword <code>foo</code>).</dd>
-          <dt><code>name="Foo Bar"</code></dt><dd>Exact card name.</dd>
-          <dt><code>t:creature</code> · <code>type:creature</code></dt><dd>Type line contains the substring <code>creature</code>.</dd>
-          <dt><code>t:"legendary creature"</code></dt><dd>Type line contains the literal substring (with the space).</dd>
-          <dt><code>t:spell</code> · <code>t:permanent</code> · <code>t:thing</code></dt><dd><code>spell</code> = instant or sorcery; <code>permanent</code> = neither; <code>thing</code> = enchantment, artifact, or battle.</dd>
-          <dt><code>t=enchantment</code></dt><dd>Has the type word <code>enchantment</code>; with multiple words, all must be present.</dd>
-          <dt><code>t==enchantment</code></dt><dd>Has exactly the listed words as its complete type set (supertypes, types, subtypes).</dd>
-          <dt><code>t&lt;="enchantment artifact"</code></dt><dd>Every type word on the card is among the listed words.</dd>
-          <dt><code>o:foo</code> · <code>oracle:foo</code> · <code>text:foo</code></dt><dd>Oracle text contains the substring <code>foo</code>. The character <code>~</code> in the value expands to the card's name.</dd>
-          <dt><code>o=foo</code> · <code>o==foo</code></dt><dd>Oracle text contains <code>foo</code> as a whole word (with word boundaries). Multi-word values stay literal: <code>o="draw a card"</code> requires the phrase with boundaries on each end.</dd>
-          <dt><code>o:/regex/</code></dt><dd>Case-insensitive regex on oracle text. No whitespace inside the slashes.</dd>
-          <dt><code>kw:flying</code> · <code>keyword:flying</code></dt><dd>Card carries the named keyword (matched against the parsed keyword list).</dd>
-          <dt><code>ft:foo</code> · <code>flavor:foo</code></dt><dd>Any printing's flavor text contains <code>foo</code>.</dd>
-        </dl>
+        <ul class="tokens">
+          <li><code>foo</code></li>
+          <li><code>name:foo</code></li>
+          <li><code>name="Foo Bar"</code></li>
+          <li><code>t:creature</code></li>
+          <li><code>type:creature</code></li>
+          <li><code>t:"legendary creature"</code></li>
+          <li><code>t:spell</code></li>
+          <li><code>t:permanent</code></li>
+          <li><code>t:thing</code></li>
+          <li><code>t=enchantment</code></li>
+          <li><code>t==enchantment</code></li>
+          <li><code>t&lt;="enchantment artifact"</code></li>
+          <li><code>o:foo</code></li>
+          <li><code>oracle:foo</code></li>
+          <li><code>text:foo</code></li>
+          <li><code>o=foo</code></li>
+          <li><code>o==foo</code></li>
+          <li><code>o:/regex/</code></li>
+          <li><code>kw:flying</code></li>
+          <li><code>keyword:flying</code></li>
+          <li><code>ft:foo</code></li>
+          <li><code>flavor:foo</code></li>
+        </ul>
       </section>
 
       <section>
         <h4>Numeric fields</h4>
-        <dl>
-          <dt><code>mv:N</code> · <code>cmc:N</code> · <code>power:N</code> · <code>pow:N</code> · <code>toughness:N</code> · <code>tou:N</code> · <code>loyalty:N</code> · <code>loy:N</code> · <code>defense:N</code> · <code>def:N</code></dt><dd>Field equals N.</dd>
-          <dt><code>mv&lt;N</code> · <code>mv&lt;=N</code> · ...</dt><dd>Numeric comparison.</dd>
-          <dt><code>mv=odd</code> · <code>mv=even</code></dt><dd>Parity of the value.</dd>
-          <dt><code>pow=tou</code></dt><dd>Right-hand side may name another numeric field.</dd>
-        </dl>
+        <ul class="tokens">
+          <li><code>mv:N</code></li>
+          <li><code>cmc:N</code></li>
+          <li><code>power:N</code></li>
+          <li><code>pow:N</code></li>
+          <li><code>toughness:N</code></li>
+          <li><code>tou:N</code></li>
+          <li><code>loyalty:N</code></li>
+          <li><code>loy:N</code></li>
+          <li><code>defense:N</code></li>
+          <li><code>def:N</code></li>
+          <li><code>mv&lt;N</code></li>
+          <li><code>mv&lt;=N</code></li>
+          <li><code>mv&gt;N</code></li>
+          <li><code>mv&gt;=N</code></li>
+          <li><code>mv=odd</code></li>
+          <li><code>mv=even</code></li>
+          <li><code>pow=tou</code></li>
+        </ul>
       </section>
 
       <section>
-        <h4>Mana cost (<code>mana:</code>)</h4>
-        <dl>
-          <dt><code>mana:WW</code> · <code>mana=WW</code> · <code>mana==WW</code></dt><dd>Cost is exactly <code>{W}{W}</code> (multiset equality on pips, equal generic).</dd>
-          <dt><code>mana:1WW</code></dt><dd>Cost is exactly <code>{1}{W}{W}</code>. Digit runs sum to a single generic value.</dd>
-          <dt><code>mana&gt;=Q</code></dt><dd>Cost is a multiset superset of <code>Q</code> (cost has at least everything in <code>Q</code>).</dd>
-          <dt><code>mana&lt;=Q</code></dt><dd>Cost fits within <code>Q</code>.</dd>
-          <dt><code>mana&gt;Q</code></dt><dd>Strict superset of <code>Q</code>.</dd>
-          <dt><code>mana:U/G</code></dt><dd>Cost is exactly one hybrid pip <code>{U/G}</code>.</dd>
-          <dt><code>mana:c</code></dt><dd>Cost is exactly one colored pip.</dd>
-          <dt><code>mana:h</code></dt><dd>Cost is exactly one hybrid pip.</dd>
-          <dt><code>mana:m</code></dt><dd>Cost is exactly one colored pip. Multiple <code>m</code>s in one query bind to the same color.</dd>
-          <dt><code>mana:mm</code></dt><dd>Cost is exactly two colored pips of the same color.</dd>
-          <dt><code>mana:mn</code></dt><dd>Cost is exactly two colored pips of different colors.</dd>
-          <dt><code>mana:mno</code></dt><dd>Cost is exactly three colored pips of pairwise distinct colors.</dd>
-        </dl>
-        <p class="help-note">Combine with <code>&gt;=</code> for "contains at least these pips": <code>mana&gt;=mm</code> matches any cost that includes two same-color pips, regardless of other generic or colored mana.</p>
-        <p class="help-note">Pip letters: <code>W</code> <code>U</code> <code>B</code> <code>R</code> <code>G</code> exact colors; <code>I</code> silver (Voyager); <code>V</code> Vertex (Voyager); <code>X</code>; <code>P</code> Phyrexian; <code>Vp</code> prismatic.</p>
-      </section>
-
-      <section>
-        <h4>Castability (<code>castable:</code>)</h4>
-        <dl>
-          <dt><code>castable:wu</code> · <code>castable=wu</code></dt><dd>Card is castable from a pool of <code>W</code> and <code>U</code> mana.</dd>
-          <dt><code>castable:wuc</code></dt><dd>Pool letter <code>c</code> adds colorless mana.</dd>
-        </dl>
+        <h4>Mana cost</h4>
+        <ul class="tokens">
+          <li><code>mana:WW</code></li>
+          <li><code>mana=WW</code></li>
+          <li><code>mana==WW</code></li>
+          <li><code>mana:1WW</code></li>
+          <li><code>mana&gt;=WW</code></li>
+          <li><code>mana&lt;=WW</code></li>
+          <li><code>mana&gt;WW</code></li>
+          <li><code>mana:U/G</code></li>
+          <li><code>mana:c</code></li>
+          <li><code>mana:h</code></li>
+          <li><code>mana:m</code></li>
+          <li><code>mana:mm</code></li>
+          <li><code>mana:mn</code></li>
+          <li><code>mana:mno</code></li>
+        </ul>
+        <p class="help-legend">Pips: <code>W</code> <code>U</code> <code>B</code> <code>R</code> <code>G</code> <code>X</code> · <code>I</code> silver · <code>V</code> Vertex · <code>P</code> Phyrexian · <code>Vp</code> prismatic</p>
+        <p class="help-legend">Wildcards: <code>c</code> any colored pip · <code>h</code> any hybrid pip · <code>m</code> <code>n</code> <code>o</code> color variables, same letter = same color</p>
       </section>
 
       <section>
         <h4>Color</h4>
-        <dl>
-          <dt><code>c:w</code> · <code>color:w</code></dt><dd>Card colors include <code>W</code>. Letters are <code>W</code> <code>U</code> <code>B</code> <code>R</code> <code>G</code> <code>I</code>.</dd>
-          <dt><code>c:wu</code></dt><dd>Card colors include both <code>W</code> and <code>U</code>.</dd>
-          <dt><code>c=wu</code> · <code>c==wu</code></dt><dd>Card colors are exactly <code>{W, U}</code>.</dd>
-          <dt><code>c&lt;=wu</code></dt><dd>Card colors are a subset of <code>{W, U}</code>.</dd>
-          <dt><code>c&gt;=wu</code></dt><dd>Card colors are a superset of <code>{W, U}</code>.</dd>
-          <dt><code>c&lt;wu</code> · <code>c&gt;wu</code></dt><dd>Strict subset / strict superset.</dd>
-          <dt><code>c!=wu</code></dt><dd>Card colors are not exactly <code>{W, U}</code>.</dd>
-          <dt><code>c:c</code> · <code>c:colorless</code></dt><dd>Card has no colors.</dd>
-          <dt><code>c:m</code> · <code>c:multi</code> · <code>c:multicolor</code></dt><dd>Card has two or more colors.</dd>
-          <dt><code>c:N</code></dt><dd>Card has exactly N colors (N is a digit).</dd>
-        </dl>
+        <ul class="tokens">
+          <li><code>c:w</code></li>
+          <li><code>c:wu</code></li>
+          <li><code>c=wu</code></li>
+          <li><code>c&lt;=wu</code></li>
+          <li><code>c&gt;=wu</code></li>
+          <li><code>c&lt;wu</code></li>
+          <li><code>c&gt;wu</code></li>
+          <li><code>c!=wu</code></li>
+          <li><code>c:c</code></li>
+          <li><code>c:m</code></li>
+          <li><code>c:N</code></li>
+          <li><code>castable:wu</code></li>
+          <li><code>castable:wuc</code></li>
+        </ul>
       </section>
 
       <section>
-        <h4>Set and printing</h4>
-        <dl>
-          <dt><code>e:CODE</code> · <code>set:CODE</code></dt><dd>Some printing's set code or set name contains <code>CODE</code>. All operators behave the same; matches reprints regardless of which other sets the card also appears in.</dd>
-          <dt><code>e:A,B,C</code></dt><dd>Comma-separated list, OR-combined.</dd>
-          <dt><code>sets:A-B</code></dt><dd>Some printing's set falls in the chronological range from <code>A</code> to <code>B</code>, inclusive. Either bound may be omitted (<code>sets:A-</code>, <code>sets:-B</code>). Order of the two codes does not matter.</dd>
-          <dt><code>set&gt;=CODE</code> · <code>set&lt;=CODE</code> · <code>set&gt;CODE</code> · <code>set&lt;CODE</code></dt><dd>Some printing's set falls on the given side of <code>CODE</code> chronologically. E.g. <code>set&gt;=sol</code> matches cards printed in Solastere or any later set.</dd>
-          <dt><code>r:c</code> · <code>r:u</code> · <code>r:r</code> · <code>r:m</code> · <code>r:s</code></dt><dd>Rarity letter (common, uncommon, rare, mythic, special). Full names also accepted.</dd>
-          <dt><code>r&lt;=u</code> · <code>r&gt;=r</code></dt><dd>Rarity ordering: <code>c &lt; u &lt; r &lt; m &lt; s</code>. Matches if any printing satisfies the comparison.</dd>
-          <dt><code>a:foo</code> · <code>art:foo</code> · <code>artist:foo</code></dt><dd>Some printing's artist name contains <code>foo</code>.</dd>
-          <dt><code>layout:normal</code></dt><dd>Layout exactly equals the value. Known values include <code>normal</code>, <code>split</code>, <code>transform</code>, <code>modal_dfc</code>, <code>saga</code>, <code>class</code>, <code>planar</code>.</dd>
-        </dl>
+        <h4>Set, printing and legality</h4>
+        <ul class="tokens">
+          <li><code>e:CODE</code></li>
+          <li><code>set:CODE</code></li>
+          <li><code>e:A,B,C</code></li>
+          <li><code>sets:A-B</code></li>
+          <li><code>sets:A-</code></li>
+          <li><code>sets:-B</code></li>
+          <li><code>set&gt;=CODE</code></li>
+          <li><code>set&lt;=CODE</code></li>
+          <li><code>set&gt;CODE</code></li>
+          <li><code>set&lt;CODE</code></li>
+          <li><code>r:c</code></li>
+          <li><code>r:u</code></li>
+          <li><code>r:r</code></li>
+          <li><code>r:m</code></li>
+          <li><code>r:s</code></li>
+          <li><code>r&lt;=u</code></li>
+          <li><code>r&gt;=r</code></li>
+          <li><code>a:foo</code></li>
+          <li><code>art:foo</code></li>
+          <li><code>artist:foo</code></li>
+          <li><code>layout:normal</code></li>
+          <li><code>has:flavor</code></li>
+          <li><code>has:flavour</code></li>
+          <li><code>f:FORMAT</code></li>
+          <li><code>legal:FORMAT</code></li>
+          <li><code>banned:FORMAT</code></li>
+          <li><code>restricted:FORMAT</code></li>
+        </ul>
       </section>
 
       <section>
-        <h4>Legality</h4>
-        <dl>
-          <dt><code>f:FORMAT</code> · <code>format:FORMAT</code> · <code>legal:FORMAT</code></dt><dd>Legal in the named format. Including this in a query overrides the format toggle.</dd>
-          <dt><code>banned:FORMAT</code></dt><dd>Banned in the named format.</dd>
-          <dt><code>restricted:FORMAT</code></dt><dd>Restricted in the named format.</dd>
-        </dl>
-        <p class="help-note">The padlock in the search bar locks the current query as the deck's format filter — e.g. lock <code>f:eternal r:c</code> to build Eternal Pauper. While locked, every search is restricted to matching cards and cards outside the filter are flagged illegal in the deck. The lock saves and loads with the deck; click the padlock again to unlock.</p>
+        <h4><code>is:</code> and <code>tag:</code></h4>
+        <ul class="tokens">
+          <li><code>is:permanent</code></li>
+          <li><code>is:split</code></li>
+          <li><code>is:mdfc</code></li>
+          <li><code>is:transform</code></li>
+          <li><code>is:saga</code></li>
+          <li><code>is:class</code></li>
+          <li><code>is:planar</code></li>
+          <li><code>is:reprint</code></li>
+          <li><code>is:page</code></li>
+          <li><code>is:adventure</code></li>
+          <li><code>is:discharge</code></li>
+          <li><code>is:vertex</code></li>
+          <li><code>is:hybrid</code></li>
+          <li><code>is:prismatic</code></li>
+          <li><code>is:common</code></li>
+          <li><code>is:uncommon</code></li>
+          <li><code>is:rare</code></li>
+          <li><code>is:mythic</code></li>
+          <li><code>is:special</code></li>
+          <li><code>is:&lt;tag&gt;</code></li>
+          <li><code>tag:&lt;tag&gt;</code></li>
+        </ul>
       </section>
 
       <section>
-        <h4><code>is:</code></h4>
-        <dl>
-          <dt><code>is:permanent</code></dt><dd>Does not have type instant or sorcery.</dd>
-          <dt><code>is:split</code> · <code>is:mdfc</code> · <code>is:transform</code> · <code>is:saga</code> · <code>is:class</code> · <code>is:planar</code></dt><dd>Layout is exactly that value.</dd>
-          <dt><code>is:reprint</code></dt><dd>Card has more than one printing in the corpus.</dd>
-          <dt><code>is:page</code> · <code>is:adventure</code> · <code>is:discharge</code></dt><dd>Card has a page face (second spell); the subtype-named variants further require that face to have that subtype.</dd>
-          <dt><code>is:vertex</code> · <code>is:hybrid</code> · <code>is:prismatic</code></dt><dd>Mana cost contains a Vertex pip, any slash-pip, or the prismatic pip <code>{Vp}</code>, respectively.</dd>
-          <dt><code>is:common</code> · <code>is:uncommon</code> · <code>is:rare</code> · <code>is:mythic</code> · <code>is:special</code></dt><dd>Card's current rarity equals that value.</dd>
-          <dt><code>is:&lt;tag&gt;</code></dt><dd>Card carries the named user tag (or an alias resolving to it). Falls through when the value matches no built-in.</dd>
-          <dt><code>tag:&lt;tag&gt;</code></dt><dd>Like <code>is:</code> but only searches user tags — built-in keywords (<code>page</code>, <code>hybrid</code>, <code>reprint</code>, …) are skipped, so a tag whose name collides with one of those is reachable here.</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h4><code>has:</code></h4>
-        <dl>
-          <dt><code>has:flavor</code> · <code>has:flavour</code></dt><dd>Some printing has non-empty flavor text.</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h4><code>manabase:</code></h4>
-        <dl>
-          <dt><code>manabase:WUG</code></dt><dd>Card carries a tag of the form <code>&lt;colors&gt;land</code> whose colors are a subset of <code>WUG</code>, or <code>utilityland</code>, or <code>goldland</code> when the input has two or more colors.</dd>
-          <dt><code>manabase&lt;=WUG</code></dt><dd>Equivalent to <code>manabase:WUG</code>.</dd>
-        </dl>
+        <h4>Lands</h4>
+        <ul class="tokens">
+          <li><code>manabase:WUG</code></li>
+        </ul>
       </section>
 
       <section>
         <h4><code>sort:</code></h4>
-        <dl>
-          <dt><code>sort:name</code></dt><dd>Order results ascending by canonical name.</dd>
-          <dt><code>sort:mv</code> · <code>sort:cmc</code></dt><dd>Order ascending by mana value.</dd>
-          <dt><code>sort:power</code> · <code>sort:pow</code></dt><dd>Order ascending by power.</dd>
-          <dt><code>sort:toughness</code> · <code>sort:tou</code></dt><dd>Order ascending by toughness.</dd>
-          <dt><code>sort:rarity</code></dt><dd>Order ascending by rarity rank.</dd>
-          <dt><code>sort:set</code></dt><dd>Order ascending by set code.</dd>
-          <dt><code>sort:color</code></dt><dd>Order ascending by color count.</dd>
-          <dt><code>-sort:&lt;field&gt;</code></dt><dd>Same field, descending.</dd>
-        </dl>
+        <ul class="tokens">
+          <li><code>sort:name</code></li>
+          <li><code>sort:mv</code></li>
+          <li><code>sort:cmc</code></li>
+          <li><code>sort:power</code></li>
+          <li><code>sort:pow</code></li>
+          <li><code>sort:toughness</code></li>
+          <li><code>sort:tou</code></li>
+          <li><code>sort:rarity</code></li>
+          <li><code>sort:set</code></li>
+          <li><code>sort:color</code></li>
+          <li><code>-sort:&lt;field&gt;</code></li>
+        </ul>
       </section>
 
     </div>
@@ -424,9 +460,6 @@
 </div>
 
 <div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
-<!-- Always-rendered, near-invisible image used as the drag preview for
-     deck-list rows (where there's no card image in the source element).
-     showPreview() updates its src on hover so it's loaded before dragstart. -->
 <img id="drag-img" alt="">
 
 <div class="floating-actions">

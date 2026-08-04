@@ -6,7 +6,6 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="icon" type="image/webp" href="favicon.webp">
 <script>
-  // Apply saved theme before CSS loads to avoid a flash of the wrong theme.
   try {
     var raw = localStorage.getItem('rev-deckbuilder-prefs-v1');
     if (raw) {
@@ -14,7 +13,6 @@
       if (p && p.theme === 'light') document.documentElement.dataset.theme = 'light';
     }
   } catch (_) {}
-  // Flip app.js into tag-tool mode. Must run before the app.js tag below.
   window.TAG_MODE = true;
 </script>
 <link rel="stylesheet" href="style.css">
@@ -94,8 +92,6 @@
 
 <main>
   <aside class="zones">
-    <!-- Stub sort bar so app.js wiring (data-list-sort / pile-sort) doesn't
-         throw; hidden in tag mode via body.tag-mode in style.css. -->
     <div class="sort-bar">
       <span>Sort:</span>
       <button class="sort-btn active" data-list-sort="type">Type</button>
@@ -166,7 +162,6 @@
   </section>
 </main>
 
-<!-- Stub modals so wiring doesn't crash; hidden and unused in tag mode. -->
 <div id="name-conflict-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3 id="conflict-title"></h3><p id="conflict-msg" class="modal-help"></p><div class="modal-buttons"><button id="conflict-cancel"></button><button id="conflict-keep-both"></button><button id="conflict-overwrite"></button></div></div></div>
 <div id="delete-confirm-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p id="delete-confirm-msg" class="modal-help"></p><div class="modal-buttons"><button id="delete-cancel"></button><button id="delete-confirm"></button></div></div></div>
 <div id="paste-modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-content"><h3></h3><p class="modal-help"></p><textarea id="paste-textarea"></textarea><div class="modal-buttons"><button id="paste-cancel"></button><button id="paste-confirm"></button></div></div></div>

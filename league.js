@@ -1,39 +1,10 @@
-/* league.js — wraps lackeybot.com's published Revolution league decklists.
- *
- * Pages:
- *   - List view (rows of decks): aesthetically consonant with the deckbuilder
- *   - Detail view (one deck): mirrors the deckbuilder's pane layout
- *     (.zones aside + .piles-pane) so the deck UI users know from the
- *     editor renders identically here. Drag is within-zone only — moving
- *     cards to a different zone (Main → Side) is forbidden, and the deck
- *     itself is read-only (no add/remove). Pile rearrangements within a
- *     zone are temporary view state.
- *
- * Data source: lackeybot.com's statDex API directly (POST /statdex/api,
- * with `Access-Control-Allow-Origin: *` so the browser can call it). Two
- * data_types are used: `viewable` to enumerate `<pKey>/<run>` slugs for
- * the tourney, and `decklist` (with `deckviewer: true`) to fetch each
- * deck's full slim shape — counts plus the per-card metadata
- * (setID/cardID/fullName/type/shape) the renderer needs.
- *
- * The assembled bundle is cached in localStorage with a short TTL so
- * repeat visits are instant and a typical visit only hits lackeybot once.
- * The Refresh button bypasses the cache.
- */
 
 (() => {
 'use strict';
 
-// ---------------------------------------------------------------------------
-// Configuration
 
-// League seasons follow the `rev_YY_MM` convention (zero-padded month),
-// one per calendar month. lackeybot has no "list tournaments" endpoint, so
-// we don't discover seasons — we generate the slugs by convention, from the
-// first 2026 season through the current month. This auto-rolls forward:
-// next month's slug appears in the picker with no code change.
-const SEASON_FLOOR_YEAR = 2026;     // don't list seasons before 2026
-const SEASON_FLOOR_MONTH = 1;       // January 2026 (rev_26_01)
+const SEASON_FLOOR_YEAR = 2026;
+const SEASON_FLOOR_MONTH = 1;
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -47,18 +18,17 @@ function parseSeasonSlug(slug) {
 }
 function seasonLabel(slug) {
   const p = parseSeasonSlug(slug);
-  if (!p || p.month < 1 || p.month > 12) return slug;   // e.g. a gprev_ override
+  if (!p || p.month < 1 || p.month > 12) return slug;
   return `${MONTH_NAMES[p.month - 1]} ${p.year}`;
 }
 function currentSeasonSlug() {
   const now = new Date();
-  return seasonSlug(now.getFullYear(), now.getMonth() + 1);
+  return seasonSlug(now.getUTCFullYear(), now.getUTCMonth() + 1);
 }
-// Season slugs newest-first, from the floor through the current month.
 function listSeasons() {
   const now = new Date();
   const out = [];
-  let y = now.getFullYear(), m = now.getMonth() + 1;
+  let y = now.getUTCFullYear(), m = now.getUTCMonth() + 1;
   while (y > SEASON_FLOOR_YEAR || (y === SEASON_FLOOR_YEAR && m >= SEASON_FLOOR_MONTH)) {
     out.push(seasonSlug(y, m));
     if (--m === 0) { m = 12; y -= 1; }
@@ -66,80 +36,44 @@ function listSeasons() {
   return out;
 }
 
-// The tournament slug the page wraps. Read from URL hash if provided
-// (#t=foo) so the page can also browse arbitrary lackeybot tournaments
-// (e.g. a grand prix slug). Default tracks the current month's season.
 function getTourney() {
   const m = /[#&?]t=([\w-]+)/.exec(location.hash || '');
   return (m && m[1]) || currentSeasonSlug();
 }
 const TOURNEY = getTourney();
 
-// lackeybot.com's statDex API. `Access-Control-Allow-Origin: *` is set,
-// so the browser can POST to it directly. The same endpoint serves the
-// viewable index (data_type: "viewable") and individual deck bodies
-// (data_type: "decklist"); see fetchBundle.
 const API_URL = 'https://lackeybot.com/statdex/api';
 
-// localStorage cache. Key is per-tourney so multiple leagues don't fight.
-// TTL is short enough that "I want fresh data" is rarely more than one
-// click on Refresh away, but long enough that opening a deck and bouncing
-// back to the list doesn't re-fetch 80 decks.
-// :v2 — bumped when the player-username map was added to the bundle. Old
-// :v1 entries don't carry players, so falling back to them would silently
-// reproduce the broken-author bug after we fixed it.
-// :v3 — bumped when 404 "no decklist on file" run slots stopped counting as
-// load failures. A :v2 bundle still carries those ids in missingDeckIds, so
-// falling back to it would keep showing the stale "N could not be loaded".
 const CACHE_KEY = 'rev-deckbuilder-league-cache:v3:' + TOURNEY;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
-// How many deck POSTs to run in parallel during a fresh fetch. Browsers
-// already cap per-host concurrency at ~6, so anything higher is wasted.
 const FETCH_CONCURRENCY = 6;
 
 const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
 
 const IMG_BASE = 'https://raw.githubusercontent.com/cajunwritescode/Revolution/refs/heads/main/img';
 
-// Pile rendering knobs — must mirror the deckbuilder so the visual stack
-// spacing matches what users see in the editor.
 const PILE_OFFSET_Y = 30;
 
-// ---------------------------------------------------------------------------
-// State
 
 const STATE = {
-  decks: [],              // [{ id, parsed, colors, author, idCards, error? }]
-  byId: new Map(),        // id -> entry
-  cards: null,            // card index, or null until loaded
-  cardsLoading: null,     // Promise while loading
-  view: 'list',           // 'list' | 'detail'
-  detailId: null,         // currently open deck id
-  detailZones: null,      // working pile state for detail view
-  focusedZone: 'main',    // which zone the right pane shows
+  decks: [],
+  byId: new Map(),
+  cards: null,
+  cardsLoading: null,
+  view: 'list',
+  loaded: false,
+  detailId: null,
+  detailZones: null,
+  focusedZone: 'main',
   filterText: '',
   uidCounter: 0,
-  // List sort: chain of methods, primary first. Most-recently-chosen
-  // primary slides previous primaries down to serve as tiebreakers, just
-  // like the deckbuilder's pile-sort chain.
   sortChain: ['wins'],
-  // refName -> total mainCount+sideCount across all decks in the bundle.
-  // Built once after the bundle loads; the identifying-card logic looks
-  // each card up here to find the deck's "rarest" cards league-wide.
   cardUsage: new Map(),
-  // Discord ID -> display username, populated from lackeybot's `tournament`
-  // endpoint. Empty if that fetch fails — the row falls back to the legacy
-  // "<player>'s <deck>" parse, which is correct for the subset of decks
-  // whose names follow that convention.
   players: new Map(),
 };
 function newUid() { return ++STATE.uidCounter; }
 
-// ---------------------------------------------------------------------------
-// Cards.json index — lazy-loaded so the page renders deck rows fast and
-// only pulls the ~10MB blob if the user opens a detail view (or sooner,
-// for color analysis on the list).
 
 async function ensureCards() {
   if (STATE.cards) return STATE.cards;
@@ -148,8 +82,8 @@ async function ensureCards() {
     const r = await fetch('cards.json', { cache: 'force-cache' });
     if (!r.ok) throw new Error('cards.json fetch failed');
     const data = await r.json();
-    const bySetNum = new Map();   // "SET:123" -> card
-    const byCanonical = new Map();// canonical name -> card (first wins)
+    const bySetNum = new Map();
+    const byCanonical = new Map();
     for (const setId of Object.keys(data.data || {})) {
       const sd = data.data[setId];
       for (const c of (sd.cards || [])) {
@@ -173,15 +107,6 @@ function lookupCard(deckCard) {
   return STATE.cards.byCanonical.get(deckCard.fullName || '') || null;
 }
 
-// ---------------------------------------------------------------------------
-// Mana / color reasoning
-//
-// A deck is color C iff (deck can produce C) AND (some card cost requires
-// C, given the producible set). Hybrid {X/Y} contributes a requirement
-// for whichever of {X,Y} is actually producible — so a {W/U} card in a
-// W-only deck requires W, but in a deck that produces neither it
-// requires nothing. Phyrexian {X/P}, mono-hybrid {2/X}, snow, colorless
-// and generic pips never contribute a required color.
 
 const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'];
 
@@ -248,7 +173,6 @@ function producibleColors(text) {
 }
 
 function computeDeckColors(deck) {
-  // Sideboard cards don't count — color identity reflects the maindeck only.
   const producible = new Set();
   const cardEntries = Object.values(deck.cards || {});
   for (const e of cardEntries) {
@@ -277,11 +201,8 @@ function computeDeckColors(deck) {
   return colors;
 }
 
-// ---------------------------------------------------------------------------
-// Deck stats
 
 function deckRecord(deck) {
-  // Order: [wins, losses, draws]. Match-level — sum equals matches played.
   const sc = Array.isArray(deck.scores) ? deck.scores : [0, 0, 0];
   const wins = sc[0] || 0;
   const losses = sc[1] || 0;
@@ -308,22 +229,6 @@ function deckArchetype(deck) {
   return m ? m[1] : null;
 }
 
-// Resolve a deck's author and the cleaned-up deck-name shown in the list.
-//
-// Author comes from lackeybot's `tournament` endpoint (STATE.players),
-// keyed by the deck's discord ID. The deck endpoint itself doesn't include
-// a username — only the discord ID — so the tournament map is the only
-// signal we can trust. When it's missing (tournament fetch failed, or the
-// player isn't listed) we fall through with author=''; buildDeckRow then
-// surfaces a truncated discord ID stub. We intentionally do NOT parse
-// "<x>'s <deck>" out of the deck name: many decks don't follow that
-// convention, and even when they do the prefix is just text the player
-// typed (clan tags, joke names, references to other players) — treating
-// it as authoritative produces wrong attributions.
-//
-// shortName is stripped of a `<author>'s ` prefix only when it matches the
-// resolved author exactly, for the same reason — we won't strip on a loose
-// regex match.
 function authorAndShortName(deck) {
   const raw = (deck.name || '').trim();
   const username = STATE.players.get(String(deck.player || '')) || '';
@@ -335,20 +240,6 @@ function authorAndShortName(deck) {
   return { author: username, shortName: raw };
 }
 
-// Map lackeybot refName to the deckbuilder's byName key.
-//
-// Single-faced: "Forest_VLR" → "Forest_VLR" (passthrough).
-// Double-faced: "Root Fossil//Reborn Lily_CCR" → "Root Fossil_CCR".
-//
-// Why: parseAllSetsJson keys DFCs in byName under the FRONT face's name
-// only (it slices `rawName` at " // " and discards the back), so the
-// composite "Front // Back_SET" we used to emit never matched, and even the
-// canonical fallback failed because card.canonical is just "Root Fossil"
-// while canonicalName("Root Fossil // Reborn Lily_CCR") strips only the
-// trailing "_CCR" and stops at the still-present " // ". Result: every DFC
-// vanished from a copied deck. Reattaching the set suffix to the front
-// face restores both the byName hit (when it has the suffixed form) and
-// the canonical fallback (which strips it cleanly).
 function refNameToDeckbuilderName(refName) {
   if (!refName) return refName;
   const slash = refName.indexOf('//');
@@ -359,11 +250,6 @@ function refNameToDeckbuilderName(refName) {
   return m ? `${front}_${m[1]}` : front;
 }
 
-// Build the image URL for a deck card. `face` selects which side of a
-// double-faced card to show. cajunwritescode/Revolution publishes DFCs as
-// "<n>a.jpg" (front) and "<n>b.jpg" (back); the bare "<n>.jpg" is the
-// printed two-sided thumbnail, which is too cramped to use in the viewer.
-// Single-faced cards live at "<n>.jpg" with no suffix.
 function imgUrlForDeckCard(deckCard, face) {
   if (!deckCard) return null;
   const set = deckCard.setID;
@@ -379,8 +265,6 @@ function isDoubleface(deckCard) {
   return !!(deckCard && deckCard.shape === 'doubleface');
 }
 
-// ---------------------------------------------------------------------------
-// DOM utilities
 
 function el(tag, attrs, children) {
   const e = document.createElement(tag);
@@ -411,9 +295,6 @@ function pipsRow(colors) {
   return el('span', { class: 'league-pips' }, colors.map(manaIcon));
 }
 
-// Render one MTG mana symbol via Andrew Gioia's mana-font (vendored under
-// static/vendor/mana-font/). The font already paints WUBRG with the
-// canonical disc + stylized symbol when both .ms and .ms-cost are set.
 function manaIcon(c) {
   const lc = String(c || '').toLowerCase();
   return el('i', {
@@ -452,38 +333,7 @@ function toast(msg) {
   }, 2200);
 }
 
-// ---------------------------------------------------------------------------
-// List view
 
-// ---------------------------------------------------------------------------
-// Structured query language
-//
-// Modeled on the deckbuilder's parseQuery (app.js) but tailored to the
-// fields a league row exposes:
-//   name:foo          — substring of deck name (case-insensitive)
-//   author:foo, p:foo — substring of author OR Discord ID
-//   color:WU, c:wu    — color comparison (operators below)
-//   has:CardName      — deck contains a card whose fullName contains the term
-//   wins:N, w:N       — numeric comparison on match wins
-//   losses:N, l:N     — numeric comparison on match losses
-//   winrate:X, wr:X   — wins / (wins + losses); X<=1 is a fraction, X>1 is
-//                       a percent. Decks with no decided games never match.
-//
-// Numeric fields accept :, =, !=, <, <=, >, >=. `:` and `=` are equality.
-// Color comparisons accept :, =, !=, <, <=, >, >=. The RHS is a string of
-// color letters in any order ("uw" == "wu") or `c`/`0` for colorless.
-//   color=WU    deck colors == {W, U}
-//   color>=WU   deck colors ⊇ {W, U}      (default for bare terms — see below)
-//   color<=WU   deck colors ⊆ {W, U}      (alias of color:)
-//   color<WU    strict subset
-//   color>WU    strict superset
-//
-// Boolean operators: AND (implicit between atoms), OR, NOT. Leading `-`
-// before an atom is a negation. Parentheses group.
-//
-// A bare term (no field:) matches if ANY of (color>=term, name:term,
-// author:term) holds — so "wu jund kayiu" each independently extend in
-// whichever direction is plausible. All bare/atomic predicates AND together.
 
 function parseLeagueQuery(q) {
   const trimmed = (q || '').trim();
@@ -495,8 +345,6 @@ function parseLeagueQuery(q) {
     if (cur.i < tokens.length) throw new Error('unexpected ' + JSON.stringify(tokens[cur.i]));
     return { predicate: pred, error: null };
   } catch (e) {
-    // Fail-soft: a malformed query matches everything so the user can keep
-    // typing instead of seeing the list disappear mid-keystroke.
     return { predicate: () => true, error: e.message };
   }
 }
@@ -510,7 +358,6 @@ function tokenizeQ(q) {
     if (/\s/.test(ch)) { i++; continue; }
     if (ch === '(') { out.push({ type: 'lparen' }); i++; continue; }
     if (ch === ')') { out.push({ type: 'rparen' }); i++; continue; }
-    // Leading-minus NOT, only at the start or after whitespace/(.
     if (ch === '-') {
       const prev = i === 0 ? null : q[i - 1];
       const next = i + 1 < n ? q[i + 1] : null;
@@ -520,7 +367,6 @@ function tokenizeQ(q) {
         continue;
       }
     }
-    // Atom: read until whitespace/paren, honoring quoted spans.
     let atom = '';
     let inQ = null;
     while (i < n) {
@@ -558,7 +404,7 @@ function parseAnd(cur) {
   while (cur.i < cur.tokens.length) {
     const t = cur.tokens[cur.i];
     if (t.type === 'or' || t.type === 'rparen') break;
-    if (t.type === 'and') { cur.i++; }            // explicit AND is just a no-op separator
+    if (t.type === 'and') { cur.i++; }
     const right = parseNot(cur);
     const a = left, b = right;
     left = (entry) => a(entry) && b(entry);
@@ -588,8 +434,6 @@ function parseAtom(cur) {
   return atomPredicate(t.value);
 }
 
-// Map an atom string to a predicate. Recognizes "field<op>value"; otherwise
-// treats the atom as a bare term (the OR-of-three default).
 const FIELD_ALIASES_LEAGUE = {
   name: 'name', n: 'name',
   author: 'author', a: 'author', player: 'author', p: 'author',
@@ -621,8 +465,6 @@ function fieldPredicate(field, op, valRaw) {
     case 'losses': return predFromNumber((e) => deckRecord(e.parsed).losses, op, parseFloat(valRaw));
     case 'winrate': {
       const n = parseFloat(valRaw);
-      // n in [0, 1] — fraction; n > 1 — percent. Either way, threshold
-      // is stored as a fraction so the getter returns a fraction too.
       const threshold = Number.isNaN(n) ? NaN : (n <= 1 ? n : n / 100);
       return predFromNumber((e) => {
         const r = deckRecord(e.parsed);
@@ -648,10 +490,6 @@ function deckHasCard(e, lowerName) {
   return false;
 }
 
-// String comparator. `:` and `=` accept substring; `=` is also exact (we
-// treat both as substring for the user-friendly behavior). `!=` is the
-// negation of substring. Inequalities compare lexicographically — useful
-// for prefix-style queries on author names.
 function predFromString(getter, op, val) {
   switch (op) {
     case ':': case '=':
@@ -666,9 +504,6 @@ function predFromString(getter, op, val) {
   }
 }
 
-// Numeric comparator. Getter returning null/NaN means "no value" — those
-// entries never match (so wr<X doesn't sweep up decks with no decided
-// games). NaN threshold (unparseable RHS) likewise matches nothing.
 function predFromNumber(getter, op, val) {
   if (Number.isNaN(val)) return () => false;
   return (e) => {
@@ -690,7 +525,6 @@ function parseColorRHS(s) {
   const set = new Set();
   for (const ch of s.toUpperCase()) {
     if ('WUBRG'.includes(ch)) set.add(ch);
-    // 'C' or '0' alone keeps the set empty, which is the colorless rep.
   }
   return set;
 }
@@ -723,10 +557,6 @@ function isSubset(small, big) {
   return true;
 }
 
-// Bare term: matches if any of (color superset, name substring, author
-// substring) holds. The color branch is only attempted when the term is
-// recognizable as a color string (only WUBRG/C letters), so names that
-// happen to start with "rg" don't get hijacked.
 function barePredicate(atom) {
   const lower = atom.toLowerCase();
   const colorsForBare = isColorWord(atom) ? parseColorRHS(atom) : null;
@@ -756,9 +586,11 @@ function renderList() {
     .filter(e => e.parsed)
     .filter(e => entryMatchesFilter(e, parsed));
   if (!entries.length) {
-    host.appendChild(el('div', { class: 'league-empty', text: STATE.decks.length
-      ? 'No decks match.'
-      : 'Loading league index…' }));
+    let msg;
+    if (STATE.decks.length) msg = 'No decks match.';
+    else if (STATE.loaded) msg = 'No decks in this league yet.';
+    else msg = 'Loading league index…';
+    host.appendChild(el('div', { class: 'league-empty', text: msg }));
     return;
   }
   sortListEntries(entries);
@@ -778,19 +610,9 @@ function setSearchError(msg) {
   }
 }
 
-// Compare two list entries by the active sort chain. Each chain entry is a
-// method name; ties from the primary fall through to the next, etc. The
-// final implicit tiebreaker is canonical deck name. The chain is updated by
-// pushSort() — the most-recently-chosen method moves to the front, and
-// previously-chosen methods slide down to serve as tiebreakers, mirroring
-// the deckbuilder's pile-sort chain.
 const SORT_KEYS = {
-  // Wins: more wins first.
   wins: (e) => -((deckRecord(e.parsed).wins) || 0),
-  // Color: bucket by color combination, ordered to keep similar colors
-  // adjacent (mono first by WUBRG, then guilds, then 3+, then colorless).
   color: (e) => colorSortKey(e.colors || []),
-  // Author: lowercase alpha. Empty author sorts last.
   author: (e) => (e.author ? e.author.toLowerCase() : '￿'),
 };
 function sortListEntries(entries) {
@@ -806,20 +628,15 @@ function sortListEntries(entries) {
   });
 }
 
-// Canonical color-combo ordering: WUBRG order for mono, then number of
-// colors ascending, then WUBRG-lex within a tier so guilds/shards land near
-// their components. Colorless ('') sorts last.
 const COLOR_ORDER_INDEX = (() => {
   const idx = Object.create(null);
   MANA_COLORS.forEach((c, i) => { idx[c] = i; });
   return idx;
 })();
 function colorSortKey(colors) {
-  if (!colors.length) return '9';                     // colorless last
+  if (!colors.length) return '9';
   const sorted = [...colors].sort(
     (a, b) => COLOR_ORDER_INDEX[a] - COLOR_ORDER_INDEX[b]);
-  // Single-digit count prefix (max 5) clusters monos / guilds / shards;
-  // the WUBRG-ordered suffix orders within a count tier.
   return String(sorted.length) + sorted.join('');
 }
 
@@ -835,9 +652,6 @@ function buildDeckRow(entry) {
     onclick: () => openDetail(entry.id),
   });
 
-  // Author column — falls back to a short Discord ID so the row never
-  // shows just blank space when the deck name doesn't fit the
-  // "<player>'s ..." convention.
   let authorLabel = author;
   let authorClass = 'deck-author';
   if (!authorLabel) {
@@ -850,10 +664,6 @@ function buildDeckRow(entry) {
     title: d.player ? ('Discord ID: ' + d.player) : '',
   }));
 
-  // Deck name column (without the duplicated author prefix). Hovering the
-  // name (specifically) is what summons the decklist popup — using the
-  // whole row as the trigger fired the popup constantly when scanning the
-  // list, including when the cursor was just passing over the copy button.
   const nameCell = el('span', { class: 'deck-name' }, [
     document.createTextNode(shortName),
     archetype && !shortName.includes(archetype) ? el('span', { class: 'deck-archetype', text: archetype }) : null,
@@ -862,7 +672,6 @@ function buildDeckRow(entry) {
   nameCell.addEventListener('mouseleave', hideDecklistPopup);
   row.appendChild(nameCell);
 
-  // Record (wins-losses[-draws]) — no percent, no card count.
   const recBox = el('span', { class: 'league-record' });
   if (rec.played > 0) {
     recBox.appendChild(el('span', { class: 'raw wins', text: String(rec.wins) }));
@@ -875,8 +684,6 @@ function buildDeckRow(entry) {
 
   row.appendChild(pipsRow(entry.colors));
 
-  // Identifying-card swatches: A) least-used 4-of non-land, B) least-used
-  // overall card in the deck. See computeIdentifyingCards().
   const ids = entry.idCards || {};
   row.appendChild(buildIdCards(d, ids));
 
@@ -893,7 +700,7 @@ function buildDeckRow(entry) {
 
 function buildIdCards(deck, ids) {
   const wrap = el('span', { class: 'league-id-cards' });
-  const labels = ['4-of', 'rarest'];                  // for placeholders + a11y
+  const labels = ['4-of', 'rarest'];
   [ids.fourOf, ids.rarest].forEach((ref, idx) => {
     if (!ref) {
       wrap.appendChild(el('span', { class: 'id-card placeholder', text: '—' }));
@@ -906,8 +713,6 @@ function buildIdCards(deck, ids) {
       text: dc.fullName || ref,
       title: `${labels[idx]} — played ${total}× across the league. Hover for the card image.`,
     });
-    // Hover preview reuses the existing #league-card-preview overlay so the
-    // visual is the same one the deck-list piles use.
     node.addEventListener('mouseenter', (ev) => { ev.stopPropagation(); showCardPreview(dc, ev); });
     node.addEventListener('mousemove', moveCardPreview);
     node.addEventListener('mouseleave', hideCardPreview);
@@ -916,21 +721,6 @@ function buildIdCards(deck, ids) {
   return wrap;
 }
 
-// ---------------------------------------------------------------------------
-// Card-usage statistics and identifying-card derivation
-//
-// We compute a single map of refName -> total mainCount + sideCount summed
-// across every deck in the bundle. Each row then picks two badges:
-//
-//   A. The non-land card with mainCount === 4 in this deck whose total
-//      league usage is smallest (the deck's most distinguishing 4-of).
-//   B. The card with the smallest total league usage out of every card in
-//      the deck (main or side). Ties broken by *more copies in this deck*
-//      first — a 4-of seen in 2 decks is a louder signal than a 1-of in
-//      the same 2 decks.
-//
-// Card B always picks a different ref than card A so the two swatches don't
-// duplicate. If no 4-of non-land exists, A is omitted; B then ignores A.
 
 function buildCardUsage(decks) {
   const usage = new Map();
@@ -951,25 +741,11 @@ function isLandType(typeStr) {
 
 function computeIdentifyingCards(deck, usage) {
   if (!deck) return { fourOf: null, rarest: null };
-  // First-tier candidate (a 4-of non-land) is the cleanest "iconic" badge
-  // because a 4-of declares the deck cares about that card. When a deck has
-  // no 4-of non-land (control decks with mostly singletons, prototype lists,
-  // etc.) we fall back to 3-ofs, then 2-ofs — keeping the same min-usage
-  // criterion. Singletons aren't iconic enough to slot into the "4-of"
-  // badge and would just duplicate the rarest-card badge, so we stop at 2.
-  const buckets = new Map();   // playsetSize → best { ref, total }
-  let bestRarest = null;       // { ref, total, copies }
+  const buckets = new Map();
+  let bestRarest = null;
   for (const [ref, c] of Object.entries(deck.cards || {})) {
     const main = c.mainCount || 0;
-    // Sideboard-only cards aren't iconic — the badges should reflect the
-    // 60-card deck the pilot is leading with, not their tech against
-    // specific matchups. (A sideboard-only 1-of of an obscure card would
-    // otherwise dominate the rarest-card calculation.)
     if (main === 0) continue;
-    // Lands are not iconic — basics get artificially "rare" via per-printing
-    // usage stats (a 1-of Mountain_CYB beats every spell), and non-basics
-    // mostly identify the colors, which the pip strip already shows. The
-    // playset-bucket and rarest-card badges should both come from spells.
     if (isLandType(c.type)) continue;
     const total = usage.get(ref) || 0;
     if (main >= 2 && main <= 4) {
@@ -983,10 +759,6 @@ function computeIdentifyingCards(deck, usage) {
     }
   }
   const bestFour = buckets.get(4) || buckets.get(3) || buckets.get(2) || null;
-  // Make sure the two badges don't collide. If bestRarest === bestFour,
-  // pick the next-best rarest distinct ref. Must apply the same land
-  // filter as the main pass — otherwise lands sneak in here when the
-  // deck's rarest spell happens to also be its iconic playset.
   if (bestFour && bestRarest && bestFour.ref === bestRarest.ref) {
     let alt = null;
     for (const [ref, c] of Object.entries(deck.cards || {})) {
@@ -1015,8 +787,6 @@ function rebuildAllIdentifyingCards() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Decklist hover popup — shows the full main+side list when you hover a row.
 
 let popupHideTimer = null;
 function showDecklistPopup(entry, anchor) {
@@ -1030,8 +800,6 @@ function showDecklistPopup(entry, anchor) {
 }
 
 function hideDecklistPopup() {
-  // Slight delay so a hover that crosses between row children doesn't
-  // flicker the popup off and back on.
   if (popupHideTimer) clearTimeout(popupHideTimer);
   popupHideTimer = setTimeout(() => {
     document.getElementById('league-decklist-popup').classList.remove('show');
@@ -1086,11 +854,7 @@ function popupRowsFor(deck, zone) {
 }
 
 function positionPopup(popup, anchor) {
-  // Anchor at the row's right edge by default. If the popup would overflow
-  // the viewport horizontally, flip to the row's left edge. Vertical: align
-  // the popup's top with the row's top, but clamp inside the viewport.
   const margin = 8;
-  // Reset before measuring so previous size doesn't bias the calc.
   popup.style.left = '0px';
   popup.style.top = '0px';
   const rect = anchor.getBoundingClientRect();
@@ -1106,8 +870,6 @@ function positionPopup(popup, anchor) {
   popup.style.top = y + 'px';
 }
 
-// ---------------------------------------------------------------------------
-// Detail view — replicates the deckbuilder's pile-pane UI
 
 const TYPE_ORDER = ['Creature', 'Planeswalker', 'Instant', 'Sorcery',
                     'Artifact', 'Enchantment', 'Battle', 'Land'];
@@ -1121,12 +883,6 @@ function typeRank(typeStr) {
   return i < 0 ? TYPE_ORDER.length : i;
 }
 
-// Build the working pile state for a freshly-opened deck. Mirrors the
-// deckbuilder's import default (placeInstanceIntoZone in app.js): each
-// distinct card occupies its own pile, with a 4-of forming a "playset
-// pile" and additional copies starting a fresh pile right after it. New
-// piles slot in by primary type. The result is many short piles (one per
-// card) instead of a single giant pile per type.
 function buildInitialZones(deck) {
   function expand(getCount) {
     const piles = [];
@@ -1146,9 +902,6 @@ function buildInitialZones(deck) {
   };
 }
 
-// Sort comparator for the "where does a brand-new pile go?" decision.
-// Type rank first (matches the deckbuilder's default `pileSort: 'type'`),
-// then card name as a stable tiebreaker.
 function compareRefsForPiles(a, b, deckCards) {
   const ca = deckCards[a] || {}, cb = deckCards[b] || {};
   const ra = typeRank(ca.type), rb = typeRank(cb.type);
@@ -1160,17 +913,12 @@ function isLeaguePlaysetPile(pile, ref) {
   return pile.length === 4 && pile.every(x => x.ref === ref);
 }
 
-// Replicates app.js's placeInstanceIntoZone:
-//   1. existing non-playset pile already containing this card → merge in
-//   2. an existing playset pile of this card → start a new pile right after it
-//   3. otherwise → new pile, slotted by sort comparator
 function placeInstance(piles, inst, ref, deckCards) {
   for (let i = 0; i < piles.length; i++) {
     const p = piles[i];
     if (p.length === 0) continue;
     if (isLeaguePlaysetPile(p, ref)) continue;
     if (p.some(x => x.ref === ref)) {
-      // Group same-ref copies together within a pile.
       let lastIdx = -1;
       for (let j = 0; j < p.length; j++) if (p[j].ref === ref) lastIdx = j;
       p.splice(lastIdx + 1, 0, inst);
@@ -1204,7 +952,6 @@ function openDetail(id) {
 
   document.getElementById('league-list-view').classList.add('hidden');
   document.getElementById('league-detail-view').classList.remove('hidden');
-  // Detail view uses internal pane scrolling — clamp html/body back to 100vh.
   document.body.classList.add('detail-active');
   renderDetail();
   window.scrollTo(0, 0);
@@ -1224,12 +971,7 @@ function renderDetail() {
   if (!entry || !entry.parsed) return;
   const d = entry.parsed;
 
-  // Header
   document.getElementById('league-detail-name').textContent = d.name || '(untitled)';
-  // Source link points at the deck's lackeybot statdex page (the
-  // human-readable HTML view). The slim shape we render here comes from
-  // the JSON API, but the HTML page is the canonical permalink users
-  // expect to see when they click "view source".
   const src = document.getElementById('league-detail-source');
   if (src) {
     const url = lackeybotDeckUrl(d.id);
@@ -1258,9 +1000,7 @@ function renderDetail() {
   }
   if (d.tournName) meta.appendChild(el('span', { text: d.tournName }));
 
-  // Zone sidebar
   for (const zone of ['main', 'side']) renderZoneSidebar(zone);
-  // Focus zone styling
   for (const sec of document.querySelectorAll('#lg-zones .zone')) {
     sec.classList.toggle('focused', sec.dataset.zone === STATE.focusedZone);
   }
@@ -1275,7 +1015,6 @@ function renderZoneSidebar(zoneName) {
   const list = document.getElementById('lg-list-' + zoneName);
   list.innerHTML = '';
   const zone = STATE.detailZones[zoneName];
-  // Aggregate by ref → count for the list display (deckbuilder's convention).
   const counts = new Map();
   for (const pile of zone.piles) {
     for (const inst of pile) {
@@ -1289,7 +1028,6 @@ function renderZoneSidebar(zoneName) {
   const entry = STATE.byId.get(STATE.detailId);
   const deckCards = entry.parsed.cards;
 
-  // Group rows by primary type
   const rows = [...counts.entries()].map(([ref, count]) => {
     const dc = deckCards[ref] || {};
     return { ref, count, deckCard: dc, mtgCard: lookupCard(dc) };
@@ -1299,7 +1037,6 @@ function renderZoneSidebar(zoneName) {
     if (ra !== rb) return ra - rb;
     return (a.deckCard.fullName || '').localeCompare(b.deckCard.fullName || '');
   });
-  // Emit grouped rows with type-group-headers
   const totals = new Map();
   for (const r of rows) {
     const t = primaryType(r.deckCard.type);
@@ -1354,8 +1091,6 @@ function makePileGap(insertIdx) {
     ondragover: (ev) => {
       const z = ev.dataTransfer.types.includes('text/league-zone')
                 ? null : null;
-      // Within-zone enforcement happens at drop: we still allow visual
-      // hover so the user gets feedback if they're in the right zone.
       ev.preventDefault();
       ev.dataTransfer.dropEffect = 'move';
       clearOtherDragOver(g);
@@ -1464,14 +1199,9 @@ function makeCardSlot(inst, slotIdx) {
     }));
     ev.dataTransfer.setData('text/league-zone', STATE.focusedZone);
     slot.classList.add('dragging');
-    // Custom card-image ghost (matches the deckbuilder). Anchor offset
-    // halfway across, 30px down — same anchor app.js uses on its piles, so
-    // the ghost feels "weighted" at the same point the user grabbed.
     startLeagueDragGhost(ev, dc, !!inst.flipped,
       slot.offsetWidth, slot.offsetHeight,
       slot.offsetWidth / 2, 30);
-    // Suppress the hover preview while dragging — the ghost is the visual,
-    // and a popup hanging next to the cursor on top of it is just noise.
     hideCardPreview();
   });
   slot.addEventListener('dragend', () => {
@@ -1482,9 +1212,6 @@ function makeCardSlot(inst, slotIdx) {
   slot.addEventListener('mousemove', moveCardPreview);
   slot.addEventListener('mouseleave', hideCardPreview);
 
-  // DFC flip overlay — transparent center button identical to the
-  // deckbuilder's. Toggles inst.flipped, swaps the image src, and adds the
-  // .flipped outline. Only rendered when the card actually has a back side.
   if (dfc) slot.appendChild(makeLeagueFlipButton(inst, dc, slot));
 
   return slot;
@@ -1523,10 +1250,6 @@ function clearOtherDragOver(except) {
   }
 }
 
-// Walk the focused zone's piles, take out instances with these uids, and
-// drop them at the end of the destination pile. Empty source piles are
-// pruned. Operates on the working detail-view state only — never writes
-// upstream.
 function moveUidsToPile(uids, destPileIdx) {
   const zone = STATE.detailZones[STATE.focusedZone];
   const dest = zone.piles[destPileIdx];
@@ -1565,20 +1288,6 @@ function pruneEmptyPiles() {
   zone.piles = zone.piles.filter(p => p.length > 0);
 }
 
-// ---------------------------------------------------------------------------
-// Card image preview (hover) — mirrors the deckbuilder's showPreview /
-// positionPreview / hidePreview (app.js) so hovering a card in the league
-// detail view feels identical to hovering one in the editor:
-//   - 250 ms debounce so flicking the cursor across a row doesn't flash a
-//     dozen popups
-//   - When invoked from a card slot (avoidEl set), the popup anchors to the
-//     slot's edge instead of chasing the cursor — so it never covers the
-//     card you're trying to look at
-//   - Hides while the new image is loading so the previous card never
-//     flashes for a fraction of a second under the new title
-//
-// Its own DOM node (#league-card-preview) since league.html doesn't carry
-// the deckbuilder's #card-preview, but the visual / behavior is the same.
 
 const previewEl = () => document.getElementById('league-card-preview');
 const previewImg = () => document.getElementById('league-card-preview-img');
@@ -1590,7 +1299,6 @@ let _leaguePreviewAvoidEl = null;
 function showCardPreview(deckCard, ev, isFlipped, avoidEl) {
   if (_leaguePreviewTimer) clearTimeout(_leaguePreviewTimer);
   _leaguePreviewAvoidEl = avoidEl || null;
-  // Capture cursor position now; the timer fires later when ev is stale.
   const startEv = { clientX: ev.clientX, clientY: ev.clientY };
   const face = (isDoubleface(deckCard) && isFlipped) ? 'back' : 'front';
   const url = imgUrlForDeckCard(deckCard, face);
@@ -1600,9 +1308,6 @@ function showCardPreview(deckCard, ev, isFlipped, avoidEl) {
     const node = previewEl();
     const img = previewImg();
     img.alt = deckCard.fullName || '';
-    // Hide while loading so we never flash the previous card under a new
-    // hover. show() runs once the new image is in (or immediately if it's
-    // the same URL we already loaded).
     node.classList.remove('show');
     const show = () => {
       node.classList.add('show');
@@ -1625,7 +1330,6 @@ function positionCardPreview(ev) {
   const w = node.offsetWidth || 240;
   const h = node.offsetHeight || 336;
   if (_leaguePreviewAvoidEl) {
-    // Anchor to the slot's right edge; flip to the left if it would overflow.
     const ar = _leaguePreviewAvoidEl.getBoundingClientRect();
     let x = ar.right + 8;
     if (x + w > window.innerWidth) x = ar.left - w - 8;
@@ -1644,8 +1348,6 @@ function positionCardPreview(ev) {
     node.style.top = y + 'px';
   }
 }
-// Kept for the cursor-tracking call sites (sidebar rows, id-card badges)
-// where the preview chases the cursor instead of anchoring to a slot.
 function moveCardPreview(ev) {
   if (_leaguePreviewAvoidEl) return;
   positionCardPreview(ev);
@@ -1655,19 +1357,13 @@ function hideCardPreview() {
   previewEl().classList.remove('show');
 }
 
-// ---------------------------------------------------------------------------
-// Custom drag ghost — replaces the browser's default semi-transparent
-// screenshot with a card-image overlay that matches the deckbuilder's drag
-// feel exactly. Same trick as app.js: a 1×1 transparent gif suppresses the
-// native ghost (setDragImage), and a fixed-position .drag-ghost div is
-// repositioned on every dragover.
 
 const LEAGUE_EMPTY_DRAG_IMG = new Image();
 LEAGUE_EMPTY_DRAG_IMG.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 LEAGUE_EMPTY_DRAG_IMG.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:-1;';
 document.documentElement.appendChild(LEAGUE_EMPTY_DRAG_IMG);
 
-let _leagueDragGhost = null;  // { el, offsetX, offsetY }
+let _leagueDragGhost = null;
 
 function startLeagueDragGhost(ev, deckCard, isFlipped, width, height, offsetX, offsetY) {
   endLeagueDragGhost();
@@ -1697,9 +1393,6 @@ function endLeagueDragGhost() {
     _leagueDragGhost = null;
   }
 }
-// Cursor tracking. dragover fires continuously during a drag — including
-// over the document — so a single document-level listener keeps the ghost
-// glued to the cursor regardless of which child element is under it.
 document.addEventListener('dragover', (ev) => {
   if (_leagueDragGhost) {
     _leagueDragGhost.el.style.left = (ev.clientX - _leagueDragGhost.offsetX) + 'px';
@@ -1707,8 +1400,6 @@ document.addEventListener('dragover', (ev) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Copy to deckbuilder
 
 function copyDeckToDeckbuilder(entry) {
   const d = entry.parsed;
@@ -1744,18 +1435,11 @@ function copyDeckToDeckbuilder(entry) {
   }
 }
 
-// Build the deck's permalink on lackeybot.com (the human-readable HTML
-// page, not the JSON API endpoint). Used by the "view source" link in
-// the detail view.
 function lackeybotDeckUrl(deckId) {
   if (!deckId || typeof deckId !== 'string' || deckId.indexOf('/') < 0) return null;
   return `https://lackeybot.com/rev/statdex/d/${TOURNEY}/${deckId}`;
 }
 
-// Plain-text decklist matching the deckbuilder's importTxt format:
-// "<count> <name>" lines, blank line between zones, main → sideboard.
-// Names are run through refNameToDeckbuilderName so DFCs come out as the
-// front face's name (the same key the deckbuilder accepts on import).
 function buildClipboardText(deck) {
   const sections = [];
   for (const zone of ['main', 'side']) {
@@ -1785,9 +1469,6 @@ async function copyDetailTextToClipboard() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
     } else {
-      // Fallback for older browsers / non-secure contexts: a hidden textarea
-      // + execCommand. Modern Chromium/Firefox/Safari all support the
-      // clipboard API on https or localhost, so this branch is rare.
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.position = 'fixed';
@@ -1810,9 +1491,6 @@ function copyDetailToDeckbuilder() {
   if (!STATE.detailId) return;
   const entry = STATE.byId.get(STATE.detailId);
   if (!entry) return;
-  // Build payload from the in-page (possibly rearranged) zones, preserving
-  // the user's pile arrangement so the deckbuilder loads it the same way
-  // they laid it out in the viewer.
   const zones = { main: [], sanctum: [], side: [], maybe: [] };
   for (const z of ['main', 'side']) {
     for (const pile of STATE.detailZones[z].piles) {
@@ -1851,15 +1529,10 @@ function makeUniqueDeckbuilderName(base) {
   return cand;
 }
 
-// ---------------------------------------------------------------------------
-// Boot
 
 async function loadAll(force) {
   setStatus('Loading league…');
 
-  // Cache hit short-circuits the lackeybot round-trip. We still re-run
-  // color analysis on every load (cheap, depends on cards.json which can
-  // outlive any single cache entry).
   let bundle = null;
   if (!force) {
     bundle = readCache();
@@ -1879,12 +1552,8 @@ async function loadAll(force) {
 
   hydrateFromBundle(bundle);
 
-  // Cards.json drives color analysis (it has each card's text + manaCost,
-  // which the statDex API doesn't return). The deckviewer payload already
-  // gives us setID/cardID/type/fullName/shape, so no per-card enrichment
-  // pass is needed.
   try { await ensureCards(); }
-  catch (_) { /* color analysis is skipped if cards.json fails */ }
+  catch (_) {   }
   for (const entry of STATE.decks) {
     if (entry.parsed) entry.colors = computeDeckColors(entry.parsed);
   }
@@ -1893,13 +1562,6 @@ async function loadAll(force) {
   const stamp = bundle.fetchedAt
     ? ' · synced ' + new Date(bundle.fetchedAt).toLocaleString()
     : '';
-  // missingDeckIds is the gap between what `viewable` advertised and what the
-  // per-deck `decklist` calls actually delivered. The endpoint returns HTTP
-  // 500 for these IDs and the cause is opaque from the outside — neither the
-  // docs' "active runs" hint nor any visible field on the run record (match
-  // count, duplicate name, score shape, encoded card list) cleanly separates
-  // the failing IDs from the rest. Surface the count so the list isn't
-  // silently truncated.
   const missing = Array.isArray(bundle.missingDeckIds) ? bundle.missingDeckIds.length : 0;
   const total = bundle.decks.length + missing;
   const gap = missing
@@ -1908,11 +1570,6 @@ async function loadAll(force) {
   setStatus(`${bundle.decks.length} deck${bundle.decks.length === 1 ? '' : 's'} loaded${gap}${stamp}`);
 }
 
-// Pulls the viewable index, fans out one POST per deck, and assembles the
-// slim bundle. `onProgress(done, total)` fires after every fetch attempt
-// so the page can show "Loading league… 23/80". Throws on index failure;
-// per-deck failures are logged and skipped so one bad deck can't mask the
-// other 79.
 async function fetchBundle(onProgress) {
   const ids = await fetchViewable();
 
@@ -1929,11 +1586,6 @@ async function fetchBundle(onProgress) {
         out[i] = await fetchOneDeck(ids[i]);
       } catch (e) {
         out[i] = null;
-        // A 404 means the `viewable` index advertised a run slot that has no
-        // decklist on file — a registered-but-unsubmitted/abandoned run, not
-        // a load failure. There's no deck to show, so drop it silently rather
-        // than counting it against the "could not be loaded" tally. Genuine
-        // misses (500 withheld active runs, network errors) still count.
         if (!(e && e.status === 404)) {
           console.warn('league: deck fetch failed', ids[i], e);
           missingDeckIds.push(ids[i]);
@@ -1944,11 +1596,6 @@ async function fetchBundle(onProgress) {
     }
   }
   const workers = Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker);
-  // Tournament data is needed for the discord-id → username map. It's a
-  // single small POST and the only signal we have for player names (the
-  // per-deck endpoint omits them), so kick it off in parallel with the
-  // deck-fetch fan-out. A failure here isn't fatal — players just falls
-  // back to {} and the rows surface truncated discord ids instead.
   const playersPromise = fetchTournamentPlayers().catch(e => {
     console.warn('league: tournament/players fetch failed', e);
     return {};
@@ -1964,10 +1611,6 @@ async function fetchBundle(onProgress) {
   };
 }
 
-// Fetch the tournament endpoint and pluck the {pKey: username} map. The
-// rest of the response (matches, leaderboards, etc.) we don't use yet, so
-// keep only what's needed — caching the full body would balloon the
-// localStorage entry.
 async function fetchTournamentPlayers() {
   const data = await callStatDex({
     format: 'revolution',
@@ -1999,10 +1642,6 @@ async function fetchOneDeck(deckId) {
   if (slash < 0) throw new Error('malformed deck id ' + deckId);
   const pKey = deckId.slice(0, slash);
   const rKey = deckId.slice(slash + 1);
-  // `deckviewer: true` makes the response include the per-card metadata
-  // (setID/cardID/type/fullName/shape) the renderer needs. Without it the
-  // body's cards map only has counts, and we'd have to look everything up
-  // in cards.json ourselves.
   const data = await callStatDex({
     format: 'revolution',
     data_type: 'decklist',
@@ -2025,18 +1664,12 @@ async function callStatDex(payload) {
   });
   if (!r.ok) {
     const err = new Error(`statdex ${r.status}`);
-    err.status = r.status;   // let callers distinguish 404 (no such deck) from 500 etc.
+    err.status = r.status;
     throw err;
   }
   return r.json();
 }
 
-// Translate the statDex API's per-deck shape into the slim shape the rest
-// of league.js consumes. With `deckviewer: true`, every field we need is
-// already on the upstream card record; we just flatten `decks: {main, side}`
-// to the legacy `mainCount`/`sideCount` keys and pass the metadata through.
-// The `opponents` array is preserved so a future detail view can surface
-// match-by-match results.
 function apiDeckToSlim(deckId, body) {
   const cards = {};
   for (const [ref, c] of Object.entries(body.cards || {})) {
@@ -2066,10 +1699,7 @@ function apiDeckToSlim(deckId, body) {
 }
 
 function hydrateFromBundle(bundle) {
-  // Populate STATE.players FIRST — authorAndShortName reads it. An older
-  // cached bundle from before :v2 won't have `players`; the empty-map
-  // fallback drops every row's author back to the discord-id stub, which
-  // matches what those users would see if they refreshed.
+  STATE.loaded = true;
   STATE.players = new Map(Object.entries(bundle.players || {}));
   const decks = Array.isArray(bundle.decks) ? bundle.decks : [];
   STATE.decks = decks.map(d => {
@@ -2101,7 +1731,6 @@ function writeCache(bundle) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(bundle));
   } catch (_) {
-    /* over quota or storage disabled — cache is best-effort */
   }
 }
 
@@ -2109,10 +1738,6 @@ function renderListIfList() {
   if (STATE.view === 'list') renderList();
 }
 
-// Sort-chain UI. Mirrors the deckbuilder's pile-sort dropdown: clicking a
-// method moves it to the front of STATE.sortChain so previously-chosen
-// methods slide down to act as tiebreakers (the user-stated requirement is
-// "ties broken by most recently chosen").
 const SORT_LABELS = {
   wins:   'Wins',
   color:  'Color',
@@ -2154,26 +1779,17 @@ function pushSort(method) {
   const i = chain.indexOf(method);
   if (i >= 0) chain.splice(i, 1);
   chain.unshift(method);
-  // Keep the chain bounded by the method count — duplicates can't grow it
-  // since we splice them out above, but defense in depth.
   if (chain.length > Object.keys(SORT_LABELS).length) {
     chain.length = Object.keys(SORT_LABELS).length;
   }
 }
 
-// Season picker. Lists every generated season newest-first; the active one
-// is highlighted. Picking a different season reloads the page with the new
-// slug in the hash so all module-load-time state (TOURNEY, cache key, STATE)
-// is rebuilt cleanly rather than surgically reset.
 function wireSeasonDropdown() {
   const btn = document.getElementById('league-season-btn');
   const menu = document.getElementById('league-season-menu');
   if (!btn || !menu) return;
 
   const seasons = listSeasons();
-  // If TOURNEY came from a #t= override outside the generated range (an old
-  // season below the floor, or a non-league slug like a gprev), surface it
-  // at the top so the button still shows the active selection.
   if (!seasons.includes(TOURNEY)) seasons.unshift(TOURNEY);
 
   btn.innerHTML = seasonLabel(TOURNEY) + ' &#x25BE;';
@@ -2220,7 +1836,6 @@ function wireUI() {
 
   wireSortDropdown();
 
-  // Click a zone in the aside to focus it (matches the deckbuilder).
   for (const hdr of document.querySelectorAll('#lg-zones .zone > header')) {
     hdr.addEventListener('click', () => {
       const z = hdr.dataset.zoneTarget;
