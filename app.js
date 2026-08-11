@@ -14,6 +14,7 @@ const VOYAGER_STORAGE_KEY = `rev-deckbuilder-voyager-v${STORAGE_VERSION}`;
 const _datasetSessionCache = { revolution: null, voyager: null };
 
 const PREFS_KEY = 'rev-deckbuilder-prefs-v1';
+const SESSION_KEY = 'rev-deckbuilder-session-v1';
 
 
 const STATE = {
@@ -224,6 +225,14 @@ function wireDragTrash() {
 
   loadPrefs();
 
+  const sessionPayload = (location.hash || '').startsWith('#d=') ? null : readSessionState();
+  if (sessionPayload && (sessionPayload.format === 'standard' || sessionPayload.format === 'eternal'
+      || sessionPayload.format === 'range' || sessionPayload.format === 'voyager')) {
+    STATE.format = sessionPayload.format;
+    STATE.rangeStart = typeof sessionPayload.rangeStart === 'string' ? sessionPayload.rangeStart : null;
+    STATE.rangeEnd   = typeof sessionPayload.rangeEnd   === 'string' ? sessionPayload.rangeEnd   : null;
+  }
+
   let data = null;
   try {
     data = await loadDatasetData(currentDataset());
@@ -254,11 +263,14 @@ function wireDragTrash() {
   wireSearchToggle();
   wireUndoRedo();
   wireVersionPicker();
+  wireSessionPersistence();
   setFocusedZone('main');
   applySearchPanelMode();
   if (STATE.tagMode) initTagMode();
   markDeckClean();
   renderAll();
+
+  if (sessionPayload) applySessionState(sessionPayload);
 
   await loadDeckFromUrlFragment();
 
@@ -1253,6 +1265,83 @@ function rehydrateZonesFromNames(snapshot) {
     }
   }
   return zones;
+}
+
+let sessionSaveTimer = null;
+
+function writeSessionState() {
+  sessionSaveTimer = null;
+  if (STATE.tagMode) return;
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      format: STATE.format,
+      rangeStart: STATE.rangeStart,
+      rangeEnd: STATE.rangeEnd,
+      formatLock: STATE.formatLock,
+      zones: snapshotZonesByName(STATE.zones),
+      loadedDeckName: STATE.loadedDeckName,
+      loadedDeckFolder: STATE.loadedDeckFolder,
+      loadedDeckTags: (STATE.loadedDeckTags || []).slice(),
+      loadedPlanName: STATE.loadedPlanName,
+      basePlanZones: STATE.basePlanZones,
+      deckSnapshot: STATE.deckSnapshot,
+      stashedByDataset: STATE.stashedByDataset,
+    }));
+  } catch (_) {}
+}
+
+function scheduleSessionSave() {
+  if (sessionSaveTimer != null) return;
+  sessionSaveTimer = setTimeout(writeSessionState, 300);
+}
+
+function flushSessionSave() {
+  if (sessionSaveTimer != null) clearTimeout(sessionSaveTimer);
+  writeSessionState();
+}
+
+function readSessionState() {
+  if (STATE.tagMode) return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== 'object' || !obj.zones) return null;
+    return obj;
+  } catch (_) { return null; }
+}
+
+function applySessionState(payload) {
+  if (datasetForFormat(payload.format) !== currentDataset()) return;
+  STATE.zones = rehydrateZonesFromNames(payload.zones);
+  STATE.loadedDeckName = typeof payload.loadedDeckName === 'string' ? payload.loadedDeckName : null;
+  STATE.loadedDeckFolder = typeof payload.loadedDeckFolder === 'string' ? payload.loadedDeckFolder : null;
+  STATE.loadedDeckTags = Array.isArray(payload.loadedDeckTags) ? payload.loadedDeckTags.slice() : [];
+  STATE.loadedPlanName = typeof payload.loadedPlanName === 'string' ? payload.loadedPlanName : null;
+  STATE.basePlanZones = payload.basePlanZones || null;
+  if (STATE.loadedPlanName && (!STATE.loadedDeckName
+      || !listPlans(STATE.loadedDeckName).some(p => p.name === STATE.loadedPlanName))) {
+    STATE.loadedPlanName = null;
+    STATE.basePlanZones = null;
+  }
+  if (payload.stashedByDataset && typeof payload.stashedByDataset === 'object') {
+    STATE.stashedByDataset.revolution = payload.stashedByDataset.revolution || null;
+    STATE.stashedByDataset.voyager = payload.stashedByDataset.voyager || null;
+  }
+  if (typeof payload.deckSnapshot === 'string') STATE.deckSnapshot = payload.deckSnapshot;
+  else markDeckClean();
+  setFormatLock(typeof payload.formatLock === 'string' ? payload.formatLock : null);
+  runSearch(document.getElementById('search').value);
+  renderAll();
+  resetHistory();
+  updateSaveButtons();
+}
+
+function wireSessionPersistence() {
+  window.addEventListener('pagehide', flushSessionSave);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSessionSave();
+  });
 }
 
 async function switchDataset(toDataset) {
@@ -3436,6 +3525,7 @@ function renderAll() {
   renderPiles();
   updatePlanBanner();
   captureUndoSnapshot();
+  scheduleSessionSave();
 }
 
 
@@ -5624,6 +5714,7 @@ function snapshotDeck() {
 
 function markDeckClean() {
   STATE.deckSnapshot = snapshotDeck();
+  scheduleSessionSave();
 }
 
 function deckIsDirty() {
@@ -5647,6 +5738,7 @@ function updateSaveButtons() {
     document.title = 'Revolution Deckbuilder';
   }
   updatePlanBanner();
+  scheduleSessionSave();
 }
 
 function updatePlanBanner() {
