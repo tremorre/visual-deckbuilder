@@ -1189,7 +1189,7 @@ function makeCardSlot(inst, slotIdx) {
     if (mtg.type) titleParts.push(mtg.type);
     if (mtg.text) titleParts.push('', mtg.text);
   }
-  slot.title = titleParts.join('\n');
+  slot.dataset.title = titleParts.join('\n');
 
   slot.addEventListener('dragstart', (ev) => {
     ev.dataTransfer.effectAllowed = 'move';
