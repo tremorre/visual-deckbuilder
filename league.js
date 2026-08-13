@@ -1407,8 +1407,8 @@ function copyDeckToDeckbuilder(entry) {
   const mainPile = [];
   const sidePile = [];
   for (const e of Object.values(d.cards || {})) {
-    for (let i = 0; i < (e.mainCount || 0); i++) mainPile.push(refNameToDeckbuilderName(e.refName));
-    for (let i = 0; i < (e.sideCount || 0); i++) sidePile.push(refNameToDeckbuilderName(e.refName));
+    for (let i = 0; i < (e.mainCount || 0); i++) mainPile.push(deckbuilderCardName(e));
+    for (let i = 0; i < (e.sideCount || 0); i++) sidePile.push(deckbuilderCardName(e));
   }
   if (mainPile.length) zones.main.push(mainPile);
   if (sidePile.length) zones.side.push(sidePile);
@@ -1429,9 +1429,18 @@ function copyDeckToDeckbuilder(entry) {
   };
   try {
     localStorage.setItem(SAVED_DECK_PREFIX + baseName, JSON.stringify(payload));
-    toast('Copied "' + baseName + '" to deckbuilder');
   } catch (e) {
     toast('Copy failed: ' + e.message);
+    return;
+  }
+  offerOpenInDeckbuilder(baseName, payload.folder);
+}
+
+function offerOpenInDeckbuilder(deckName, folder) {
+  if (confirm('Copied "' + deckName + '" to the deckbuilder. Open it there now?')) {
+    location.href = 'index.html#open=' + encodeURIComponent(deckName);
+  } else {
+    toast('Saved "' + deckName + '" to deckbuilder in folder "' + folder + '"');
   }
 }
 
@@ -1440,19 +1449,28 @@ function lackeybotDeckUrl(deckId) {
   return `https://lackeybot.com/rev/statdex/d/${TOURNEY}/${deckId}`;
 }
 
+function deckbuilderCardName(deckCard) {
+  const c = lookupCard(deckCard);
+  if (c && c.name) {
+    const i = c.name.indexOf(' // ');
+    return i >= 0 ? c.name.slice(0, i) : c.name;
+  }
+  return refNameToDeckbuilderName(deckCard.refName);
+}
+
 function buildClipboardText(deck) {
   const sections = [];
   for (const zone of ['main', 'side']) {
-    const lines = [];
-    const refs = Object.keys(deck.cards || {})
-      .filter(r => (zone === 'main' ? deck.cards[r].mainCount : deck.cards[r].sideCount) > 0)
-      .sort((a, b) => (deck.cards[a].fullName || '').localeCompare(deck.cards[b].fullName || ''));
-    for (const ref of refs) {
-      const c = deck.cards[ref];
+    const counts = new Map();
+    for (const c of Object.values(deck.cards || {})) {
       const n = zone === 'main' ? c.mainCount : c.sideCount;
       if (!n) continue;
-      lines.push(`${n} ${refNameToDeckbuilderName(ref)}`);
+      const name = deckbuilderCardName(c);
+      counts.set(name, (counts.get(name) || 0) + n);
     }
+    const lines = Array.from(counts.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, n]) => `${n} ${name}`);
     if (lines.length) sections.push(lines.join('\n'));
   }
   return sections.join('\n\n') + '\n';
@@ -1494,7 +1512,10 @@ function copyDetailToDeckbuilder() {
   const zones = { main: [], sanctum: [], side: [], maybe: [] };
   for (const z of ['main', 'side']) {
     for (const pile of STATE.detailZones[z].piles) {
-      const names = pile.map(inst => refNameToDeckbuilderName(inst.ref));
+      const names = pile.map(inst => {
+        const dc = entry.parsed && entry.parsed.cards && entry.parsed.cards[inst.ref];
+        return dc ? deckbuilderCardName(dc) : refNameToDeckbuilderName(inst.ref);
+      });
       if (names.length) zones[z].push(names);
     }
   }
@@ -1514,10 +1535,11 @@ function copyDetailToDeckbuilder() {
   };
   try {
     localStorage.setItem(SAVED_DECK_PREFIX + baseName, JSON.stringify(payload));
-    toast('Copied "' + baseName + '" to deckbuilder');
   } catch (e) {
     toast('Copy failed: ' + e.message);
+    return;
   }
+  offerOpenInDeckbuilder(baseName, payload.folder);
 }
 
 function makeUniqueDeckbuilderName(base) {

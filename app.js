@@ -225,7 +225,9 @@ function wireDragTrash() {
 
   loadPrefs();
 
-  const sessionPayload = (location.hash || '').startsWith('#d=') ? null : readSessionState();
+  const startHash = location.hash || '';
+  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open='))
+    ? null : readSessionState();
   if (sessionPayload && (sessionPayload.format === 'standard' || sessionPayload.format === 'eternal'
       || sessionPayload.format === 'range' || sessionPayload.format === 'voyager')) {
     STATE.format = sessionPayload.format;
@@ -273,6 +275,7 @@ function wireDragTrash() {
   if (sessionPayload) applySessionState(sessionPayload);
 
   await loadDeckFromUrlFragment();
+  await loadSavedDeckFromUrlFragment();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(e => {
@@ -6611,6 +6614,41 @@ async function loadDeckFromUrlFragment() {
   } finally {
     clearHash();
   }
+}
+
+async function loadSavedDeckFromUrlFragment() {
+  const hash = location.hash || '';
+  if (!hash.startsWith('#open=')) return;
+  let name = '';
+  try { name = decodeURIComponent(hash.slice(6)); } catch (_) {}
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!name) return;
+  const payload = readDeckPayload(name);
+  if (!payload) {
+    alert('No saved deck named “' + name + '” was found.');
+    return;
+  }
+  if ((payload.format || 'standard') !== 'voyager' && currentDataset() !== 'revolution') {
+    try {
+      await switchDataset('revolution');
+    } catch (e) {
+      alert('Could not switch datasets to open “' + name + '”: ' + (e && e.message ? e.message : e));
+      return;
+    }
+    STATE.format = 'standard';
+    savePrefs();
+    syncFormatUI();
+    renderAll();
+  }
+  if (!loadDeckFromStorage(name)) {
+    alert('Could not load deck “' + name + '”');
+    return;
+  }
+  const meta = readDeckMeta(name);
+  STATE.loadedDeckName = name;
+  STATE.loadedDeckFolder = meta.folder;
+  STATE.loadedDeckTags = meta.tags;
+  updateSaveButtons();
 }
 
 function buildTxtExport(maybeMode) {
