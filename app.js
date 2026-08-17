@@ -40,6 +40,7 @@ const STATE = {
   rangeStart: null,
   rangeEnd: null,
   formatLock: null,
+  sealedFragment: null,
   stashedByDataset: { revolution: null, voyager: null },
   listSort: 'type',
   pileSort: 'type',
@@ -226,8 +227,7 @@ function wireDragTrash() {
   loadPrefs();
 
   const startHash = location.hash || '';
-  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open=')
-      || startHash.startsWith('#sealed='))
+  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open='))
     ? null : readSessionState();
   if (sessionPayload && (sessionPayload.format === 'standard' || sessionPayload.format === 'eternal'
       || sessionPayload.format === 'range' || sessionPayload.format === 'voyager')) {
@@ -254,6 +254,7 @@ function wireDragTrash() {
   await loadTags();
 
   wireSearch();
+  wireSealedButton();
   wireFormatLock();
   syncFormatLockUI();
   wireZones();
@@ -1291,6 +1292,7 @@ function writeSessionState() {
       basePlanZones: STATE.basePlanZones,
       deckSnapshot: STATE.deckSnapshot,
       stashedByDataset: STATE.stashedByDataset,
+      sealedFragment: STATE.sealedFragment,
     }));
   } catch (_) {}
 }
@@ -1335,6 +1337,7 @@ function applySessionState(payload) {
   }
   if (typeof payload.deckSnapshot === 'string') STATE.deckSnapshot = payload.deckSnapshot;
   else markDeckClean();
+  STATE.sealedFragment = typeof payload.sealedFragment === 'string' ? payload.sealedFragment : null;
   setFormatLock(typeof payload.formatLock === 'string' ? payload.formatLock : null);
   runSearch(document.getElementById('search').value);
   renderAll();
@@ -2974,8 +2977,35 @@ function wireFormatLock() {
 
 const SEARCH_RESULT_CAP = 300;
 
+function updateSealedButton(raw) {
+  const btn = document.getElementById('btn-sealed');
+  if (!btn) return;
+  const m = /^(?:set|e|edition):([A-Za-z0-9]+)$/i.exec(raw || '');
+  const code = m ? m[1].toUpperCase() : null;
+  const ok = !!(code && currentDataset() === 'revolution' && STATE.setsByCode[code]);
+  btn.classList.toggle('hidden', !ok);
+  if (ok) {
+    btn.dataset.set = code;
+    btn.dataset.title = 'Create a sealed pool of ' + code;
+  }
+}
+
+function wireSealedButton() {
+  const btn = document.getElementById('btn-sealed');
+  btn.addEventListener('click', async () => {
+    const set = btn.dataset.set;
+    if (!set) return;
+    const user = (window.prompt('Player name for the sealed pool:') || '').trim();
+    if (!user) return;
+    const url = window.Sealed.buildUrl(set, user, Date.now() - 60 * 1000);
+    history.replaceState(null, '', url);
+    await loadSealedFromUrlFragment();
+  });
+}
+
 function runSearch(q) {
   const raw = (q || '').trim();
+  updateSealedButton(raw);
   const results = document.getElementById('search-results');
   const looksStructured = /[:<>=!/"'()]/.test(raw) || /\s(?:AND|OR|NOT)\s/i.test(raw);
   if (!raw || (!looksStructured && raw.length < 2)) {
@@ -5024,6 +5054,7 @@ function clearAllZones() {
   for (const z of Object.keys(STATE.zones)) {
     STATE.zones[z].piles = [];
   }
+  STATE.sealedFragment = null;
 }
 
 function resolveCardName(name, uuid) {
@@ -6645,27 +6676,24 @@ async function loadDeckFromUrlFragment() {
 async function loadSealedFromUrlFragment() {
   const hash = location.hash || '';
   if (!hash.startsWith('#sealed=')) return;
-  const clearHash = () =>
-    history.replaceState(null, '', location.pathname + location.search);
+  if (STATE.sealedFragment === hash) return;
 
   let req;
   try {
     req = window.Sealed.parseFragment(hash);
   } catch (e) {
     alert('Bad sealed URL: ' + (e && e.message ? e.message : e));
-    clearHash();
     return;
   }
 
   if (currentDataset() !== 'revolution') {
     const ok = confirm(
       'This sealed URL is for the Revolution card pool. Switch to Revolution to open it?');
-    if (!ok) { clearHash(); return; }
+    if (!ok) return;
     try {
       await switchDataset('revolution');
     } catch (e) {
       alert('Could not switch to Revolution: ' + (e && e.message ? e.message : e));
-      clearHash();
       return;
     }
     STATE.format = 'standard';
@@ -6676,7 +6704,6 @@ async function loadSealedFromUrlFragment() {
 
   if (!STATE.setsByCode[req.set]) {
     alert('Unknown set code “' + req.set + '” in sealed URL.');
-    clearHash();
     return;
   }
 
@@ -6685,18 +6712,16 @@ async function loadSealedFromUrlFragment() {
   if (Date.now() < readyMs) {
     alert('This sealed pool will be available after ' +
       new Date(readyMs).toLocaleString() + ' local time.');
-    clearHash();
     return;
   }
 
   if (isPlanActive()) {
     alert('Exit the current plan before opening a sealed URL.');
-    clearHash();
     return;
   }
   if (!deckIsEmpty()) {
     const ok = confirm('Replace the current deck with the sealed pool from this URL?');
-    if (!ok) { clearHash(); return; }
+    if (!ok) return;
   }
 
   try {
@@ -6709,6 +6734,7 @@ async function loadSealedFromUrlFragment() {
     clearAllZones();
     for (const [id, n] of counts) placeCardsInZone(id, 'side', n);
     for (const z of Object.keys(STATE.zones)) resortPiles(z);
+    STATE.sealedFragment = hash;
     STATE.format = 'range';
     STATE.rangeStart = req.set;
     STATE.rangeEnd = req.set;
@@ -6716,11 +6742,10 @@ async function loadSealedFromUrlFragment() {
     syncFormatUI();
     renderAll();
     updateSaveButtons();
+    scheduleSessionSave();
   } catch (e) {
     console.error('failed to build sealed pool:', e);
     alert('Could not build the sealed pool: ' + (e && e.message ? e.message : e));
-  } finally {
-    clearHash();
   }
 }
 

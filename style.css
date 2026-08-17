@@ -350,6 +350,35 @@ body.search-active .toolbar {
   font-family: ui-monospace, "SF Mono", monospace;
   font-size: 10px;
 }
+.sealed-btn {
+  position: absolute;
+  right: 84px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.12s, background 0.12s, color 0.12s, border-color 0.12s;
+}
+.sealed-btn:hover {
+  opacity: 1;
+  background: var(--bg-button-hover);
+  border-color: var(--accent);
+}
+.sealed-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .search-lock-btn {
   position: absolute;
   right: 56px;

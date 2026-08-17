@@ -139,28 +139,95 @@
     return a.slice(0, k);
   }
 
+  // per-set common land cycles: only these fill the non-basic half of the land slot.
+  // Utility commons (Evolving Wilds, any-color, colorless-only) stay in the common slots.
+  const LAND_CYCLES = {
+    KUT: ['Bloodfell Caves', 'Blossoming Sands', 'Dismal Backwater', 'Jungle Hollow',
+          'Rugged Highlands', 'Scoured Barrens', 'Swiftwater Cliffs', 'Thornwood Falls',
+          'Tranquil Cove', 'Wind-Scarred Crag',
+          'Alruq Veil-Boundary', 'Dhagiri Veil-Boundary', 'Narwa Veil-Boundary',
+          'Neqanak Veil-Boundary', 'Tambara Veil-Boundary'],
+    VRD: ['Benthic Bunker', "Biomancer's Workshop", "Cultist's Compound", 'Decadent Lobby',
+          'Glacial Base', 'Inconspicuous Volcano', 'Midnight Square', 'Penthouse Office',
+          'Remote Facility', 'Underground Lab'],
+    POP: ['Abandoned Warehouse', 'Corgan Sprawl', 'Drizzling Cloister', 'Ozzen Headquarters',
+          'Possibility Heights', 'Quantum Skycity', 'Rapturous Festival', 'Sunrise Lot',
+          'Swanky Club', 'Tenuous Edge'],
+    TRX: ['Temple of Abandon', 'Temple of Deceit', 'Temple of Enlightenment',
+          'Temple of Epiphany', 'Temple of Malady', 'Temple of Malice', 'Temple of Mystery',
+          'Temple of Plenty', 'Temple of Silence', 'Temple of Triumph'],
+    CYB: ['Dark Horizon', 'Field Laboratory', 'Lunar Plateau', 'Nebulous Ring',
+          'Steam Colony', 'Valley Village'],
+    CNY: ['Bustling Motorway', 'Congressional Hall', 'Controlled Ecosystem',
+          'Executive Office', 'Groupthink Tank', 'Interrogation Chamber',
+          'Looming Skyscrapers', 'Neglected Slums', 'Open Air Boardwalk', 'Urban Sunscape'],
+    CCR: ['Calmed Battleground', 'Cryptic Reef', 'Deeplife Cavern', 'Fortress Arena',
+          'Frigid Highlands', 'Gleaming Hot Springs', 'Ominous Quag', 'Serpentine Woods',
+          'Stunning Cascade', 'Sunlit Ruins'],
+    ERR: ['Chimeric Soulspace', 'Eidetic Soulspace', 'Footloose Soulspace',
+          'Hopeful Soulspace', 'Lonely Soulspace', 'Macabre Soulspace',
+          'Nostalgic Soulspace', 'Soaring Soulspace', 'Vindictive Soulspace',
+          'Zealous Soulspace',
+          'Clearwater Grotto', 'Enigmatic Fen', 'Lucent Basin', 'Misty Peak',
+          'Profane Grove', 'Sanguine Palace', 'Stark Expanse', 'Urban Jungle',
+          'Verdant Sanctum', 'Windbeaten Stones'],
+    TWI: ['Blossoming Sands', 'Dismal Backwater', 'Jungle Hollow', 'Swiftwater Cliffs',
+          'Wind-Scarred Crag'],
+    SOL: ['Bloodfell Caves', 'Blossoming Sands', 'Dismal Backwater', 'Jungle Hollow',
+          'Rugged Highlands', 'Scoured Barrens', 'Swiftwater Cliffs', 'Thornwood Falls',
+          'Tranquil Cove', 'Wind-Scarred Crag'],
+    VLR: ['Flooded Morass', 'Flourishing Crevasse', 'Frostfire Geysers', 'Fungal Mire',
+          'Gloomcover Steppe', 'Heart of the Glade', 'Lavatorn Fields', 'Lush Oasis',
+          'Pool of Light', 'Spiraling Canyon'],
+  };
+
+  // sets whose land slot has custom halves instead of cycle-lands-vs-basics
+  const LAND_SLOT_GROUPS = {
+    ERR: [
+      LAND_CYCLES.ERR.slice(0, 10),   // soulspaces
+      LAND_CYCLES.ERR.slice(10),      // shocks
+    ],
+  };
+
+  function baseName(name) { return name.split('_')[0]; }
+
   function classifySetCards(cards, set) {
-    const pools = { common: [], uncommon: [], rare: [], mythic: [], basicLand: [], commonLand: [] };
+    const buckets = { common: [], uncommon: [], rare: [], mythic: [], basic: [], cycle: [] };
+    const cycleNames = new Set(LAND_CYCLES[set] || []);
     const seenNames = new Set();
     for (const c of cards) {
-      if (c.set !== set || seenNames.has(c.name)) continue;
-      const isLand = Array.isArray(c.types)
-        ? c.types.includes('Land')
-        : /\bLand\b/.test(c.type || '');
+      if (c.set !== set || seenNames.has(c.name) || c.rarity === 'special') continue;
+      const isBasic = (Array.isArray(c.supertypes) && c.supertypes.includes('Basic'))
+        || c.rarity === 'basic';
       let bucket = null;
-      if (c.rarity === 'basic' && isLand) bucket = 'basicLand';
-      else if (c.rarity === 'common' && isLand) bucket = 'commonLand';
-      else if (pools[c.rarity] && c.rarity !== 'basicLand' && c.rarity !== 'commonLand') bucket = c.rarity;
-      if (!bucket || !pools[bucket]) continue;
+      if (isBasic) bucket = 'basic';
+      else if (cycleNames.has(baseName(c.name))) bucket = 'cycle';
+      else if (buckets[c.rarity]) bucket = c.rarity;
+      if (!bucket) continue;
       seenNames.add(c.name);
-      pools[bucket].push(c);
+      buckets[bucket].push(c);
     }
     // canonical order: codepoint compare on name — locale- and id-scheme-independent
-    for (const k of Object.keys(pools)) {
-      pools[k].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-      pools[k] = pools[k].map(c => c.id);
+    const toIds = arr => arr
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+      .map(c => c.id);
+    const custom = LAND_SLOT_GROUPS[set];
+    let landGroups;
+    if (custom) {
+      landGroups = custom.map(names => {
+        const wanted = new Set(names);
+        return toIds(buckets.cycle.filter(c => wanted.has(baseName(c.name))));
+      });
+    } else {
+      landGroups = [toIds(buckets.cycle.slice()), toIds(buckets.basic.slice())];
     }
-    return pools;
+    return {
+      common: toIds(buckets.common),
+      uncommon: toIds(buckets.uncommon),
+      rare: toIds(buckets.rare),
+      mythic: toIds(buckets.mythic),
+      landGroups: landGroups.filter(g => g.length > 0),
+    };
   }
 
   async function drawUnique(pool, picked, stream) {
@@ -188,8 +255,8 @@
         pools.rare.length < 1) {
       throw new Error(set + ' does not have enough commons, uncommons, and rares to build boosters');
     }
-    if (shape.lands > 0 && !pools.basicLand.length && !pools.commonLand.length) {
-      throw new Error(set + ' has no basic or common lands for the land slot');
+    if (shape.lands > 0 && !pools.landGroups.length) {
+      throw new Error(set + ' has no lands for the land slot');
     }
 
     const pool = [];
@@ -212,9 +279,10 @@
         take(await drawUnique(from, picked, stream));
       }
       for (let i = 0; i < shape.lands; i++) {
-        const useNonbasic = pools.commonLand.length > 0 &&
-          (!pools.basicLand.length || (await stream.nextInt(2)) === 0);
-        take(await drawUnique(useNonbasic ? pools.commonLand : pools.basicLand, picked, stream));
+        const g = pools.landGroups.length === 1
+          ? pools.landGroups[0]
+          : pools.landGroups[await stream.nextInt(pools.landGroups.length)];
+        take(await drawUnique(g, picked, stream));
       }
     }
     return pool;
@@ -229,6 +297,7 @@
 
   const api = {
     DRAND, PACKS, BOOSTER_TYPES, DRAFT_BOOSTER_SETS, boosterTypeFor,
+    LAND_CYCLES, LAND_SLOT_GROUPS,
     parseFragment, roundFor, roundTimeMs,
     fetchBeacon, deriveSeed, HashStream, generatePool, buildUrl,
   };
