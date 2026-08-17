@@ -55,7 +55,6 @@
     const username = decodeURIComponent(parts[1]).trim();
     const rawTime = parts.slice(2).join(':');
     if (!set) throw new Error('empty set code');
-    if (!username) throw new Error('empty username');
     return { set, username, unlockMs: parseTimestamp(rawTime) };
   }
 
@@ -67,6 +66,10 @@
 
   function roundTimeMs(round) {
     return (DRAND.genesis + (round - 1) * DRAND.period) * 1000;
+  }
+
+  function currentRound(nowMs) {
+    return Math.max(1, Math.floor((Math.floor(nowMs / 1000) - DRAND.genesis) / DRAND.period) + 1);
   }
 
   async function fetchBeacon(round) {
@@ -298,7 +301,7 @@
   const api = {
     DRAND, PACKS, BOOSTER_TYPES, DRAFT_BOOSTER_SETS, boosterTypeFor,
     LAND_CYCLES, LAND_SLOT_GROUPS,
-    parseFragment, roundFor, roundTimeMs,
+    parseFragment, roundFor, roundTimeMs, currentRound,
     fetchBeacon, deriveSeed, HashStream, generatePool, buildUrl,
   };
   (typeof window === 'undefined' ? globalThis : window).Sealed = api;

@@ -28,6 +28,17 @@
         <circle cx="10.5" cy="10.5" r="0.9" fill="currentColor" stroke="none"/>
       </svg>
     </button>
+    <div id="sealed-dropdown" class="deck-dropdown hidden">
+      <input id="sealed-username" type="text" placeholder="Username (optional)" spellcheck="false">
+      <div class="sealed-time-row">
+        <input id="sealed-time" type="text" placeholder="2026-08-20-18:00" spellcheck="false">
+        <button id="sealed-now" type="button" data-title="Fill in the most recent valid time">Now</button>
+      </div>
+      <div class="save-name-buttons">
+        <button id="sealed-ok" class="primary">Open pool</button>
+        <button id="sealed-cancel">Cancel</button>
+      </div>
+    </div>
     <button type="button" id="btn-search-lock" class="search-lock-btn" aria-label="Lock filters as deck format">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M5 7.5V5a3 3 0 0 1 6 0v2.5"/>

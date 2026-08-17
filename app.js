@@ -2992,15 +2992,50 @@ function updateSealedButton(raw) {
 
 function wireSealedButton() {
   const btn = document.getElementById('btn-sealed');
-  btn.addEventListener('click', async () => {
+  const dd = document.getElementById('sealed-dropdown');
+  const userInput = document.getElementById('sealed-username');
+  const timeInput = document.getElementById('sealed-time');
+  const stampNow = () => {
+    const ms = window.Sealed.roundTimeMs(window.Sealed.currentRound(Date.now()));
+    return new Date(ms).toISOString().replace(/\.\d{3}Z$/, '').replace('T', '-');
+  };
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    dd.classList.toggle('hidden');
+    if (!dd.classList.contains('hidden')) {
+      document.getElementById('search-results').classList.add('hidden');
+      userInput.focus();
+    }
+  });
+  document.addEventListener('click', (ev) => {
+    if (!dd.contains(ev.target) && !btn.contains(ev.target)) dd.classList.add('hidden');
+  });
+  document.getElementById('sealed-now').addEventListener('click', () => {
+    timeInput.value = stampNow();
+  });
+  document.getElementById('sealed-cancel').addEventListener('click', () => dd.classList.add('hidden'));
+  const submit = async () => {
     const set = btn.dataset.set;
     if (!set) return;
-    const user = (window.prompt('Player name for the sealed pool:') || '').trim();
-    if (!user) return;
-    const url = window.Sealed.buildUrl(set, user, Date.now() - 60 * 1000);
-    history.replaceState(null, '', url);
+    const user = userInput.value.trim();
+    const stamp = timeInput.value.trim() || stampNow();
+    const frag = '#sealed=' + encodeURIComponent(set) + ':' + encodeURIComponent(user) + ':' + stamp;
+    try {
+      window.Sealed.parseFragment(frag);
+    } catch (e) {
+      alert('Bad timestamp: ' + (e && e.message ? e.message : e));
+      return;
+    }
+    dd.classList.add('hidden');
+    history.replaceState(null, '', location.pathname + location.search + frag);
     await loadSealedFromUrlFragment();
-  });
+  };
+  document.getElementById('sealed-ok').addEventListener('click', submit);
+  for (const input of [userInput, timeInput]) {
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') submit();
+    });
+  }
 }
 
 function runSearch(q) {

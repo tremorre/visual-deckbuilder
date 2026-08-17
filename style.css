@@ -379,6 +379,33 @@ body.search-active .toolbar {
   height: 14px;
 }
 
+#sealed-dropdown {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#sealed-dropdown input {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#sealed-dropdown input:focus { outline: none; border-color: var(--accent); }
+.sealed-time-row {
+  display: flex;
+  gap: 6px;
+}
+.sealed-time-row button {
+  font-size: 11px;
+  padding: 3px 10px;
+}
+
 .search-lock-btn {
   position: absolute;
   right: 56px;
