@@ -2607,7 +2607,12 @@ function buildRarityPredicate(op, rawValue) {
   const canon = RARITY_CANON[raw];
   if (!canon) return (_c) => false;
   const want = RARITY_RANK[canon];
+  // promo printings only count when the query itself asks about special,
+  // and showcase sets with decorative rarities never count
+  const includeSpecial = canon === 'special';
   return (c) => anyPrinting(c, p => {
+    if (p.rarity === 'special' && !includeSpecial) return false;
+    if (SORT_SET_EXCLUDE.has(p.set)) return false;
     const have = RARITY_RANK[p.rarity];
     if (have == null) return false;
     return numericCompare(op, have, want);
