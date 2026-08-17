@@ -6678,9 +6678,8 @@ async function loadSealedFromUrlFragment() {
   const round = window.Sealed.roundFor(req.unlockMs);
   const readyMs = window.Sealed.roundTimeMs(round);
   if (Date.now() < readyMs) {
-    alert('This sealed pool unlocks at ' + new Date(readyMs).toLocaleString() +
-      '. It is seeded from a public randomness beacon value that will not exist until then, ' +
-      'so nobody can compute the pool early. Reopen the link after that time.');
+    alert('This sealed pool will be available after ' +
+      new Date(readyMs).toLocaleString() + ' local time.');
     clearHash();
     return;
   }
