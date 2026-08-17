@@ -1597,6 +1597,11 @@ function compareCards(a, b, mode) {
       const kb = colorSortKey(cb);
       return ka < kb ? -1 : (ka > kb ? 1 : 0);
     }
+    case 'rarity': {
+      const ra = RARITY_RANK[ca.rarity] ?? -1;
+      const rb = RARITY_RANK[cb.rarity] ?? -1;
+      return rb - ra;
+    }
     case 'name':
       return ca.canonical.localeCompare(cb.canonical);
     case 'type':
@@ -2793,13 +2798,26 @@ function buildFlavorPredicate(_op, rawValue) {
   return (c) => anyPrinting(c, p => matcher(p.flavor || ''));
 }
 
+const IN_ZONE_ALIASES = {
+  deck:    ['main', 'sanctum', 'side', 'maybe'],
+  main:    ['main'],
+  mb:      ['main'],
+  side:    ['side'],
+  sb:      ['side'],
+  maybe:   ['maybe'],
+  sanctum: ['sanctum'],
+};
+
 function buildInPredicate(_op, rawValue) {
   const raw = stripQuotes(rawValue).toLowerCase();
-  const canon = RARITY_CANON[raw];
-  if (canon) {
-    return (c) => anyPrinting(c, p => p.rarity === canon);
-  }
-  return (c) => anyPrinting(c, p => (p.set || '').toLowerCase() === raw);
+  const zones = IN_ZONE_ALIASES[raw];
+  if (!zones) return (_c) => false;
+  return (c) => zones.some(z =>
+    STATE.zones[z].piles.some(pile =>
+      pile.some(inst => {
+        const zc = STATE.byId.get(inst.cardId);
+        return zc && zc.canonical === c.canonical;
+      })));
 }
 
 function buildLayoutPredicate(_op, rawValue) {
@@ -4760,6 +4778,7 @@ const PILE_SORT_LABELS = {
   cmc:  'Mana',
   set:  'Set',
   color:'Color',
+  rarity: 'Rarity',
   name: 'Name',
 };
 
