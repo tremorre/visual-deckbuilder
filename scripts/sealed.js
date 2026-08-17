@@ -24,9 +24,9 @@
     play:  { commons: 7,  uncommons: 3, rareMythics: 1,
              wildcards: [WILDCARD_WEIGHTS, FOIL_WILDCARD_WEIGHTS], lands: 1 },
   };
-  // tentative: sets before TWI use draft boosters, TWI and later use play boosters
+  // tentative: sets before TWI use draft boosters (except ERR), TWI and later use play boosters
   const DRAFT_BOOSTER_SETS = new Set(['VST', 'SRC', 'MON', 'KUT', 'GQC', 'SVG', 'VRD',
-    'KRS', 'KSV', 'BLR', 'DOV', 'POP', 'TRX', 'OLD', 'CYB', 'CNY', 'CCR', 'ERR', 'KDT',
+    'KRS', 'KSV', 'BLR', 'DOV', 'POP', 'TRX', 'OLD', 'CYB', 'CNY', 'CCR', 'KDT',
     'REV', 'PLANE']);
   const DEFAULT_BOOSTER_TYPE = 'play';
 

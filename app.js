@@ -279,6 +279,11 @@ function wireDragTrash() {
   await loadDeckFromUrlFragment();
   await loadSavedDeckFromUrlFragment();
   await loadSealedFromUrlFragment();
+  window.addEventListener('hashchange', async () => {
+    await loadDeckFromUrlFragment();
+    await loadSavedDeckFromUrlFragment();
+    await loadSealedFromUrlFragment();
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(e => {
@@ -6756,7 +6761,11 @@ async function loadSealedFromUrlFragment() {
   }
   if (!deckIsEmpty()) {
     const ok = confirm('Replace the current deck with the sealed pool from this URL?');
-    if (!ok) return;
+    if (!ok) {
+      history.replaceState(null, '',
+        location.pathname + location.search + (STATE.sealedFragment || ''));
+      return;
+    }
   }
 
   try {
