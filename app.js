@@ -226,7 +226,8 @@ function wireDragTrash() {
   loadPrefs();
 
   const startHash = location.hash || '';
-  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open='))
+  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open=')
+      || startHash.startsWith('#sealed='))
     ? null : readSessionState();
   if (sessionPayload && (sessionPayload.format === 'standard' || sessionPayload.format === 'eternal'
       || sessionPayload.format === 'range' || sessionPayload.format === 'voyager')) {
@@ -276,6 +277,7 @@ function wireDragTrash() {
 
   await loadDeckFromUrlFragment();
   await loadSavedDeckFromUrlFragment();
+  await loadSealedFromUrlFragment();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(e => {
@@ -6611,6 +6613,89 @@ async function loadDeckFromUrlFragment() {
   } catch (e) {
     console.error('failed to load deck from URL:', e);
     alert('Could not load deck from URL: ' + (e && e.message ? e.message : e));
+  } finally {
+    clearHash();
+  }
+}
+
+async function loadSealedFromUrlFragment() {
+  const hash = location.hash || '';
+  if (!hash.startsWith('#sealed=')) return;
+  const clearHash = () =>
+    history.replaceState(null, '', location.pathname + location.search);
+
+  let req;
+  try {
+    req = window.Sealed.parseFragment(hash);
+  } catch (e) {
+    alert('Bad sealed URL: ' + (e && e.message ? e.message : e));
+    clearHash();
+    return;
+  }
+
+  if (currentDataset() !== 'revolution') {
+    const ok = confirm(
+      'This sealed URL is for the Revolution card pool. Switch to Revolution to open it?');
+    if (!ok) { clearHash(); return; }
+    try {
+      await switchDataset('revolution');
+    } catch (e) {
+      alert('Could not switch to Revolution: ' + (e && e.message ? e.message : e));
+      clearHash();
+      return;
+    }
+    STATE.format = 'standard';
+    savePrefs();
+    syncFormatUI();
+    renderAll();
+  }
+
+  if (!STATE.setsByCode[req.set]) {
+    alert('Unknown set code “' + req.set + '” in sealed URL.');
+    clearHash();
+    return;
+  }
+
+  const round = window.Sealed.roundFor(req.unlockMs);
+  const readyMs = window.Sealed.roundTimeMs(round);
+  if (Date.now() < readyMs) {
+    alert('This sealed pool unlocks at ' + new Date(readyMs).toLocaleString() +
+      '. It is seeded from a public randomness beacon value that will not exist until then, ' +
+      'so nobody can compute the pool early. Reopen the link after that time.');
+    clearHash();
+    return;
+  }
+
+  if (isPlanActive()) {
+    alert('Exit the current plan before opening a sealed URL.');
+    clearHash();
+    return;
+  }
+  if (!deckIsEmpty()) {
+    const ok = confirm('Replace the current deck with the sealed pool from this URL?');
+    if (!ok) { clearHash(); return; }
+  }
+
+  try {
+    const randomness = await window.Sealed.fetchBeacon(round);
+    const seed = await window.Sealed.deriveSeed(randomness, req.set, req.username, round);
+    const stream = new window.Sealed.HashStream(seed);
+    const ids = await window.Sealed.generatePool(STATE.cards, req.set, stream);
+    const counts = new Map();
+    for (const id of ids) counts.set(id, (counts.get(id) || 0) + 1);
+    clearAllZones();
+    for (const [id, n] of counts) placeCardsInZone(id, 'side', n);
+    for (const z of Object.keys(STATE.zones)) resortPiles(z);
+    STATE.format = 'range';
+    STATE.rangeStart = req.set;
+    STATE.rangeEnd = req.set;
+    savePrefs();
+    syncFormatUI();
+    renderAll();
+    updateSaveButtons();
+  } catch (e) {
+    console.error('failed to build sealed pool:', e);
+    alert('Could not build the sealed pool: ' + (e && e.message ? e.message : e));
   } finally {
     clearHash();
   }
