@@ -36,8 +36,9 @@
 
   function parseTimestamp(raw) {
     if (/^\d+$/.test(raw)) return Number(raw) * 1000;
-    let s = raw;
-    // bare ISO times are pinned to UTC so every client maps to the same round
+    // friendly form: 2026-08-20-18:00 → 2026-08-20T18:00
+    let s = raw.replace(/^(\d{4}-\d{2}-\d{2})-(\d{2}:\d{2}(?::\d{2})?)$/, '$1T$2');
+    // times without a zone are pinned to UTC so every client maps to the same round
     if (!/([zZ]|[+-]\d\d:?\d\d)$/.test(s)) s += 'Z';
     const ms = Date.parse(s);
     if (!Number.isFinite(ms)) throw new Error('unparseable timestamp: ' + raw);
@@ -220,9 +221,10 @@
   }
 
   function buildUrl(set, username, unlockMs) {
-    const iso = new Date(unlockMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const stamp = new Date(unlockMs).toISOString()
+      .replace(/:\d{2}\.\d{3}Z$/, '').replace('T', '-');
     return location.origin + location.pathname + '#sealed=' +
-      encodeURIComponent(set.toUpperCase()) + ':' + encodeURIComponent(username) + ':' + iso;
+      encodeURIComponent(set.toUpperCase()) + ':' + encodeURIComponent(username) + ':' + stamp;
   }
 
   const api = {
