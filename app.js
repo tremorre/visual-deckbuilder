@@ -1856,6 +1856,13 @@ function anyPrinting(c, pred) {
   return ps.some(pred);
 }
 
+function isPromoPrinting(p) {
+  if (SORT_SET_EXCLUDE.has(p.set)) return false;
+  if (p.rarity === 'special') return true;
+  // shiny ★ alt-arts keep their base rarity
+  return (p.name || '').includes('★');
+}
+
 const FORMAT_ALIASES = {
   rev: 'revolution', revolution: 'revolution', standard: 'revolution',
   eternal: 'eternal',
@@ -1931,15 +1938,16 @@ function parseQuery(q, opts) {
     error: null,
     hasBareTerm: false,
     bareMatchesOracle: !!(opts && opts.bareMatchesOracle),
+    printingMatchers: [],
   };
   const trimmed = (q || '').trim();
   if (!trimmed) {
-    return { predicate: (_c) => true, sort: [], overridesFormat: false, error: null, hasBareTerm: false };
+    return { predicate: (_c) => true, sort: [], overridesFormat: false, error: null, hasBareTerm: false, printingMatchers: [] };
   }
   const tokens = tokenizeQuery(trimmed);
   extractSortTokens(tokens, ctx);
   if (tokens.length === 0) {
-    return { predicate: (_c) => true, sort: ctx.sort, overridesFormat: false, error: null, hasBareTerm: false };
+    return { predicate: (_c) => true, sort: ctx.sort, overridesFormat: false, error: null, hasBareTerm: false, printingMatchers: [] };
   }
   const state = { tokens, pos: 0 };
   let predicate;
@@ -1950,7 +1958,7 @@ function parseQuery(q, opts) {
       throw new Error(`unexpected ${leftover.type === 'rparen' ? "')'" : JSON.stringify(leftover.value || leftover.type)}`);
     }
   } catch (e) {
-    return { predicate: (_c) => false, sort: [], overridesFormat: false, error: e.message, hasBareTerm: false };
+    return { predicate: (_c) => false, sort: [], overridesFormat: false, error: e.message, hasBareTerm: false, printingMatchers: [] };
   }
   return {
     predicate,
@@ -1958,6 +1966,7 @@ function parseQuery(q, opts) {
     overridesFormat: ctx.overridesFormat,
     error: null,
     hasBareTerm: ctx.hasBareTerm,
+    printingMatchers: ctx.printingMatchers,
   };
 }
 
@@ -2016,10 +2025,17 @@ function parseAnd(state, ctx) {
 function parseNot(state, ctx) {
   if (peek(state) && peek(state).type === 'not') {
     consume(state);
+    const before = ctx.printingMatchers ? ctx.printingMatchers.length : 0;
     const inner = parseNot(state, ctx);
+    // negated terms must not steer which printing gets displayed
+    if (ctx.printingMatchers) ctx.printingMatchers.length = before;
     return (c) => !inner(c);
   }
   return parseAtomOrGroup(state, ctx);
+}
+
+function addPrintingMatcher(ctx, fn) {
+  if (ctx && ctx.printingMatchers) ctx.printingMatchers.push(fn);
 }
 
 function parseAtomOrGroup(state, ctx) {
@@ -2199,11 +2215,15 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
     case 'toughness':  return buildNumericPredicate((c) => parseIntOrNaN(c.toughness), op, rawValue);
     case 'loyalty':    return buildNumericPredicate((c) => parseIntOrNaN(c.loyalty), op, rawValue);
     case 'defense':    return buildNumericPredicate((c) => parseIntOrNaN(c.defense), op, rawValue);
-    case 'rarity':     return buildRarityPredicate(op, rawValue);
-    case 'set':        return buildSetPredicate(op, rawValue);
-    case 'sets':       return buildSetsRangePredicate(op, rawValue);
-    case 'cn':         return buildNumericPredicate((c) => parseIntOrNaN(c.num), op, rawValue);
-    case 'artist':     return buildArtistPredicate(op, rawValue);
+    case 'rarity':     return buildRarityPredicate(op, rawValue, ctx);
+    case 'set':        return buildSetPredicate(op, rawValue, ctx);
+    case 'sets':       return buildSetsRangePredicate(op, rawValue, ctx);
+    case 'cn':         {
+      const pred = buildNumericPredicate((c) => parseIntOrNaN(c.num), op, rawValue);
+      addPrintingMatcher(ctx, pred);
+      return pred;
+    }
+    case 'artist':     return buildArtistPredicate(op, rawValue, ctx);
     case 'kw':         return buildKeywordPredicate(op, rawValue);
     case 'format':     ctx.overridesFormat = true;
                        return buildFormatPredicate('legal', rawValue);
@@ -2213,7 +2233,7 @@ function buildFieldPredicate(field, op, rawValue, ctx) {
                        return buildFormatPredicate('banned', rawValue);
     case 'restricted': ctx.overridesFormat = true;
                        return buildFormatPredicate('restricted', rawValue);
-    case 'is':         return buildIsPredicate(rawValue);
+    case 'is':         return buildIsPredicate(rawValue, ctx);
     case 'tag':        return buildTagPredicate(rawValue);
     case 'has':        return buildHasPredicate(rawValue);
     case 'manabase':   return buildManabasePredicate(rawValue);
@@ -2610,7 +2630,7 @@ function pipCastable(pip, pool, spellColors) {
   return false;
 }
 
-function buildRarityPredicate(op, rawValue) {
+function buildRarityPredicate(op, rawValue, ctx) {
   const raw = stripQuotes(rawValue).toLowerCase();
   const canon = RARITY_CANON[raw];
   if (!canon) return (_c) => false;
@@ -2618,55 +2638,51 @@ function buildRarityPredicate(op, rawValue) {
   // promo printings only count when the query itself asks about special,
   // and showcase sets with decorative rarities never count
   const includeSpecial = canon === 'special';
-  return (c) => anyPrinting(c, p => {
+  const matches = (p) => {
     if (p.rarity === 'special' && !includeSpecial) return false;
     if (SORT_SET_EXCLUDE.has(p.set)) return false;
     const have = RARITY_RANK[p.rarity];
     if (have == null) return false;
     return numericCompare(op, have, want);
-  });
+  };
+  addPrintingMatcher(ctx, matches);
+  return (c) => anyPrinting(c, matches);
 }
 
-function buildSetPredicate(op, rawValue) {
+function buildSetPredicate(op, rawValue, ctx) {
   if (op === '>=' || op === '<=' || op === '>' || op === '<') {
     const code = stripQuotes(rawValue).toUpperCase();
     const pivotSet = STATE.setsByCode[code];
     if (!pivotSet) return (_c) => false;
     const pivot = pivotSet.releasedate || '';
-    return (c) => {
-      const printings = STATE.byCanonical.get(c.canonical) || [c];
-      for (const p of printings) {
-        const ps = STATE.setsByCode[p.set];
-        if (!ps) continue;
-        const d = ps.releasedate || '';
-        if (op === '>=' && d >= pivot) return true;
-        if (op === '<=' && d <= pivot) return true;
-        if (op === '>'  && d >  pivot) return true;
-        if (op === '<'  && d <  pivot) return true;
-      }
-      return false;
+    const matches = (p) => {
+      const ps = STATE.setsByCode[p.set];
+      if (!ps) return false;
+      const d = ps.releasedate || '';
+      if (op === '>=') return d >= pivot;
+      if (op === '<=') return d <= pivot;
+      if (op === '>')  return d >  pivot;
+      return d < pivot;
     };
+    addPrintingMatcher(ctx, matches);
+    return (c) => anyPrinting(c, matches);
   }
   const values = parseListValue(rawValue).map(v => v.toLowerCase());
   if (!values.length) return (_c) => false;
-  return (c) => {
-    const printings = STATE.byCanonical.get(c.canonical) || [c];
-    for (const p of printings) {
-      const code = (p.set || '').toLowerCase();
-      const setObj = STATE.setsByCode[p.set];
-      const name = setObj ? (setObj.longname || '').toLowerCase() : '';
-      for (const v of values) {
-        if (code.includes(v) || (name && name.includes(v))) return true;
-      }
-    }
-    return false;
+  const matches = (p) => {
+    const code = (p.set || '').toLowerCase();
+    const setObj = STATE.setsByCode[p.set];
+    const name = setObj ? (setObj.longname || '').toLowerCase() : '';
+    return values.some(v => code.includes(v) || (name && name.includes(v)));
   };
+  addPrintingMatcher(ctx, matches);
+  return (c) => anyPrinting(c, matches);
 }
 
-function buildSetsRangePredicate(op, rawValue) {
+function buildSetsRangePredicate(op, rawValue, ctx) {
   const raw = stripQuotes(rawValue);
   const m = raw.match(/^([A-Za-z0-9_]*)\s*-\s*([A-Za-z0-9_]*)$/);
-  if (!m) return buildSetPredicate(op, rawValue);
+  if (!m) return buildSetPredicate(op, rawValue, ctx);
   const codeOf = (s) => s.toUpperCase();
   const dateOf = (code) => {
     const obj = STATE.setsByCode[code];
@@ -2680,21 +2696,21 @@ function buildSetsRangePredicate(op, rawValue) {
   const bDate = bCode ? dateOf(bCode) : '￿';
   const lo = aDate < bDate ? aDate : bDate;
   const hi = aDate < bDate ? bDate : aDate;
-  return (c) => {
-    const printings = STATE.byCanonical.get(c.canonical) || [c];
-    for (const p of printings) {
-      const setObj = STATE.setsByCode[p.set];
-      if (!setObj) continue;
-      const d = setObj.releasedate || '';
-      if (d >= lo && d <= hi) return true;
-    }
-    return false;
+  const matches = (p) => {
+    const setObj = STATE.setsByCode[p.set];
+    if (!setObj) return false;
+    const d = setObj.releasedate || '';
+    return d >= lo && d <= hi;
   };
+  addPrintingMatcher(ctx, matches);
+  return (c) => anyPrinting(c, matches);
 }
 
-function buildArtistPredicate(op, rawValue) {
+function buildArtistPredicate(op, rawValue, ctx) {
   const matcher = stringMatcher(rawValue);
-  return (c) => anyPrinting(c, p => matcher(p.artist || ''));
+  const matches = (p) => matcher(p.artist || '');
+  addPrintingMatcher(ctx, matches);
+  return (c) => anyPrinting(c, matches);
 }
 
 function buildFormatPredicate(status, rawValue) {
@@ -2702,9 +2718,13 @@ function buildFormatPredicate(status, rawValue) {
   return (c) => (c.legalities && c.legalities[fmt]) === status;
 }
 
-function buildIsPredicate(rawValue) {
+function buildIsPredicate(rawValue, ctx) {
   const v = stripQuotes(rawValue).toLowerCase();
   switch (v) {
+    case 'promo': {
+      addPrintingMatcher(ctx, isPromoPrinting);
+      return (c) => anyPrinting(c, isPromoPrinting);
+    }
     case 'permanent': {
       const bad = new Set(['instant', 'sorcery']);
       return (c) => !(c.types || []).some(t => bad.has(String(t).toLowerCase()));
@@ -2731,7 +2751,11 @@ function buildIsPredicate(rawValue) {
     case 'uncommon':
     case 'rare':
     case 'mythic':
-    case 'special':   return (c) => c.rarity === v;
+    case 'special': {
+      const matches = (p) => p.rarity === v;
+      addPrintingMatcher(ctx, matches);
+      return matches;
+    }
     default: return buildTagPredicate(rawValue);
   }
 }
@@ -3090,6 +3114,7 @@ function runSearch(q) {
 
 function collectSearchItems(parsed, lock) {
   const predicate = parsed.predicate;
+  const matchers = parsed.printingMatchers || [];
   const seenCanon = new Set();
   const items = [];
   for (const c of STATE.cards) {
@@ -3107,10 +3132,30 @@ function collectSearchItems(parsed, lock) {
     items.push({
       canonical: c.canonical,
       printings,
-      pickedIdx: printings.length - 1,
+      pickedIdx: pickPrintingIdx(printings, matchers),
     });
   }
   return items;
+}
+
+// show the printing the query actually matched (set:SOL shows the SOL
+// printing, is:promo the promo one); newest wins ties, and with no
+// printing-level terms this stays the newest printing
+function pickPrintingIdx(printings, matchers) {
+  let best = printings.length - 1;
+  if (!matchers.length) return best;
+  let bestScore = 0;
+  for (let i = 0; i < printings.length; i++) {
+    let score = 0;
+    for (const m of matchers) {
+      if (m(printings[i])) score++;
+    }
+    if (score > 0 && score >= bestScore) {
+      best = i;
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 function facesMatch(card, predicate) {
@@ -3132,8 +3177,8 @@ function sortSearchItems(items, sortSpec) {
   }
   const keyFns = specs.map(s => sortKeyFn(s.field)).filter(Boolean);
   items.sort((a, b) => {
-    const ac = a.printings[a.printings.length - 1];
-    const bc = b.printings[b.printings.length - 1];
+    const ac = a.printings[a.pickedIdx] || a.printings[a.printings.length - 1];
+    const bc = b.printings[b.pickedIdx] || b.printings[b.printings.length - 1];
     for (let i = 0; i < keyFns.length; i++) {
       const va = keyFns[i](ac), vb = keyFns[i](bc);
       const desc = specs[i].desc;
@@ -3151,8 +3196,8 @@ function sortSearchItems(items, sortSpec) {
 
 function sortSearchItemsByPileChain(items) {
   items.sort((a, b) => {
-    const ac = a.printings[a.printings.length - 1];
-    const bc = b.printings[b.printings.length - 1];
+    const ac = a.printings[a.pickedIdx] || a.printings[a.printings.length - 1];
+    const bc = b.printings[b.pickedIdx] || b.printings[b.printings.length - 1];
     const c = compareCardsChained({ cardId: ac.id }, { cardId: bc.id }, STATE.pileSortChain);
     if (c !== 0) return c;
     return a.canonical.localeCompare(b.canonical);
