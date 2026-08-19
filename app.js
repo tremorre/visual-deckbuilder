@@ -298,9 +298,19 @@ function wireDragTrash() {
   document.body.appendChild(pre);
 });
 
+// variant printings often omit or reformat reminder text, so compare
+// rules text with parentheticals stripped and punctuation flattened
+function structText(text) {
+  return String(text || '')
+    .replace(/\([^()]*\)/g, ' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9+/{}]+/g, ' ')
+    .trim();
+}
+
 function structKey(c) {
   return JSON.stringify([
-    c.text || '',
+    structText(c.text),
     c.type || '',
     c.cmc != null ? c.cmc : 0,
     c.manacost || '',
@@ -322,6 +332,12 @@ function stripNameOnce(name) {
 }
 
 function consolidateCanonicals(cards, byName) {
+  // raw names carry _SET suffixes in older sets, so also resolve hosts
+  // through their stripped canonical
+  const byCanon = new Map();
+  for (const c of cards) {
+    if (!byCanon.has(c.canonical)) byCanon.set(c.canonical, c);
+  }
   for (const c of cards) {
     const key = structKey(c);
     let cur = c.canonical;
@@ -329,7 +345,7 @@ function consolidateCanonicals(cards, byName) {
     while (true) {
       const step = stripNameOnce(cur);
       if (!step) break;
-      const host = byName.get(step.stem);
+      const host = byName.get(step.stem) || byCanon.get(step.stem);
       if (host && host !== c && structKey(host) === key) {
         cur = step.stem;
         variant = step.variant;
@@ -606,6 +622,7 @@ function parseAllSetsJson(json) {
         layout: c.layout || 'normal',
         set: code,
         num,
+        uuid: c.uuid || '',
         rarity: c.rarity || '',
         legalities,
         fmt_rev: legalities.revolution || '',
@@ -890,6 +907,7 @@ function parseCockatriceXml(xmlText) {
       layout,
       set: setCode,
       num,
+      uuid,
       rarity,
       legalities: {},
       fmt_rev: '',
@@ -1856,11 +1874,20 @@ function anyPrinting(c, pred) {
   return ps.some(pred);
 }
 
+// a promo is an alt-art variant of a card; a printing in another real set
+// is just a reprint, and a set's own basic-land art cycle is just basics
 function isPromoPrinting(p) {
   if (SORT_SET_EXCLUDE.has(p.set)) return false;
-  if (p.rarity === 'special') return true;
-  // shiny ★ alt-arts keep their base rarity
-  return (p.name || '').includes('★');
+  if (/_PRO(_|$)/.test(p.name || '')) return true;
+  // one-time exception: uuid-stamped promo with no base card to be a
+  // variant of and no _PRO in its display name
+  if (p.canonical === 'Ema, the Traveler') return true;
+  // a set's own basic-land art cycle is just basics, but a _PRO-stamped
+  // basic above is still a promo
+  if ((p.supertypes || []).includes('Basic')) return false;
+  // consolidation labels every printing it merged into a base card
+  // (★ shinies, crossover skins, (Star)/(Calamity)-style variants)
+  return !!p.variant;
 }
 
 const FORMAT_ALIASES = {
