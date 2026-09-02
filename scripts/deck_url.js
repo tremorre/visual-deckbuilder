@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  const VERSION = 2;
+  const VERSION = 3;
+  const POOL_FILES = { 1: 'cards.frozen.json', 2: 'cards.frozen.json', 3: 'cards.frozen.v3.json' };
   const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'];
   const COLOR_BIT = { W: 1, U: 2, B: 4, R: 8, G: 16 };
   const BASIC_NAMES = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
@@ -113,6 +114,7 @@
     const info = new Map();
     const lookup = new Map();
     const bareBySetNum = new Map();
+    const basicOf = new Map();
     const sets = Object.keys(data).sort();
     const allSetCodes = new Set(Object.keys(data));
     function stripBareV1(name) {
@@ -129,6 +131,35 @@
       return name;
     }
     const stripBare = version === 1 ? stripBareV1 : stripBareV2;
+    // v3+: an alt-art printing ("Foo (Label)", "Foo ★", "Forest Pixel") shares
+    // its base card's slot when the stripped stem names a card with the same
+    // gameplay structure, so URLs carry no art information
+    let foldOf = null;
+    if (version >= 3) {
+      const structOf = new Map();
+      const rows = [];
+      for (const s of sets) {
+        if (s === 'REV') continue;
+        for (const c of ((data[s] && data[s].cards) || [])) {
+          const side = (c.side || '').toLowerCase();
+          if (side === 'b' || side === 'back') continue;
+          const bare0 = stripBare((c.name || '').split(' // ', 2)[0]);
+          const key = structKey(c);
+          if (!structOf.has(bare0)) structOf.set(bare0, key);
+          rows.push([bare0, key]);
+        }
+      }
+      foldOf = new Map();
+      for (const [bare0, key] of rows) {
+        if (foldOf.has(bare0)) continue;
+        let cur = bare0;
+        for (let step = stripNameOnce(cur); step; step = stripNameOnce(cur)) {
+          if (structOf.get(step.stem) !== key) break;
+          cur = step.stem;
+        }
+        foldOf.set(bare0, cur);
+      }
+    }
     for (const s of sets) {
       if (s === 'REV') continue;
       const cards = (data[s] && data[s].cards) || [];
@@ -137,8 +168,13 @@
         const side = (c.side || '').toLowerCase();
         if (side === 'b' || side === 'back') continue;
         const full = (c.name || '').split(' // ', 2)[0];
-        const bare = stripBare(full);
-        if (BASIC_NAMES.indexOf(bare) >= 0) continue;
+        const bare0 = stripBare(full);
+        const bare = foldOf ? foldOf.get(bare0) : bare0;
+        if (BASIC_NAMES.indexOf(bare) >= 0) {
+          if (foldOf) { basicOf.set(full, bare); basicOf.set(bare0, bare); }
+          continue;
+        }
+        if (foldOf && !lookup.has(bare0)) lookup.set(bare0, bare);
         bareBySetNum.set(s + '|' + String(c.number || ''), bare);
         let ci = 0;
         for (const col of (c.colorIdentity || [])) {
@@ -162,6 +198,7 @@
           e.ci |= ci;
           e.legal = e.legal || isLegalPrinting;
           lookup.set(full, bare);
+          if (foldOf && stripBare(e.firstName) !== bare && bare0 === bare) e.firstName = full;
         }
       }
     }
@@ -171,7 +208,7 @@
       return numKey(ia.num).localeCompare(numKey(ib.num));
     });
     const nonBasicFullLen = fullCanonical.length;
-    if (version === 2) {
+    if (version >= 2) {
       for (const b of BASIC_NAMES) fullCanonical.push(b);
     }
     const fullNameIndex = new Map();
@@ -180,8 +217,10 @@
       b => info.get(b).legal && !unplayable.has(b));
     const legalNameIndex = new Map();
     legalCanonical.forEach((b, i) => legalNameIndex.set(b, i));
+    const appIdxBits = version >= 3
+      ? Math.max(13, Math.ceil(Math.log2(fullCanonical.length))) : 13;
     return { fullCanonical, fullNameIndex, legalCanonical, legalNameIndex,
-             info, lookup, staples, nonBasicFullLen, bareBySetNum, allSetCodes };
+             info, lookup, staples, nonBasicFullLen, bareBySetNum, allSetCodes, appIdxBits, basicOf };
   }
 
   function buildLiveBridge(data) {
@@ -254,6 +293,32 @@
     return null;
   }
 
+  function stripNameOnce(name) {
+    const paren = name.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+    if (paren && paren[1]) return { stem: paren[1], variant: paren[2] };
+    const under = name.match(/^(.*)_([A-Za-z0-9]+)$/);
+    if (under && under[1]) return { stem: under[1], variant: under[2] };
+    const word = name.match(/^(.*\S)\s+(\S+)$/);
+    if (word && word[1]) return { stem: word[1], variant: word[2] };
+    return null;
+  }
+
+  function structText(text) {
+    return String(text || '')
+      .replace(/\([^()]*\)/g, ' ')
+      .toLowerCase()
+      .replace(/[^a-z0-9+/{}]+/g, ' ')
+      .trim();
+  }
+
+  function structKey(c) {
+    return JSON.stringify([
+      structText(c.text), c.type || '', c.manaCost || '',
+      (c.colors || []).join(''), (c.colorIdentity || []).join(''),
+      c.power != null ? String(c.power) : '', c.toughness != null ? String(c.toughness) : '',
+    ]);
+  }
+
   function numKey(n) {
     const s = String(n || '');
     const m = /^(\d+)([A-Za-z]*)$/.exec(s);
@@ -264,17 +329,21 @@
   async function ensurePool(version) {
     if (_poolPromises.has(version)) return _poolPromises.get(version);
     const p = (async () => {
+      const poolFile = POOL_FILES[version];
+      if (!poolFile) throw new Error('unknown deck-URL version: ' + version);
+      // v1/v2 pools carve out staples.txt / unplayable.txt; v3+ is every legal card
+      const sideLists = version <= 2;
       const [frozenResp, liveResp, staplesResp, unplayableResp, renamesResp] = await Promise.all([
-        fetch('cards.frozen.json', { cache: 'force-cache' }),
+        fetch(poolFile, { cache: 'force-cache' }),
         fetch('cards.json', { cache: 'force-cache' }).catch(() => null),
-        fetch('staples.txt', { cache: 'force-cache' }),
-        fetch('unplayable.txt', { cache: 'force-cache' }),
+        sideLists ? fetch('staples.txt', { cache: 'force-cache' }) : null,
+        sideLists ? fetch('unplayable.txt', { cache: 'force-cache' }) : null,
         fetch('renames.txt', { cache: 'force-cache' }).catch(() => null),
       ]);
-      if (!frozenResp.ok) throw new Error('cards.frozen.json fetch failed');
+      if (!frozenResp.ok) throw new Error(poolFile + ' fetch failed');
       const data = (await frozenResp.json()).data || {};
-      const staples = parseStaples(staplesResp.ok ? await staplesResp.text() : '');
-      const unplayable = parseStaples(unplayableResp.ok ? await unplayableResp.text() : '');
+      const staples = parseStaples(staplesResp && staplesResp.ok ? await staplesResp.text() : '');
+      const unplayable = parseStaples(unplayableResp && unplayableResp.ok ? await unplayableResp.text() : '');
       const renames = parseRenames(renamesResp && renamesResp.ok ? await renamesResp.text() : '');
       const pool = buildPool(data, staples, unplayable, version);
       let liveData = {};
@@ -415,7 +484,7 @@
   async function encode(entries) {
     const pool = await ensurePool(VERSION);
     const { legalCanonical, legalNameIndex, fullNameIndex,
-            info, lookup, staples, nonBasicFullLen } = pool;
+            info, lookup, staples, nonBasicFullLen, appIdxBits, basicOf } = pool;
 
     const basics = {};
     for (const b of BASIC_NAMES) basics[b] = [0, 0];
@@ -424,7 +493,7 @@
     for (const e of entries) {
       const m = e.main || 0, s = e.side || 0;
       if (m + s <= 0) continue;
-      const b = isBasic(e.name);
+      const b = isBasic(e.name) || basicOf.get(e.name) || basicOf.get(e.name.split('_')[0]) || null;
       if (b) { basics[b][0] += m; basics[b][1] += s; continue; }
       const canon = resolveCanon(e.name, pool);
       if (canon && info.has(canon)) nonbasic.push({ canon, main: m, side: s });
@@ -537,7 +606,7 @@
       rice(bw, 0, k2);
       bw.writeBits(MAIN_CODES[EOS]);
       for (const [fullIdx, m, s] of appendix) {
-        bw.w(fullIdx, 13);
+        bw.w(fullIdx, appIdxBits);
         bw.writeBits(APP_CODES[pairKey(m, s)]);
       }
     }
@@ -605,12 +674,12 @@
     while (br.bits[br.pos] === 0) br.pos++;
     br.pos++;
     const version = br.read(8);
-    if (version !== 1 && version !== 2) {
+    if (!POOL_FILES[version]) {
       throw new Error('unknown deck-URL version: ' + version);
     }
     const pool = await ensurePool(version);
     const { legalCanonical, fullCanonical, info, staples, nonBasicFullLen,
-            lookup, liveByName, liveNameBySetNum, renameFwd } = pool;
+            lookup, liveByName, liveNameBySetNum, renameFwd, appIdxBits } = pool;
     const claimedByPool = (nm) =>
       !!nm && (lookup.has(nm) || lookup.has(nm.split('_')[0]));
     const nameOut = (bare) => {
@@ -678,10 +747,10 @@
       prev = segPos;
     }
     if (appendixStarts) {
-      while (br.remaining() >= 14) {
+      while (br.remaining() >= appIdxBits + 1) {
         let fullIdx, sym;
         try {
-          fullIdx = br.read(13);
+          fullIdx = br.read(appIdxBits);
           sym = huffmanDecodeOne(br, appHd);
         } catch (e) { break; }
         const [m, s] = parsePair(sym);

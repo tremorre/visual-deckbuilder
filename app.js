@@ -1286,8 +1286,7 @@ function rehydrateZonesFromNames(snapshot) {
     for (const pileNames of snapshot[z]) {
       const pile = [];
       for (const name of pileNames) {
-        const card = STATE.byName.get(name)
-                     || STATE.cards.find(c => c.canonical === canonicalName(name));
+        const card = findCardByName(name);
         if (card) pile.push({ uid: newUid(), cardId: card.id });
       }
       if (pile.length) zones[z].piles.push(pile);
@@ -1430,6 +1429,20 @@ function canonicalName(name) {
     else break;
   }
   return name;
+}
+
+function findCardByName(name) {
+  const exact = STATE.byName.get(name);
+  if (exact) return exact;
+  const canon = canonicalName(name);
+  const same = STATE.cards.filter(c => c.canonical === canon);
+  if (same.length) return same.find(c => !c.variant) || same[0];
+  // names that consolidateCanonicals folded into a base card with a variant label
+  for (let step = stripNameOnce(canon); step; step = stripNameOnce(step.stem)) {
+    const hit = (STATE.byCanonical.get(step.stem) || []).find(c => c.variant === step.variant);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 function zoneNamesByPile(zoneName) {
@@ -5171,13 +5184,8 @@ function clearAllZones() {
 
 function resolveCardName(name, uuid) {
   if (uuid && STATE.uuidMap[uuid]) return STATE.uuidMap[uuid].cardId;
-  const exact = STATE.byName.get(name);
-  if (exact) return exact.id;
-  const canon = canonicalName(name);
-  for (const c of STATE.cards) {
-    if (c.canonical === canon) return c.id;
-  }
-  return null;
+  const card = findCardByName(name);
+  return card ? card.id : null;
 }
 
 function importDeck(text) {
@@ -5614,14 +5622,9 @@ function loadDeckFromStorage(name) {
     const piles = (payload.zones[z] || []).map(pileNames => {
       const pile = [];
       for (const name of pileNames) {
-        const card = STATE.byName.get(name);
-        if (!card) {
-          const fallback = STATE.cards.find(c => c.canonical === canonicalName(name));
-          if (fallback) pile.push({ uid: newUid(), cardId: fallback.id });
-          else unknown.push(name);
-          continue;
-        }
-        pile.push({ uid: newUid(), cardId: card.id });
+        const card = findCardByName(name);
+        if (card) pile.push({ uid: newUid(), cardId: card.id });
+        else unknown.push(name);
       }
       return pile;
     }).filter(p => p.length > 0);
@@ -5715,14 +5718,9 @@ function loadPlanFromStorage(deckName, planName) {
     return pileNameLists.map(pileNames => {
       const pile = [];
       for (const name of pileNames) {
-        const card = STATE.byName.get(name);
-        if (!card) {
-          const fallback = STATE.cards.find(c => c.canonical === canonicalName(name));
-          if (fallback) pile.push({ uid: newUid(), cardId: fallback.id });
-          else unknown.push(name);
-          continue;
-        }
-        pile.push({ uid: newUid(), cardId: card.id });
+        const card = findCardByName(name);
+        if (card) pile.push({ uid: newUid(), cardId: card.id });
+        else unknown.push(name);
       }
       return pile;
     }).filter(p => p.length > 0);
