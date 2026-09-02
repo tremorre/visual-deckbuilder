@@ -182,6 +182,9 @@
     VLR: ['Flooded Morass', 'Flourishing Crevasse', 'Frostfire Geysers', 'Fungal Mire',
           'Gloomcover Steppe', 'Heart of the Glade', 'Lavatorn Fields', 'Lush Oasis',
           'Pool of Light', 'Spiraling Canyon'],
+    SGP: ['Bronzeglade Peaks', 'Cataract Valley', 'Cliffrest Tributary', 'Dusk Vantage',
+          "Keeper's Peninsula", 'Lakewatch Ruins', 'Lost Settlement', 'Outlands Hamlet',
+          'Secluded Avenue', 'Village Steeples'],
   };
 
   // sets whose land slot has custom halves instead of cycle-lands-vs-basics
