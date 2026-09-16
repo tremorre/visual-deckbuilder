@@ -7023,9 +7023,12 @@ function buildTxtExport(maybeMode) {
     side = Array.from(merged.values()).sort((a, b) => a.card.name.localeCompare(b.card.name));
   }
   const sanctum = currentDataset() === 'voyager' ? aggregateZone('sanctum') : [];
+  // Bare sections read positionally (main, blank line, sideboard). Headers are
+  // only added when that can't express the deck: a Sanctum, or no main deck.
+  const headers = sanctum.length > 0 || main.length === 0;
   const sections = [];
   const section = (header, rows) => {
-    if (rows.length) sections.push(header + '\n' + rows.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+    if (rows.length) sections.push((headers ? header + '\n' : '') + rows.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
   };
   section('Main', main);
   section('Sanctum', sanctum);

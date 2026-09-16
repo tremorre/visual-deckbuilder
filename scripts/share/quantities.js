@@ -1,17 +1,38 @@
-import { count } from './arithmetic.js';
+import { count, symbol } from './arithmetic.js';
 
 const PAIRS = [[3,0],[4,0],[1,0],[2,0],[0,2],[0,3],[0,4],[0,1],[1,2],[2,2],[1,1],[1,3],[2,1],[3,1]];
 const check = (v, m = 'Invalid quantities') => { if (!v) throw Error(m); };
 
-export function writeBasics(io, basics) {
+// With learned tables (model.basicTables) the presence pattern, a sideboard
+// flag and each count are arithmetic-coded; without them the layout is the
+// original 5-bit presence word plus gamma counts.
+export function writeBasics(io, basics, tables) {
   const presence = basics.reduce((m, [a, b], i) => m | ((a + b ? 1 : 0) << i), 0);
-  io.int(presence, 32);
-  for (const [m, s] of basics) if (m + s) { io.gamma(m); io.gamma(s); }
+  if (!tables) {
+    io.int(presence, 32);
+    for (const [m, s] of basics) if (m + s) { io.gamma(m); io.gamma(s); }
+    return;
+  }
+  symbol(io, tables.presence, presence);
+  if (!presence) return;
+  const side = Number(basics.some(([, s]) => s > 0));
+  symbol(io, tables.anySide, side);
+  for (const [m, s] of basics) if (m + s) {
+    count(io, tables.main, m);
+    if (side) count(io, tables.side, s);
+  }
 }
 
-export function readBasics(io) {
-  const presence = Number(io.int(32));
-  return Array.from({ length: 5 }, (_, i) => presence & (1 << i) ? [io.gamma(), io.gamma()] : [0, 0]);
+export function readBasics(io, tables) {
+  if (!tables) {
+    const presence = Number(io.int(32));
+    return Array.from({ length: 5 }, (_, i) => presence & (1 << i) ? [io.gamma(), io.gamma()] : [0, 0]);
+  }
+  const presence = symbol(io, tables.presence);
+  if (!presence) return Array.from({ length: 5 }, () => [0, 0]);
+  const side = symbol(io, tables.anySide);
+  return Array.from({ length: 5 }, (_, i) =>
+    presence & (1 << i) ? [count(io, tables.main), side ? count(io, tables.side) : 0] : [0, 0]);
 }
 
 // One function for both directions: `entries` present means encode.
