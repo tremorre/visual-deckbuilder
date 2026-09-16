@@ -36,7 +36,7 @@ const STATE = {
 
   focusedZone: 'main',
   searchPanel: false,
-  hand: { library: [], cards: [] },
+  hand: { piles: [], library: [] },
   format: 'standard',
   rangeStart: null,
   rangeEnd: null,
@@ -104,7 +104,7 @@ function pickMainType(types) {
   return best;
 }
 
-const ZONE_LABELS = { main: 'Main', sanctum: 'Sanctum', side: 'Sideboard', maybe: 'Maybeboard' };
+const ZONE_LABELS = { main: 'Main', sanctum: 'Sanctum', side: 'Sideboard', maybe: 'Maybeboard', hand: 'Hand' };
 
 
 const EMPTY_DRAG_IMG = new Image();
@@ -3520,9 +3520,26 @@ function placeCardsInZone(cardId, zoneName, count = 1) {
   }
 }
 
+function zoneByName(name) {
+  return name === 'hand' ? STATE.hand : STATE.zones[name];
+}
+
+function instanceZoneNames() {
+  return [...Object.keys(STATE.zones), 'hand'];
+}
+
+// Hand cards never leave the hand and deck cards never enter it.
+function sameSpace(uids, zoneName) {
+  const inHand = zoneName === 'hand';
+  return uids.every(uid => {
+    const found = findInstance(uid);
+    return !found || (found.zoneName === 'hand') === inHand;
+  });
+}
+
 function removeInstance(uid) {
-  for (const zoneName of Object.keys(STATE.zones)) {
-    const zone = STATE.zones[zoneName];
+  for (const zoneName of instanceZoneNames()) {
+    const zone = zoneByName(zoneName);
     for (let p = 0; p < zone.piles.length; p++) {
       const idx = zone.piles[p].findIndex(c => c.uid === uid);
       if (idx >= 0) {
@@ -3536,8 +3553,8 @@ function removeInstance(uid) {
 }
 
 function findInstance(uid) {
-  for (const zoneName of Object.keys(STATE.zones)) {
-    const zone = STATE.zones[zoneName];
+  for (const zoneName of instanceZoneNames()) {
+    const zone = zoneByName(zoneName);
     for (let p = 0; p < zone.piles.length; p++) {
       const idx = zone.piles[p].findIndex(c => c.uid === uid);
       if (idx >= 0) return { zoneName, pileIdx: p, slotIdx: idx, inst: zone.piles[p][idx] };
@@ -3548,7 +3565,7 @@ function findInstance(uid) {
 
 function moveInstanceToZone(uid, toZone) {
   const found = findInstance(uid);
-  if (!found) return;
+  if (!found || found.zoneName === 'hand') return;
   if (isMaybeLocked() && (toZone === 'maybe' || found.zoneName === 'maybe')) {
     notePlanLock('Maybeboard is locked while a sideboard plan is active.');
     return;
@@ -3564,8 +3581,8 @@ function moveInstanceToZone(uid, toZone) {
 
 
 function detachInstance(uid) {
-  for (const zoneName of Object.keys(STATE.zones)) {
-    const zone = STATE.zones[zoneName];
+  for (const zoneName of instanceZoneNames()) {
+    const zone = zoneByName(zoneName);
     for (let p = 0; p < zone.piles.length; p++) {
       const idx = zone.piles[p].findIndex(c => c.uid === uid);
       if (idx >= 0) {
@@ -3579,8 +3596,9 @@ function detachInstance(uid) {
 }
 
 function pruneEmptyPiles() {
-  for (const z of Object.keys(STATE.zones)) {
-    STATE.zones[z].piles = STATE.zones[z].piles.filter(p => p.length > 0);
+  for (const z of instanceZoneNames()) {
+    const zone = zoneByName(z);
+    zone.piles = zone.piles.filter(p => p.length > 0);
   }
 }
 
@@ -3627,7 +3645,7 @@ function moveUidsToPile(uids, destPile) {
 }
 
 function insertNewPileWithUids(uids, zoneName, atIdx) {
-  const dstZone = STATE.zones[zoneName];
+  const dstZone = zoneByName(zoneName);
   const newPile = [];
   if (atIdx < 0 || atIdx > dstZone.piles.length) atIdx = dstZone.piles.length;
   dstZone.piles.splice(atIdx, 0, newPile);
@@ -3639,6 +3657,7 @@ function insertNewPileWithUids(uids, zoneName, atIdx) {
 }
 
 function moveUidsToZoneAuto(uids, zoneName) {
+  if (!sameSpace(uids, zoneName)) return;
   if (isMaybeLocked() && zoneName === 'maybe') {
     notePlanLock('Maybeboard is locked while a sideboard plan is active.');
     return;
@@ -3677,11 +3696,11 @@ function uidsToDrag(uid) {
 }
 
 function totalCount(zoneName) {
-  return STATE.zones[zoneName].piles.reduce((s, p) => s + p.length, 0);
+  return zoneByName(zoneName).piles.reduce((s, p) => s + p.length, 0);
 }
 
 function resortPiles(zoneName) {
-  const zone = STATE.zones[zoneName];
+  const zone = zoneByName(zoneName);
   const all = zone.piles.flat();
   all.sort((a, b) => compareCardsChained(a, b, STATE.pileSortChain));
   const newPiles = [];
@@ -3916,7 +3935,6 @@ const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
 
 function renderPiles() {
   if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
-  if (STATE.focusedZone === 'hand') { renderHandPanel(); return; }
   if (STATE.tagMode && STATE.focusedZone === 'tag') { renderTagMemberPanel(); return; }
   if (STATE.tagMode && STATE.focusedZone === 'tag-list') { renderAllTagsPanel(); return; }
   document.getElementById('pile-title').textContent =
@@ -3924,7 +3942,11 @@ function renderPiles() {
   const container = document.getElementById('piles');
   container.classList.remove('search-mode');
   container.innerHTML = '';
-  const zone = STATE.zones[STATE.focusedZone];
+  const zone = zoneByName(STATE.focusedZone);
+  if (STATE.focusedZone === 'hand') {
+    document.getElementById('count-hand').textContent = String(totalCount('hand'));
+    document.getElementById('btn-hand-draw').disabled = STATE.hand.library.length === 0;
+  }
 
   zone.piles.forEach((pile, pileIdx) => {
     if (pile.length === 0) return;
@@ -3961,7 +3983,7 @@ function makePileGap(insertIdx) {
     const uids = readUidsFromDrag(ev.dataTransfer);
     console.log('[drag] DROP on pile-gap — uids:', uids, '— insertIdx:', insertIdx);
     endDragGhost();
-    if (uids.length === 0) return;
+    if (uids.length === 0 || !sameSpace(uids, STATE.focusedZone)) return;
     insertNewPileWithUids(uids, STATE.focusedZone, insertIdx);
     STATE.selection.clear();
     renderAll();
@@ -4298,7 +4320,7 @@ function makePileEl(pile, pileIdx) {
     }
 
     if (card) {
-      slot.appendChild(makeSlotButtons(inst, card));
+      if (STATE.focusedZone !== 'hand') slot.appendChild(makeSlotButtons(inst, card));
       if (card.back) {
         slot.appendChild(makeFlipButton(inst, card, slot));
       }
@@ -4325,8 +4347,8 @@ function makePileEl(pile, pileIdx) {
     const uids = readUidsFromDrag(ev.dataTransfer);
     console.log('[drag] DROP on pile — uids:', uids, '— pileIdx:', pileIdx);
     endDragGhost();
-    if (uids.length === 0) return;
-    const destPile = STATE.zones[STATE.focusedZone].piles[pileIdx];
+    if (uids.length === 0 || !sameSpace(uids, STATE.focusedZone)) return;
+    const destPile = zoneByName(STATE.focusedZone).piles[pileIdx];
     if (!destPile) return;
     if (isMaybeLocked()) {
       const m = 'Maybeboard is locked while a sideboard plan is active.';
@@ -4570,19 +4592,14 @@ function wireHand() {
   const zone = document.querySelector('.zone[data-zone="hand"]');
   if (!btn || !zone) return;
   btn.addEventListener('click', () => {
-    if (STATE.focusedZone === 'hand') {
-      zone.classList.add('hidden');
-      setFocusedZone('main');
-      return;
-    }
+    if (STATE.focusedZone === 'hand') { setFocusedZone('main'); return; }
     zone.classList.remove('hidden');
     dealHand();
     setFocusedZone('hand');
   });
-  zone.addEventListener('click', () => setFocusedZone('hand'));
   document.getElementById('btn-hand-draw').addEventListener('click', () => {
     const inst = STATE.hand.library.shift();
-    if (inst) STATE.hand.cards.push(inst);
+    if (inst) STATE.hand.piles.push([inst]);
     renderPiles();
   });
   document.getElementById('btn-hand-new').addEventListener('click', () => {
@@ -4597,50 +4614,10 @@ function dealHand() {
     const j = Math.floor(Math.random() * (i + 1));
     [lib[i], lib[j]] = [lib[j], lib[i]];
   }
-  STATE.hand.cards = lib.splice(0, 7);
-  STATE.hand.library = lib;
-}
-
-function renderHandPanel() {
-  const hand = STATE.hand;
-  document.getElementById('pile-title').textContent = `Hand (${hand.cards.length})`;
-  document.getElementById('count-hand').textContent = String(hand.cards.length);
-  document.getElementById('btn-hand-draw').disabled = hand.library.length === 0;
-  const container = document.getElementById('piles');
-  container.innerHTML = '';
-  container.classList.add('search-mode');
-  hand.cards.forEach((inst) => {
-    const card = STATE.byId.get(inst.cardId);
-    const wrapper = document.createElement('div');
-    wrapper.className = 'pile-wrapper';
-    const pile = document.createElement('div');
-    pile.className = 'pile';
-    pile.style.height = CARD_HEIGHT + 'px';
-    const slot = document.createElement('div');
-    slot.className = 'card-slot';
-    slot.style.top = '0px';
-    slot.style.cursor = 'default';
-    if (card) {
-      const face = currentFace(inst, card);
-      const img = document.createElement('img');
-      img.alt = face.canonical || face.name || card.canonical;
-      img.src = imgUrl(face);
-      img.addEventListener('error', () => {
-        slot.classList.add('no-image');
-        slot.textContent = face.canonical || face.name || '???';
-      });
-      slot.appendChild(img);
-      slot.addEventListener('mouseenter', (ev) => showPreview(face, ev, slot));
-      slot.addEventListener('mousemove', positionPreview);
-      slot.addEventListener('mouseleave', hidePreview);
-    } else {
-      slot.classList.add('no-image');
-      slot.textContent = '???';
-    }
-    pile.appendChild(slot);
-    wrapper.appendChild(pile);
-    container.appendChild(wrapper);
-  });
+  const clones = lib.map(inst => ({ ...inst, uid: newUid() }));
+  STATE.hand.piles = clones.splice(0, 7).sort((a, b) => compareCardsChained(a, b, ['cmc', 'type'])).map(inst => [inst]);
+  STATE.hand.library = clones;
+  STATE.selection.clear();
 }
 
 function updateSearchZoneCount() {
@@ -4742,6 +4719,8 @@ function setFocusedZone(zoneName) {
   document.querySelectorAll('.zone').forEach(z => z.classList.toggle('focused', z.dataset.zone === zoneName));
   document.body.classList.toggle('search-active', zoneName === 'search');
   document.body.classList.toggle('hand-active', zoneName === 'hand');
+  const handZone = document.querySelector('.zone[data-zone="hand"]');
+  if (handZone && zoneName !== 'hand') handZone.classList.add('hidden');
   const handBtn = document.getElementById('btn-hand');
   if (handBtn) handBtn.classList.toggle('active', zoneName === 'hand');
   const handActions = document.getElementById('hand-actions');
