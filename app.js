@@ -263,6 +263,7 @@ function wireDragTrash() {
   wirePileSort();
   wireListSort();
   wirePreviewHover();
+  wireFluidCardWidth();
   wireSelectionClear();
   wireRegionSelect();
   wireSearchToggle();
@@ -1417,6 +1418,7 @@ async function switchDataset(toDataset) {
     STATE.basePlanZones = null;
     markDeckClean();
   }
+  resetHistory();
   updateSaveButtons();
 }
 
@@ -1960,6 +1962,7 @@ function tokenizeQuery(q) {
       }
       if (/\s/.test(c) || c === '(' || c === ')') break;
       if (c === '"' || c === "'") { inQuote = c; atom += c; i++; continue; }
+      if (c === '/' && /[:=<>!]$/.test(atom)) { inRegex = true; atom += c; i++; continue; }
       atom += c;
       i++;
     }
@@ -3930,8 +3933,42 @@ function makeRow(zoneName, row) {
 
 
 const PILE_OFFSET_Y = 30;
-const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
-                        .getPropertyValue('--card-height'), 10) || 181;
+const CARD_NOMINAL_WIDTH = 130;
+const CARD_MIN_WIDTH = 110;
+const CARD_MAX_WIDTH = 160;
+const CARD_ASPECT = 181 / 130;
+const PILE_GAP = 14;
+
+// Pick a card width so whole columns fill the piles pane at any zoom level.
+function fitCardWidth() {
+  const container = document.getElementById('piles');
+  if (!container) return;
+  // A full-width flex item measures the content box net of padding and the reserved scrollbar gutter.
+  const probe = document.createElement('div');
+  probe.style.cssText = 'flex:0 0 100%;height:0;margin:0;padding:0;';
+  container.appendChild(probe);
+  const inner = probe.getBoundingClientRect().width;
+  probe.remove();
+  if (!(inner > 0)) return;
+  // Normal mode: every pile is preceded by a 14px gap bar and one trails the row.
+  // Search mode: piles are separated by a 14px column gap with none at the ends.
+  const searchMode = container.classList.contains('search-mode');
+  const usable = searchMode ? inner + PILE_GAP : inner - PILE_GAP;
+  const widthFor = n => usable / n - PILE_GAP;
+  let n = Math.max(1, Math.floor(usable / (CARD_NOMINAL_WIDTH + PILE_GAP)));
+  if (widthFor(n + 1) >= CARD_MIN_WIDTH) n += 1;
+  const width = Math.min(CARD_MAX_WIDTH, Math.max(CARD_MIN_WIDTH, Math.floor(widthFor(n))));
+  const root = document.documentElement.style;
+  root.setProperty('--card-width', width + 'px');
+  root.setProperty('--card-height', Math.round(width * CARD_ASPECT) + 'px');
+}
+
+function wireFluidCardWidth() {
+  const container = document.getElementById('piles');
+  if (!container || typeof ResizeObserver === 'undefined') return;
+  new ResizeObserver(() => fitCardWidth()).observe(container);
+  fitCardWidth();
+}
 
 function renderPiles() {
   if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
@@ -3940,7 +3977,7 @@ function renderPiles() {
   document.getElementById('pile-title').textContent =
     `${ZONE_LABELS[STATE.focusedZone]} (${totalCount(STATE.focusedZone)})`;
   const container = document.getElementById('piles');
-  container.classList.remove('search-mode');
+  if (container.classList.contains('search-mode')) { container.classList.remove('search-mode'); fitCardWidth(); }
   container.innerHTML = '';
   const zone = zoneByName(STATE.focusedZone);
   if (STATE.focusedZone === 'hand') {
@@ -3984,6 +4021,14 @@ function makePileGap(insertIdx) {
     console.log('[drag] DROP on pile-gap — uids:', uids, '— insertIdx:', insertIdx);
     endDragGhost();
     if (uids.length === 0 || !sameSpace(uids, STATE.focusedZone)) return;
+    if (isMaybeLocked()) {
+      const m = 'Maybeboard is locked while a sideboard plan is active.';
+      if (STATE.focusedZone === 'maybe') { notePlanLock(m); return; }
+      for (const uid of uids) {
+        const found = findInstance(uid);
+        if (found && found.zoneName === 'maybe') { notePlanLock(m); return; }
+      }
+    }
     insertNewPileWithUids(uids, STATE.focusedZone, insertIdx);
     STATE.selection.clear();
     renderAll();
@@ -4243,8 +4288,7 @@ function makePileEl(pile, pileIdx) {
   const el = document.createElement('div');
   el.className = 'pile';
   el.dataset.pileIdx = String(pileIdx);
-  const totalH = CARD_HEIGHT + Math.max(0, pile.length - 1) * PILE_OFFSET_Y;
-  el.style.height = totalH + 'px';
+  el.style.setProperty('--stack', String(Math.max(0, pile.length - 1)));
 
   pile.forEach((inst, slotIdx) => {
     const card = STATE.byId.get(inst.cardId);
@@ -4372,7 +4416,7 @@ function renderSearchPanel() {
   document.getElementById('pile-title').textContent = `Search (${count})`;
   const container = document.getElementById('piles');
   container.innerHTML = '';
-  container.classList.add('search-mode');
+  if (!container.classList.contains('search-mode')) { container.classList.add('search-mode'); fitCardWidth(); }
   STATE.search.results.forEach((item) => {
     const picked = item.printings[item.pickedIdx] || item.printings[item.printings.length - 1];
     if (!picked) return;
@@ -4380,7 +4424,6 @@ function renderSearchPanel() {
     wrapper.className = 'pile-wrapper';
     const pile = document.createElement('div');
     pile.className = 'pile';
-    pile.style.height = CARD_HEIGHT + 'px';
     pile.appendChild(makeSearchSlot(picked, item));
     wrapper.appendChild(pile);
     container.appendChild(wrapper);
@@ -5236,6 +5279,7 @@ function positionPreview(ev) {
 
 function hidePreview() {
   if (_previewTimer) { clearTimeout(_previewTimer); _previewTimer = null; }
+  document.getElementById('card-preview-img').onload = null;
   document.getElementById('card-preview').classList.add('hidden');
 }
 
@@ -5325,19 +5369,18 @@ function importTxt(text) {
 
   const groups = [];
   let cur = null;
-  let pendingZone = null;
+  let activeZone = null;
   for (const raw of text.split(/\r?\n/)) {
     const hdr = matchHeader(raw);
     if (hdr) {
-      pendingZone = hdr;
+      activeZone = hdr;
       cur = null;
       continue;
     }
     const m = raw.match(cardLine);
     if (m) {
       if (!cur) {
-        cur = { zone: pendingZone, entries: [] };
-        pendingZone = null;
+        cur = { zone: activeZone, entries: [] };
         groups.push(cur);
       }
       const name = m[2].replace(/\.$/, '').trim();
@@ -6838,7 +6881,8 @@ async function loadDeckFromUrlFragment() {
       const v = decoded.basics[b];
       if (v && v[1]) sideLines.push(`${v[1]} ${b}`);
     }
-    const text = lines.join('\n') + (sideLines.length ? '\n\n' + sideLines.join('\n') : '') + '\n';
+    const text = (lines.length ? 'Main\n' + lines.join('\n') + '\n\n' : '')
+               + (sideLines.length ? 'Sideboard\n' + sideLines.join('\n') + '\n' : '');
     importDeck(text);
   } catch (e) {
     console.error('failed to load deck from URL:', e);
@@ -6978,9 +7022,14 @@ function buildTxtExport(maybeMode) {
     }
     side = Array.from(merged.values()).sort((a, b) => a.card.name.localeCompare(b.card.name));
   }
+  const sanctum = currentDataset() === 'voyager' ? aggregateZone('sanctum') : [];
   const sections = [];
-  if (main.length) sections.push(main.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
-  if (side.length) sections.push(side.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+  const section = (header, rows) => {
+    if (rows.length) sections.push(header + '\n' + rows.map(({ count, card }) => `${count} ${card.name}`).join('\n'));
+  };
+  section('Main', main);
+  section('Sanctum', sanctum);
+  section('Sideboard', side);
   return sections.join('\n\n') + '\n';
 }
 
@@ -7169,6 +7218,7 @@ function renderTagMemberPanel() {
   const container = document.getElementById('piles');
   container.innerHTML = '';
   container.classList.add('search-mode');
+  fitCardWidth();
 
   canonicals.sort((a, b) => a.localeCompare(b));
 
@@ -7186,7 +7236,6 @@ function renderTagMemberPanel() {
     wrapper.className = 'pile-wrapper';
     const pile = document.createElement('div');
     pile.className = 'pile';
-    pile.style.height = CARD_HEIGHT + 'px';
     const slot = makeSearchSlot(picked, item);
     pile.appendChild(slot);
     wrapper.appendChild(pile);
@@ -7212,6 +7261,7 @@ function renderAllTagsPanel() {
   const container = document.getElementById('piles');
   container.innerHTML = '';
   container.classList.remove('search-mode');
+  fitCardWidth();
   const list = document.createElement('div');
   list.className = 'tag-list-view';
   for (const tag of order) {

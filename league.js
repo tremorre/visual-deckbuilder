@@ -1354,6 +1354,7 @@ function moveCardPreview(ev) {
 }
 function hideCardPreview() {
   if (_leaguePreviewTimer) { clearTimeout(_leaguePreviewTimer); _leaguePreviewTimer = null; }
+  previewImg().onload = null;
   previewEl().classList.remove('show');
 }
 

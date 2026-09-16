@@ -822,6 +822,7 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 .piles {
   flex: 1;
   overflow: auto;
+  scrollbar-gutter: stable;
   padding: 16px;
   display: flex;
   flex-direction: row;
@@ -866,6 +867,7 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 .pile {
   position: relative;
   width: var(--card-width);
+  height: calc(var(--card-height) + var(--stack, 0) * 30px);
   flex-shrink: 0;
 }
 
