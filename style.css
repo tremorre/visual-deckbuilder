@@ -1105,10 +1105,14 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 .zone-search > header { border-bottom: none; }
 .zone-hand > header { border-bottom: none; }
 
+.piles-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .hand-actions {
   display: flex;
   gap: 6px;
-  margin-left: auto;
 }
 body.hand-active .piles-sort { display: none; }
 

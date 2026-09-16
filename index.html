@@ -72,7 +72,6 @@
     <button id="btn-paste-import" data-title="Paste a deck list and edit before importing">Import text</button>
     <button id="btn-copy-txt" data-title="Copy the .txt deck list to clipboard">Export to clipboard</button>
     <button id="btn-share" data-title="Copy a shareable URL of this deck">Share</button>
-    <button id="btn-hand" data-title="Draw a random 7-card hand from the main deck">Test hand</button>
     <div class="deck-btn-group">
       <button id="btn-save-deck" data-title="Save the current deck">Save deck</button>
       <button id="btn-save-as" class="hidden" data-title="Save a copy with a new name">Save as</button>
@@ -178,11 +177,13 @@
         <span id="plan-status" class="plan-status hidden" data-title=""></span>
         <button id="plan-exit" class="plan-exit hidden" type="button" data-title="Exit plan and return to the base deck">&times;</button>
       </div>
-      <div id="hand-actions" class="hand-actions hidden">
-        <button id="btn-hand-draw">Draw</button>
-        <button id="btn-hand-new">New hand</button>
-      </div>
-      <div class="piles-sort">
+      <div class="piles-tools">
+        <button id="btn-hand" data-title="Draw a random 7-card hand from the main deck">Test hand</button>
+        <div id="hand-actions" class="hand-actions hidden">
+          <button id="btn-hand-draw">Draw</button>
+          <button id="btn-hand-new">New hand</button>
+        </div>
+        <div class="piles-sort">
         <span>Pile sort:</span>
         <div class="sort-dropdown">
           <button id="pile-sort-btn" class="sort-dropdown-btn">Type &#x25BE;</button>
@@ -194,6 +195,7 @@
             <button data-pile-sort="rarity">Rarity</button>
             <button data-pile-sort="name">Name</button>
           </div>
+        </div>
         </div>
       </div>
     </div>
