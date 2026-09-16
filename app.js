@@ -36,6 +36,7 @@ const STATE = {
 
   focusedZone: 'main',
   searchPanel: false,
+  hand: { library: [], cards: [] },
   format: 'standard',
   rangeStart: null,
   rangeEnd: null,
@@ -265,6 +266,7 @@ function wireDragTrash() {
   wireSelectionClear();
   wireRegionSelect();
   wireSearchToggle();
+  wireHand();
   wireUndoRedo();
   wireVersionPicker();
   wireSessionPersistence();
@@ -3914,6 +3916,7 @@ const CARD_HEIGHT   = parseInt(getComputedStyle(document.documentElement)
 
 function renderPiles() {
   if (STATE.focusedZone === 'search') { renderSearchPanel(); return; }
+  if (STATE.focusedZone === 'hand') { renderHandPanel(); return; }
   if (STATE.tagMode && STATE.focusedZone === 'tag') { renderTagMemberPanel(); return; }
   if (STATE.tagMode && STATE.focusedZone === 'tag-list') { renderAllTagsPanel(); return; }
   document.getElementById('pile-title').textContent =
@@ -4562,6 +4565,84 @@ function applySearchPanelMode() {
   }
 }
 
+function wireHand() {
+  const btn = document.getElementById('btn-hand');
+  const zone = document.querySelector('.zone[data-zone="hand"]');
+  if (!btn || !zone) return;
+  btn.addEventListener('click', () => {
+    if (STATE.focusedZone === 'hand') {
+      zone.classList.add('hidden');
+      setFocusedZone('main');
+      return;
+    }
+    zone.classList.remove('hidden');
+    dealHand();
+    setFocusedZone('hand');
+  });
+  zone.addEventListener('click', () => setFocusedZone('hand'));
+  document.getElementById('btn-hand-draw').addEventListener('click', () => {
+    const inst = STATE.hand.library.shift();
+    if (inst) STATE.hand.cards.push(inst);
+    renderPiles();
+  });
+  document.getElementById('btn-hand-new').addEventListener('click', () => {
+    dealHand();
+    renderPiles();
+  });
+}
+
+function dealHand() {
+  const lib = STATE.zones.main.piles.flat();
+  for (let i = lib.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [lib[i], lib[j]] = [lib[j], lib[i]];
+  }
+  STATE.hand.cards = lib.splice(0, 7);
+  STATE.hand.library = lib;
+}
+
+function renderHandPanel() {
+  const hand = STATE.hand;
+  document.getElementById('pile-title').textContent = `Hand (${hand.cards.length})`;
+  document.getElementById('count-hand').textContent = String(hand.cards.length);
+  document.getElementById('btn-hand-draw').disabled = hand.library.length === 0;
+  const container = document.getElementById('piles');
+  container.innerHTML = '';
+  container.classList.add('search-mode');
+  hand.cards.forEach((inst) => {
+    const card = STATE.byId.get(inst.cardId);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pile-wrapper';
+    const pile = document.createElement('div');
+    pile.className = 'pile';
+    pile.style.height = CARD_HEIGHT + 'px';
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+    slot.style.top = '0px';
+    slot.style.cursor = 'default';
+    if (card) {
+      const face = currentFace(inst, card);
+      const img = document.createElement('img');
+      img.alt = face.canonical || face.name || card.canonical;
+      img.src = imgUrl(face);
+      img.addEventListener('error', () => {
+        slot.classList.add('no-image');
+        slot.textContent = face.canonical || face.name || '???';
+      });
+      slot.appendChild(img);
+      slot.addEventListener('mouseenter', (ev) => showPreview(face, ev, slot));
+      slot.addEventListener('mousemove', positionPreview);
+      slot.addEventListener('mouseleave', hidePreview);
+    } else {
+      slot.classList.add('no-image');
+      slot.textContent = '???';
+    }
+    pile.appendChild(slot);
+    wrapper.appendChild(pile);
+    container.appendChild(wrapper);
+  });
+}
+
 function updateSearchZoneCount() {
   const el = document.getElementById('count-search');
   if (el) el.textContent = String(STATE.search.results.length);
@@ -4660,6 +4741,11 @@ function setFocusedZone(zoneName) {
   STATE.focusedZone = zoneName;
   document.querySelectorAll('.zone').forEach(z => z.classList.toggle('focused', z.dataset.zone === zoneName));
   document.body.classList.toggle('search-active', zoneName === 'search');
+  document.body.classList.toggle('hand-active', zoneName === 'hand');
+  const handBtn = document.getElementById('btn-hand');
+  if (handBtn) handBtn.classList.toggle('active', zoneName === 'hand');
+  const handActions = document.getElementById('hand-actions');
+  if (handActions) handActions.classList.toggle('hidden', zoneName !== 'hand');
   const allTagsBtn = document.getElementById('btn-all-tags');
   if (allTagsBtn) allTagsBtn.classList.toggle('active', zoneName === 'tag-list');
   renderPiles();
@@ -6718,8 +6804,8 @@ function wireShare() {
       btn.textContent = 'URL copied ✓';
     } catch (e) {
       console.error(e);
-      btn.textContent = 'Copy failed';
-      alert('Could not copy to clipboard: ' + (e && e.message ? e.message : e));
+      btn.textContent = 'Share failed';
+      alert('Could not create share URL: ' + (e && e.message ? e.message : e));
     }
     setTimeout(() => { btn.textContent = original; }, 1500);
   });

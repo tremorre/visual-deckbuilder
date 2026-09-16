@@ -72,6 +72,7 @@
     <button id="btn-paste-import" data-title="Paste a deck list and edit before importing">Import text</button>
     <button id="btn-copy-txt" data-title="Copy the .txt deck list to clipboard">Export to clipboard</button>
     <button id="btn-share" data-title="Copy a shareable URL of this deck">Share</button>
+    <button id="btn-hand" data-title="Draw a random 7-card hand from the main deck">Test hand</button>
     <div class="deck-btn-group">
       <button id="btn-save-deck" data-title="Save the current deck">Save deck</button>
       <button id="btn-save-as" class="hidden" data-title="Save a copy with a new name">Save as</button>
@@ -138,6 +139,12 @@
       </header>
       <div class="zone-list" id="list-main"></div>
     </section>
+    <section class="zone zone-hand hidden" data-zone="hand">
+      <header>
+        <span class="zone-title">Hand</span>
+        <span class="zone-count" id="count-hand">0</span>
+      </header>
+    </section>
     <section class="zone zone-sanctum-host" data-zone="sanctum">
       <header>
         <span class="zone-title">Sanctum</span>
@@ -170,6 +177,10 @@
         <span id="plan-title-name" class="plan-title-name"></span>
         <span id="plan-status" class="plan-status hidden" data-title=""></span>
         <button id="plan-exit" class="plan-exit hidden" type="button" data-title="Exit plan and return to the base deck">&times;</button>
+      </div>
+      <div id="hand-actions" class="hand-actions hidden">
+        <button id="btn-hand-draw">Draw</button>
+        <button id="btn-hand-new">New hand</button>
       </div>
       <div class="piles-sort">
         <span>Pile sort:</span>

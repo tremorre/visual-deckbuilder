@@ -1103,6 +1103,14 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 }
 
 .zone-search > header { border-bottom: none; }
+.zone-hand > header { border-bottom: none; }
+
+.hand-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+body.hand-active .piles-sort { display: none; }
 
 .piles.search-mode { column-gap: 14px; }
 
