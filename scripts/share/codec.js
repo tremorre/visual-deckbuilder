@@ -40,7 +40,7 @@ export function createDeckCodec(model, settings = model.settings ?? {}) {
       writeHeader(e, version);
       e.int(mask, 32);
       count(e, model.sizes.nonbasic, deck.cards.length);
-      writeBasics(e, deck.basics, model.basicTables);
+      writeBasics(e, deck.basics, model.basicTables, mask);
       subset.encode(e, deck.cards.map(([id]) => id), mask);
       quantities(e, deck.cards.map(([id]) => id), deck.basics, model, deck.cards);
       return e.finish();
@@ -50,7 +50,7 @@ export function createDeckCodec(model, settings = model.settings ?? {}) {
       if (!(payload instanceof Decoder)) check(readHeader(d) === version, 'Unknown model');
       const mask = Number(d.int(32)), n = count(d, model.sizes.nonbasic);
       check(n <= model.cards.length);
-      const basics = readBasics(d, model.basicTables), ids = subset.decode(d, n, mask);
+      const basics = readBasics(d, model.basicTables, mask), ids = subset.decode(d, n, mask);
       return { cards: quantities(d, ids, basics, model), basics };
     },
   };

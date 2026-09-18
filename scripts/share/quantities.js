@@ -1,38 +1,42 @@
 import { count, symbol } from './arithmetic.js';
 
+const POPCOUNT = Array.from({ length: 32 }, (_, n) => n.toString(2).replaceAll('0', '').length);
 const PAIRS = [[3,0],[4,0],[1,0],[2,0],[0,2],[0,3],[0,4],[0,1],[1,2],[2,2],[1,1],[1,3],[2,1],[3,1]];
 const check = (v, m = 'Invalid quantities') => { if (!v) throw Error(m); };
 
 // With learned tables (model.basicTables) the presence pattern, a sideboard
 // flag and each count are arithmetic-coded; without them the layout is the
-// original 5-bit presence word plus gamma counts.
-export function writeBasics(io, basics, tables) {
+// original 5-bit presence word plus gamma counts. Presence may be conditioned
+// on the palette and the main count on how many basic colours are present.
+export function writeBasics(io, basics, tables, mask) {
   const presence = basics.reduce((m, [a, b], i) => m | ((a + b ? 1 : 0) << i), 0);
   if (!tables) {
     io.int(presence, 32);
     for (const [m, s] of basics) if (m + s) { io.gamma(m); io.gamma(s); }
     return;
   }
-  symbol(io, tables.presence, presence);
+  symbol(io, tables.presenceByPalette?.[mask] ?? tables.presence, presence);
   if (!presence) return;
   const side = Number(basics.some(([, s]) => s > 0));
   symbol(io, tables.anySide, side);
+  const mainTable = tables.mainByColors?.[POPCOUNT[presence] - 1] ?? tables.main;
   for (const [m, s] of basics) if (m + s) {
-    count(io, tables.main, m);
+    count(io, mainTable, m);
     if (side) count(io, tables.side, s);
   }
 }
 
-export function readBasics(io, tables) {
+export function readBasics(io, tables, mask) {
   if (!tables) {
     const presence = Number(io.int(32));
     return Array.from({ length: 5 }, (_, i) => presence & (1 << i) ? [io.gamma(), io.gamma()] : [0, 0]);
   }
-  const presence = symbol(io, tables.presence);
+  const presence = symbol(io, tables.presenceByPalette?.[mask] ?? tables.presence);
   if (!presence) return Array.from({ length: 5 }, () => [0, 0]);
   const side = symbol(io, tables.anySide);
+  const mainTable = tables.mainByColors?.[POPCOUNT[presence] - 1] ?? tables.main;
   return Array.from({ length: 5 }, (_, i) =>
-    presence & (1 << i) ? [count(io, tables.main), side ? count(io, tables.side) : 0] : [0, 0]);
+    presence & (1 << i) ? [count(io, mainTable), side ? count(io, tables.side) : 0] : [0, 0]);
 }
 
 // One function for both directions: `entries` present means encode.
@@ -45,8 +49,10 @@ export function quantities(io, ids, basics, model, entries) {
   const result = new Map();
   // Cards with more than four copies escape to explicit gamma counts.
   let large = encode ? entries.map(([, m, s], i) => m + s > 4 ? i : -1).filter(i => i >= 0) : [];
-  const hasLarge = encode ? Number(large.length > 0) : io.bit();
-  if (encode) io.bit(hasLarge);
+  let hasLarge;
+  if (model.largeFlag) hasLarge = symbol(io, model.largeFlag, encode ? Number(large.length > 0) : undefined);
+  else if (encode) { hasLarge = Number(large.length > 0); io.bit(hasLarge); }
+  else hasLarge = io.bit();
   if (hasLarge) {
     if (encode) { io.gamma(large.length - 1); io.subset(large, n); }
     else large = io.subset(n, io.gamma() + 1);
