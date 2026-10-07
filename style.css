@@ -615,8 +615,11 @@ button.danger:hover { background: var(--danger-bg); }
   color: var(--text-faint);
 }
 .format-dropdown-menu > button[data-format="voyager"] {
-  border-radius: 0 0 3px 3px;
+  border-radius: 0;
   margin-top: 4px;
+}
+.format-dropdown-menu > button[data-format="field"] {
+  border-radius: 0 0 3px 3px;
 }
 
 .sort-dropdown {
@@ -867,7 +870,7 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
 .pile {
   position: relative;
   width: var(--card-width);
-  height: calc(var(--card-height) + var(--stack, 0) * 30px);
+  height: calc(var(--card-height) + var(--stack-offset, 0px));
   flex-shrink: 0;
 }
 
@@ -910,6 +913,41 @@ body:not(.voyager-mode) .sanctum-only { display: none; }
   font-size: 10px;
   color: var(--text-secondary);
   text-align: center;
+}
+@font-face {
+  font-family: "Libre Baskerville";
+  src: url("vendor/libre-baskerville/libre-baskerville-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.pile .card-slot .copy-count,
+.drag-ghost .copy-count {
+  position: absolute;
+  top: calc(var(--card-width) * 0.19);
+  right: calc(var(--card-width) * 0.09);
+  height: calc(var(--card-width) * 0.113);
+  display: flex;
+  align-items: center;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: calc(var(--card-width) * 0.105);
+  font-weight: 400;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8), 0 0 14px rgba(0, 0, 0, 0.6);
+  -webkit-text-stroke: calc(var(--card-width) * 0.0135) rgba(0, 0, 0, 0.85);
+  paint-order: stroke fill;
+  isolation: isolate;
+  pointer-events: none;
+  z-index: 4;
+}
+.pile .card-slot .copy-count::before,
+.drag-ghost .copy-count::before {
+  content: '';
+  position: absolute;
+  inset: -40% -55%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0));
 }
 .pile .card-slot.dragging {
   opacity: 0.3;
@@ -1503,6 +1541,7 @@ button.primary:hover { background: var(--accent-bg-hover); }
   z-index: -1;
 }
 
+.drag-ghost .copy-count { z-index: auto; }
 .drag-ghost {
   position: fixed;
   pointer-events: none;
@@ -1593,6 +1632,99 @@ button.primary:hover { background: var(--accent-bg-hover); }
   color: var(--text-secondary);
 }
 
+
+.settings-corner {
+  position: fixed;
+  bottom: 8px;
+  right: 10px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.settings-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+}
+.settings-btn svg { width: 16px; height: 16px; }
+.settings-btn:hover,
+.settings-corner.open .settings-btn {
+  opacity: 1;
+  background: var(--bg-button);
+  color: var(--text-secondary);
+}
+.settings-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  box-shadow: var(--shadow-dropdown-lg);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.settings-label { color: var(--text-muted); }
+.settings-segment { display: flex; }
+.settings-segment > button {
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 0;
+  white-space: nowrap;
+}
+.settings-segment > button + button { margin-left: -1px; }
+.settings-segment > button:first-child { border-radius: 3px 0 0 3px; }
+.settings-segment > button:last-child { border-radius: 0 3px 3px 0; }
+.settings-segment > button.active { position: relative; }
+.settings-range {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.settings-range select {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: inherit;
+  max-width: 160px;
+}
+.settings-range select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.settings-range .range-dash { color: var(--text-faint); }
+.settings-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.settings-actions > button {
+  flex: 1;
+  padding: 3px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
 
 .piles-header { position: relative; }
 .deck-title-bar {

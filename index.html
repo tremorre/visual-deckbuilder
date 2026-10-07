@@ -101,20 +101,6 @@
       </div>
     </div>
     <button id="btn-new-deck" class="danger" data-title="Clear all zones and start a new deck">New deck</button>
-    <div class="format-dropdown">
-      <button id="format-btn" class="format-dropdown-btn">Standard &#x25BE;</button>
-      <div id="format-menu" class="format-dropdown-menu hidden">
-        <button data-format="standard">Standard</button>
-        <button data-format="eternal">Eternal</button>
-        <button data-format="range" data-title="Restrict legality to cards from a chosen range of sets">Sets</button>
-        <div id="range-pickers" class="range-pickers hidden">
-          <select id="range-start" data-title="Earliest set in the range"></select>
-          <span class="range-dash">&ndash;</span>
-          <select id="range-end" data-title="Latest set in the range"></select>
-        </div>
-        <button data-format="voyager" data-title="Switch to the Voyager custom format (separate card pool)">Voyager</button>
-      </div>
-    </div>
   </div>
 </header>
 
@@ -509,11 +495,59 @@
 <div id="card-preview" class="hidden"><img id="card-preview-img" alt=""></div>
 <img id="drag-img" alt="">
 
-<div class="floating-actions">
-  <button id="btn-theme" data-title="Toggle light / dark mode">Light mode</button>
-  <button id="btn-refresh" data-title="Re-fetch card data from the upstream Revolution repo">Update cards</button>
-  <button id="btn-cache-imgs" data-title="Pre-fetch every card image so they're available offline">Cache images</button>
-  <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
+<div id="settings-corner" class="settings-corner">
+  <div id="settings-panel" class="settings-panel hidden">
+    <div class="settings-row">
+      <span class="settings-label">Format</span>
+      <div id="format-menu" class="settings-segment">
+        <button data-format="standard">Standard</button>
+        <button data-format="eternal">Eternal</button>
+        <button data-format="range" data-title="Restrict legality to cards from a chosen range of sets">Sets</button>
+        <button data-format="voyager" data-title="Switch to the Voyager custom format (separate card pool)">Voyager</button>
+        <button data-format="field" data-title="Switch to the Field Test custom format (separate card pool)">Field Test</button>
+      </div>
+    </div>
+    <div id="field-pool-picker" class="settings-row hidden">
+      <span class="settings-label">Pool</span>
+      <div class="settings-segment">
+        <button data-pool="all" data-title="Every Field set is legal">All</button>
+        <button data-pool="war">War</button>
+        <button data-pool="famine">Famine</button>
+        <button data-pool="pestilence">Pestilence</button>
+        <button data-pool="death">Death</button>
+      </div>
+    </div>
+    <div id="range-pickers" class="settings-range hidden">
+      <select id="range-start" data-title="Earliest set in the range"></select>
+      <span class="range-dash">&ndash;</span>
+      <select id="range-end" data-title="Latest set in the range"></select>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Theme</span>
+      <div class="settings-segment">
+        <button data-theme-choice="dark">Dark</button>
+        <button data-theme-choice="light">Light</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Piles</span>
+      <div class="settings-segment">
+        <button data-pile-style="stacked">Stacked</button>
+        <button data-pile-style="compressed" data-title="Show duplicate copies as one card with a count">Compressed</button>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button id="btn-refresh" data-title="Re-fetch card data from the upstream Revolution repo">Update cards</button>
+      <button id="btn-cache-imgs" data-title="Pre-fetch every card image so they're available offline">Cache images</button>
+      <button id="btn-clear-imgs" data-title="Drop cached card images (they'll re-download on next view)">Clear images</button>
+    </div>
+  </div>
+  <button type="button" id="btn-settings" class="settings-btn" data-title="Settings" aria-label="Settings">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12.97 8.55 14.82 9.58 13.94 11.70 11.90 11.13 11.13 11.90 11.70 13.94 9.58 14.82 8.55 12.97 7.45 12.97 6.42 14.82 4.30 13.94 4.87 11.90 4.10 11.13 2.06 11.70 1.18 9.58 3.03 8.55 3.03 7.45 1.18 6.42 2.06 4.30 4.10 4.87 4.87 4.10 4.30 2.06 6.42 1.18 7.45 3.03 8.55 3.03 9.58 1.18 11.70 2.06 11.13 4.10 11.90 4.87 13.94 4.30 14.82 6.42 12.97 7.45Z"/>
+      <circle cx="8" cy="8" r="2.1"/>
+    </svg>
+  </button>
 </div>
 
 <script src="scripts/deck_url.js"></script>

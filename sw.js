@@ -3,6 +3,7 @@ const IMG_CACHE = 'rev-img-v1';
 const IMG_HOSTS = [
   'raw.githubusercontent.com/cajunwritescode/Revolution',
   'voyager-mtg.github.io',
+  'raw.githubusercontent.com/rudyards/field-builder',
 ];
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
@@ -12,7 +13,7 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = req.url;
-  if (!url.includes('/img/')) return;
+  if (!url.includes('/img/') && !url.includes('/pics/')) return;
   if (!IMG_HOSTS.some(h => url.includes(h))) return;
 
   event.respondWith((async () => {

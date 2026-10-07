@@ -7,11 +7,19 @@ const REFRESH_URL = 'https://raw.githubusercontent.com/cajunwritescode/Revolutio
 
 const VOYAGER_URL = 'https://voyager-mtg.github.io/lists/cards.xml';
 
+const FIELD_URL = 'https://raw.githubusercontent.com/rudyards/field-builder/refs/heads/main/final/cards.xml';
+const FIELD_PICS_BASE = 'https://raw.githubusercontent.com/rudyards/field-builder/refs/heads/main/final/pics';
+
 const STORAGE_VERSION = 15;
 const STORAGE_KEY = `rev-deckbuilder-cards-v${STORAGE_VERSION}`;
 const VOYAGER_STORAGE_KEY = `rev-deckbuilder-voyager-v${STORAGE_VERSION}`;
+const FIELD_STORAGE_KEY = `rev-deckbuilder-field-v${STORAGE_VERSION}`;
 
-const _datasetSessionCache = { revolution: null, voyager: null };
+const DATASETS = ['revolution', 'voyager', 'field'];
+const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets', voyager: 'Voyager', field: 'Field Test' };
+const FIELD_POOLS = ['war', 'famine', 'pestilence', 'death'];
+const FIELD_POOL_LABELS = { all: 'All pools', war: 'War', famine: 'Famine', pestilence: 'Pestilence', death: 'Death' };
+const _datasetSessionCache = { revolution: null, voyager: null, field: null };
 
 const PREFS_KEY = 'rev-deckbuilder-prefs-v1';
 const SESSION_KEY = 'rev-deckbuilder-session-v1';
@@ -42,11 +50,13 @@ const STATE = {
   rangeEnd: null,
   formatLock: null,
   sealedFragment: null,
-  stashedByDataset: { revolution: null, voyager: null },
+  fieldPool: 'all',
+  stashedByDataset: { revolution: null, voyager: null, field: null },
   listSort: 'type',
   pileSort: 'type',
   pileSortChain: ['type'],
   theme: 'dark',
+  pileStyle: 'stacked',
 
   search: {
     results: [],
@@ -72,6 +82,7 @@ const STATE = {
   tags: {
     revolution: { cards: {}, order: [], aliases: {} },
     voyager:    { cards: {}, order: [], aliases: {} },
+    field:      { cards: {}, order: [], aliases: {} },
   },
   tagMode: !!(typeof window !== 'undefined' && window.TAG_MODE),
   focusedTag: null,
@@ -124,30 +135,51 @@ function startDragGhost(ev, uids, width, height, offsetX, offsetY) {
   const ghost = document.createElement('div');
   ghost.className = 'drag-ghost';
 
-  const stackOffset = PILE_OFFSET_Y;
-  const count = uids.length;
-  ghost.style.width = width + 'px';
-  ghost.style.height = (height + Math.max(0, count - 1) * stackOffset) + 'px';
-
-  let imgCount = 0;
-  uids.forEach((uid, i) => {
+  const compressed = STATE.pileStyle === 'compressed';
+  const groups = [];
+  const groupByCard = new Map();
+  for (const uid of uids) {
     const found = findInstance(uid);
     if (!found) {
       console.warn('[drag]   uid', uid, '— findInstance returned null, skipping');
-      return;
+      continue;
     }
-    const card = STATE.byId.get(found.inst.cardId);
-    const face = currentFace(found.inst, card);
+    const key = compressed ? found.inst.cardId : uid;
+    const g = groupByCard.get(key);
+    if (g) g.push(found.inst);
+    else { const ng = [found.inst]; groupByCard.set(key, ng); groups.push(ng); }
+  }
+
+  let top = 0;
+  let lastTop = 0;
+  let imgCount = 0;
+  groups.forEach((group) => {
+    const inst = group[0];
+    const card = STATE.byId.get(inst.cardId);
+    const face = currentFace(inst, card);
     const src = imgUrl(face);
-    console.log('[drag]   uid', uid, '— card:', card?.name, '— img:', src.slice(-40));
+    console.log('[drag]   uid', inst.uid, '— card:', card?.name, '— img:', src.slice(-40));
     const img = document.createElement('img');
     img.src = src;
-    img.style.cssText = `position:absolute;top:${i * stackOffset}px;left:0;`
+    img.style.cssText = `position:absolute;top:${top}px;left:0;`
                        + `width:${width}px;height:${height}px;`
                        + `object-fit:cover;border-radius:5px;`;
     ghost.appendChild(img);
+    if (compressed) {
+      const count = document.createElement('span');
+      count.className = 'copy-count';
+      count.style.marginTop = top + 'px';
+      count.textContent = 'x' + group.length;
+      ghost.appendChild(count);
+    }
     imgCount++;
+    lastTop = top;
+    top += compressed
+      ? width * (COMPRESSED_OFFSET_RATIO + COMPRESSED_COUNT_RATIO)
+      : PILE_OFFSET_Y;
   });
+  ghost.style.width = width + 'px';
+  ghost.style.height = (height + lastTop) + 'px';
 
   ghost.style.left = (ev.clientX - offsetX) + 'px';
   ghost.style.top = (ev.clientY - offsetY) + 'px';
@@ -230,8 +262,7 @@ function wireDragTrash() {
   const startHash = location.hash || '';
   const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open='))
     ? null : readSessionState();
-  if (sessionPayload && (sessionPayload.format === 'standard' || sessionPayload.format === 'eternal'
-      || sessionPayload.format === 'range' || sessionPayload.format === 'voyager')) {
+  if (sessionPayload && FORMAT_LABELS[sessionPayload.format]) {
     STATE.format = sessionPayload.format;
     STATE.rangeStart = typeof sessionPayload.rangeStart === 'string' ? sessionPayload.rangeStart : null;
     STATE.rangeEnd   = typeof sessionPayload.rangeEnd   === 'string' ? sessionPayload.rangeEnd   : null;
@@ -311,9 +342,14 @@ function structText(text) {
     .trim();
 }
 
-function structKey(c) {
+function structKey(c, selfNames) {
+  let text = c.text || '';
+  for (const n of selfNames || []) {
+    const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(new RegExp(`(?<![\\p{L}\\p{N}])${esc}(?![\\p{L}\\p{N}])`, 'giu'), ' ~ ');
+  }
   return JSON.stringify([
-    structText(c.text),
+    structText(text),
     c.type || '',
     c.cmc != null ? c.cmc : 0,
     c.manacost || '',
@@ -326,12 +362,30 @@ function structKey(c) {
 
 function stripNameOnce(name) {
   const paren = name.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
-  if (paren && paren[1]) return { stem: paren[1], variant: paren[2] };
+  if (paren && paren[1]) return { stem: paren[1], variant: paren[2], paren: true };
   const under = name.match(/^(.*)_([A-Za-z0-9]+)$/);
   if (under && under[1]) return { stem: under[1], variant: under[2] };
   const word  = name.match(/^(.*\S)\s+(\S+)$/);
   if (word && word[1]) return { stem: word[1], variant: word[2] };
   return null;
+}
+
+function selfNamesOf(...names) {
+  const out = new Set();
+  for (const n of names) {
+    if (!n) continue;
+    out.add(n);
+    const comma = n.indexOf(', ');
+    if (comma > 0) out.add(n.slice(0, comma));
+  }
+  return [...out].sort((a, b) => b.length - a.length);
+}
+
+// crossover skins name themselves in their own rules text
+function sameCardUnderSkin(host, c, step) {
+  if (!step.paren) return false;
+  const names = selfNamesOf(host.canonical, step.stem, step.variant);
+  return structKey(host, names) === structKey(c, names);
 }
 
 function consolidateCanonicals(cards, byName) {
@@ -349,7 +403,7 @@ function consolidateCanonicals(cards, byName) {
       const step = stripNameOnce(cur);
       if (!step) break;
       const host = byName.get(step.stem) || byCanon.get(step.stem);
-      if (host && host !== c && structKey(host) === key) {
+      if (host && host !== c && (structKey(host) === key || sameCardUnderSkin(host, c, step))) {
         cur = step.stem;
         variant = step.variant;
         continue;
@@ -460,13 +514,13 @@ function loadPrefs() {
     if (!raw) return;
     const obj = JSON.parse(raw);
     if (obj && typeof obj === 'object') {
-      if (obj.format === 'standard' || obj.format === 'eternal' || obj.format === 'range' || obj.format === 'voyager') {
-        STATE.format = obj.format;
-      }
+      if (FORMAT_LABELS[obj.format]) STATE.format = obj.format;
+      if (FIELD_POOLS.concat('all').includes(obj.fieldPool)) STATE.fieldPool = obj.fieldPool;
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
       if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
       if (typeof obj.formatLock === 'string' && obj.formatLock) STATE.formatLock = obj.formatLock;
       if (obj.theme === 'light' || obj.theme === 'dark') STATE.theme = obj.theme;
+      if (obj.pileStyle === 'stacked' || obj.pileStyle === 'compressed') STATE.pileStyle = obj.pileStyle;
     }
   } catch (e) {
     console.warn('Could not read deckbuilder prefs:', e);
@@ -479,8 +533,10 @@ function savePrefs() {
       format: STATE.format,
       rangeStart: STATE.rangeStart,
       rangeEnd: STATE.rangeEnd,
+      fieldPool: STATE.fieldPool,
       formatLock: STATE.formatLock,
       theme: STATE.theme,
+      pileStyle: STATE.pileStyle,
     }));
   } catch (e) {
     console.warn('Could not persist deckbuilder prefs:', e);
@@ -495,6 +551,9 @@ function applyTheme() {
   }
   const btn = document.getElementById('btn-theme');
   if (btn) btn.textContent = STATE.theme === 'light' ? 'Dark mode' : 'Light mode';
+  document.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.classList.toggle('active', b.dataset.themeChoice === STATE.theme);
+  });
 }
 
 
@@ -725,7 +784,7 @@ function voyagerBareManaToBraced(bare) {
   return out.map(t => '{' + t + '}').join('');
 }
 
-function buildVoyagerBackCard(el) {
+function buildVoyagerBackCard(el, picUrlOverride) {
   const get = sel => (el.querySelector(sel)?.textContent || '').trim();
   const name = get(':scope > name');
   const text = (el.querySelector(':scope > text')?.textContent || '');
@@ -765,14 +824,24 @@ function buildVoyagerBackCard(el) {
     set: setCode,
     num,
     imgVersion: 0,
-    picUrl: picurlRaw ? encodeURI(picurlRaw) : '',
+    picUrl: picUrlOverride || (picurlRaw ? encodeURI(picurlRaw) : ''),
+    ...(picurlRaw || picUrlOverride ? {} : { textOnly: true }),
   };
 }
 
-function parseCockatriceXml(xmlText) {
+function cockatriceCorrectedName(name) {
+  return name.replace(/( \/\/ |[*<>:"\\?\x00-\x08\x10-\x1f])/g, '').replace(/[\/\x09-\x0f]/g, ' ');
+}
+
+function fieldPicUrl(setCode, name, copyIdx) {
+  const file = cockatriceCorrectedName(name) + (copyIdx > 1 ? ` (${copyIdx})` : '');
+  return `${FIELD_PICS_BASE}/${encodeURIComponent(setCode)}/${encodeURIComponent(file)}.jpg`;
+}
+
+function parseCockatriceXml(xmlText, picUrlFor) {
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
   const perr = doc.querySelector('parsererror');
-  if (perr) throw new Error('failed to parse Voyager cards.xml: ' + (perr.textContent || ''));
+  if (perr) throw new Error('failed to parse cards.xml: ' + (perr.textContent || ''));
 
   const sets = {};
   const allSetCodes = new Set();
@@ -781,12 +850,28 @@ function parseCockatriceXml(xmlText) {
     const code = (setEl.querySelector('name')?.textContent || '').trim();
     if (!code) return;
     const longname = (setEl.querySelector('longname')?.textContent || '').trim();
-    const day = new Date(Date.UTC(2020, 0, 1 + idx));
+    const pool = poolFromSetType(setEl.querySelector('settype')?.textContent);
+    const rank = pool ? FIELD_POOLS.indexOf(pool) * 1000 + idx : idx;
+    const day = new Date(Date.UTC(2020, 0, 1 + rank));
     sets[code] = { code, longname, releasedate: day.toISOString().slice(0, 10) };
+    if (pool) sets[code].pool = pool;
     allSetCodes.add(code);
   });
 
   const cardEls = Array.from(doc.querySelectorAll('cards > card'));
+  const picUrlByEl = new Map();
+  if (picUrlFor) {
+    const copies = new Map();
+    for (const el of cardEls) {
+      const name = (el.querySelector(':scope > name')?.textContent || '').trim();
+      const setCode = (el.querySelector(':scope > set')?.textContent || '').trim();
+      if (!name) continue;
+      const key = setCode + '|' + name;
+      const n = (copies.get(key) || 0) + 1;
+      copies.set(key, n);
+      picUrlByEl.set(el, picUrlFor(setCode, name, n));
+    }
+  }
   const backsByKey = new Map();
   for (const el of cardEls) {
     const side = (el.querySelector('prop > side')?.textContent || '').trim().toLowerCase();
@@ -794,7 +879,10 @@ function parseCockatriceXml(xmlText) {
     const name = (el.querySelector(':scope > name')?.textContent || '').trim();
     const setEl = el.querySelector(':scope > set');
     const setCode = (setEl?.textContent || '').trim();
-    if (name) backsByKey.set(setCode + '|' + name, buildVoyagerBackCard(el));
+    if (!name) continue;
+    const key = setCode + '|' + name;
+    if (!backsByKey.has(key)) backsByKey.set(key, []);
+    backsByKey.get(key).push(buildVoyagerBackCard(el, picUrlByEl.get(el)));
   }
 
   const cards = [];
@@ -814,7 +902,9 @@ function parseCockatriceXml(xmlText) {
 
     const rawText = (el.querySelector(':scope > text')?.textContent || '');
     const textSplit = rawText.indexOf('\n---\n');
-    const frontText = textSplit >= 0 ? rawText.slice(0, textSplit) : rawText;
+    const typeHasHalves = (el.querySelector('prop > type')?.textContent || '').includes(' // ');
+    const keepWholeText = advName && !typeHasHalves;
+    const frontText = (textSplit >= 0 && !keepWholeText) ? rawText.slice(0, textSplit) : rawText;
     const advText   = textSplit >= 0 ? rawText.slice(textSplit + 5) : '';
 
     const typeLine = normalizeTypeDash((el.querySelector('prop > type')?.textContent || '').trim());
@@ -842,11 +932,18 @@ function parseCockatriceXml(xmlText) {
 
     const setEl = el.querySelector(':scope > set');
     const setCode = (setEl?.textContent || '').trim();
-    const rarity = (setEl?.getAttribute('rarity') || '').trim().toLowerCase();
+    const rarityRaw = (setEl?.getAttribute('rarity') || '').trim().toLowerCase();
+    const rarity = rarityRaw === 'mythic rare' ? 'mythic' : rarityRaw;
     const num = (setEl?.getAttribute('num') || '').trim();
     const picurlRaw = (setEl?.getAttribute('picurl') || '').trim();
-    const picUrl = picurlRaw ? encodeURI(picurlRaw) : '';
+    const picUrl = picUrlByEl.get(el) || (picurlRaw ? encodeURI(picurlRaw) : '');
     const uuid = (setEl?.getAttribute('uuid') || '').trim();
+    const legalities = {};
+    for (const fe of el.querySelectorAll('prop > *')) {
+      if (fe.tagName.startsWith('format-')) {
+        legalities[fe.tagName.slice(7)] = (fe.textContent || '').trim().toLowerCase();
+      }
+    }
 
     const typeParts = parseTypeLineParts(frontType);
     const frontRawManaCost = voyagerBareManaToBraced(frontBareMc);
@@ -863,7 +960,11 @@ function parseCockatriceXml(xmlText) {
     const transformRel = el.querySelector('related[attach="transform"]');
     if (transformRel) {
       transformBackName = (transformRel.textContent || '').trim();
-      if (transformBackName) backData = backsByKey.get(setCode + '|' + transformBackName) || null;
+      const backs = transformBackName ? backsByKey.get(setCode + '|' + transformBackName) : null;
+      if (backs) {
+        const pairedNum = num.replace(/a$/i, 'b');
+        backData = backs.find(b => b.num === pairedNum) || backs[0];
+      }
     }
 
     let uniqueName = frontName;
@@ -912,7 +1013,7 @@ function parseCockatriceXml(xmlText) {
       num,
       uuid,
       rarity,
-      legalities: {},
+      legalities,
       fmt_rev: '',
       fmt_eternal: '',
       related: transformBackName,
@@ -920,6 +1021,8 @@ function parseCockatriceXml(xmlText) {
       picUrl,
       back: backData,
     };
+    if (!picUrl) card.textOnly = true;
+    if (keepWholeText) card.fullName = rawName;
 
     if (pageData) {
       const advParts = parseTypeLineParts(pageData.type);
@@ -958,6 +1061,7 @@ function parseCockatriceXml(xmlText) {
         picUrl,
         back: null,
       };
+      if (!picUrl) card.pageFace.textOnly = true;
     }
 
     cards.push(card);
@@ -975,13 +1079,32 @@ async function fetchVoyagerData() {
   return parseCockatriceXml(xmlText);
 }
 
+async function fetchFieldData() {
+  const res = await fetch(FIELD_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching Field Test cards.xml`);
+  return parseCockatriceXml(await res.text(), fieldPicUrl);
+}
+
+function poolFromSetType(settype) {
+  const m = /^\s*(\w+)\s+pool\s*$/i.exec(settype || '');
+  return m ? m[1].toLowerCase() : null;
+}
+
+function setTitle(setMeta, code) {
+  if (!setMeta) return code || '';
+  const name = setMeta.longname || code;
+  return setMeta.pool
+    ? `${name} (${FIELD_POOL_LABELS[setMeta.pool] || setMeta.pool} Pool)`
+    : `${name} (${setMeta.releasedate || '?'})`;
+}
+
 async function loadTags() {
   try {
     const res = await fetch('tags.json', { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
     if (!data || typeof data !== 'object') return;
-    for (const ds of ['revolution', 'voyager']) {
+    for (const ds of DATASETS) {
       const d = data[ds];
       if (!d) continue;
       const slot = STATE.tags[ds];
@@ -1045,6 +1168,7 @@ async function doSaveTags() {
   const payload = {
     revolution: STATE.tags.revolution,
     voyager: STATE.tags.voyager,
+    field: STATE.tags.field,
   };
   try {
     const res = await fetch('/api/tags', {
@@ -1225,7 +1349,7 @@ function aliasesForTag(canonical, dataset = currentDataset()) {
 
 async function loadDatasetData(dataset) {
   if (_datasetSessionCache[dataset]) return _datasetSessionCache[dataset];
-  const key = dataset === 'voyager' ? VOYAGER_STORAGE_KEY : STORAGE_KEY;
+  const key = datasetStorageKey(dataset);
   try {
     const cached = localStorage.getItem(key);
     if (cached) {
@@ -1237,10 +1361,11 @@ async function loadDatasetData(dataset) {
     console.warn('Could not read cached card data:', e);
   }
   let data;
-  if (dataset === 'voyager') {
-    const res = await fetch('voyager.xml');
-    if (!res.ok) throw new Error(`failed to load voyager.xml (HTTP ${res.status})`);
-    data = parseCockatriceXml(await res.text());
+  if (dataset === 'voyager' || dataset === 'field') {
+    const file = dataset + '.xml';
+    const res = await fetch(file);
+    if (!res.ok) throw new Error(`failed to load ${file} (HTTP ${res.status})`);
+    data = parseCockatriceXml(await res.text(), dataset === 'field' ? fieldPicUrl : null);
   } else {
     const res = await fetch('cards.json');
     if (!res.ok) throw new Error(`failed to load cards.json (HTTP ${res.status})`);
@@ -1250,12 +1375,22 @@ async function loadDatasetData(dataset) {
   return data;
 }
 
+function datasetStorageKey(dataset) {
+  if (dataset === 'voyager') return VOYAGER_STORAGE_KEY;
+  if (dataset === 'field') return FIELD_STORAGE_KEY;
+  return STORAGE_KEY;
+}
+
 async function refreshCurrentDataset() {
-  if (currentDataset() === 'voyager') {
-    const data = await fetchVoyagerData();
+  const ds = currentDataset();
+  if (ds === 'voyager' || ds === 'field') {
+    const data = ds === 'voyager' ? await fetchVoyagerData() : await fetchFieldData();
     applyCardData(data);
-    _datasetSessionCache.voyager = data;
-    try { localStorage.setItem(VOYAGER_STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+    _datasetSessionCache[ds] = data;
+    // ~6M chars of JSON: over the localStorage quota, and saved decks share it
+    if (ds !== 'field') {
+      try { localStorage.setItem(datasetStorageKey(ds), JSON.stringify(data)); } catch (_) {}
+    }
   } else {
     await refreshFromUpstream();
   }
@@ -1270,16 +1405,7 @@ function freshZones() {
   };
 }
 
-function snapshotZonesByName(zones) {
-  const out = {};
-  for (const z of Object.keys(zones)) {
-    out[z] = zones[z].piles.map(pile => pile.map(inst => {
-      const c = STATE.byId.get(inst.cardId);
-      return c ? c.name : null;
-    }).filter(n => n != null));
-  }
-  return out;
-}
+const SESSION_ZONES = ['main', 'sanctum', 'side', 'maybe'];
 
 function rehydrateZonesFromNames(snapshot) {
   const zones = freshZones();
@@ -1298,28 +1424,173 @@ function rehydrateZonesFromNames(snapshot) {
   return zones;
 }
 
+const SESSION_KEY_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let sessionKeyIndex = null;
+
+function sessionHashKey(text) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  let n = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  let out = '';
+  for (let i = 0; i < 6; i++) {
+    out += SESSION_KEY_ALPHABET[n % 62];
+    n = Math.floor(n / 62);
+  }
+  return out;
+}
+
+function sessionCardKey(card) {
+  return findCardByName(card.name) === card
+    ? sessionHashKey(card.name)
+    : sessionHashKey(card.name + '\t' + card.set + '\t' + card.num);
+}
+
+function sessionCardByKey(key) {
+  if (!sessionKeyIndex || sessionKeyIndex.cards !== STATE.cards) {
+    const map = new Map();
+    for (const c of STATE.cards) {
+      const k = sessionCardKey(c);
+      if (!map.has(k)) map.set(k, c);
+    }
+    sessionKeyIndex = { cards: STATE.cards, map };
+  }
+  return sessionKeyIndex.map.get(key) || null;
+}
+
+// d: distinct cards, 6 chars each: a hash of the name for the default
+// printing, else of name + set + number.
+// z: zones split by '|', piles by ',', cards by '.'; each card is its
+// base-36 index into d, with '*n' for n consecutive copies.
+// b: 1 when the deck is clean, else the clean baseline in the same form.
+function packWorkingDeck() {
+  const entries = [];
+  const indexById = new Map();
+  const firstByName = new Map();
+  const ref = (card) => {
+    let i = indexById.get(card.id);
+    if (i == null) {
+      i = entries.length;
+      indexById.set(card.id, i);
+      entries.push(sessionCardKey(card));
+      if (!firstByName.has(card.name)) firstByName.set(card.name, card);
+    }
+    return i;
+  };
+  const packPiles = (piles) => piles.map(pile => {
+    const out = [];
+    let prev = -1, n = 0;
+    const flush = () => { if (n) out.push(prev.toString(36) + (n > 1 ? '*' + n : '')); };
+    for (const card of pile) {
+      const i = ref(card);
+      if (i === prev) { n++; continue; }
+      flush();
+      prev = i;
+      n = 1;
+    }
+    flush();
+    return out.join('.');
+  }).join(',');
+
+  const w = {
+    z: SESSION_ZONES.map(z => packPiles(STATE.zones[z].piles.map(pile =>
+      pile.map(inst => STATE.byId.get(inst.cardId)).filter(Boolean)))).join('|'),
+  };
+  if (STATE.deckSnapshot === snapshotDeck()) {
+    w.b = 1;
+  } else {
+    try {
+      const snap = JSON.parse(STATE.deckSnapshot);
+      w.b = {
+        z: SESSION_ZONES.map(z => packPiles((snap.zones[z] || []).map(pile =>
+          pile.map(name => name == null ? null : (firstByName.get(name) || findCardByName(name)))
+            .filter(Boolean)))).join('|'),
+      };
+      if (snap.formatLock != null) w.b.fl = snap.formatLock;
+    } catch (_) {}
+  }
+  w.d = entries.join('');
+  if (STATE.loadedDeckName != null) w.n = STATE.loadedDeckName;
+  if (STATE.loadedDeckFolder != null) w.fo = STATE.loadedDeckFolder;
+  if (STATE.loadedDeckTags && STATE.loadedDeckTags.length) w.t = STATE.loadedDeckTags.slice();
+  if (STATE.loadedPlanName != null) w.p = STATE.loadedPlanName;
+  return w;
+}
+
+function unpackZones(str, cards) {
+  const zones = freshZones();
+  String(str || '').split('|').forEach((zoneStr, zi) => {
+    const z = SESSION_ZONES[zi];
+    if (!z || !zoneStr) return;
+    for (const pileStr of zoneStr.split(',')) {
+      const pile = [];
+      for (const tok of pileStr.split('.')) {
+        if (!tok) continue;
+        const [idx, n] = tok.split('*');
+        const card = cards[parseInt(idx, 36)];
+        if (!card) continue;
+        for (let k = 0; k < (n ? Number(n) : 1); k++) pile.push({ uid: newUid(), cardId: card.id });
+      }
+      if (pile.length) zones[z].piles.push(pile);
+    }
+  });
+  return zones;
+}
+
+function applyWorkingDeck(w) {
+  const keys = typeof w.d === 'string' ? w.d.match(/.{6}/g) || [] : [];
+  const cards = keys.map(sessionCardByKey);
+  STATE.zones = unpackZones(w.z, cards);
+  STATE.loadedDeckName = typeof w.n === 'string' ? w.n : null;
+  STATE.loadedDeckFolder = typeof w.fo === 'string' ? w.fo : null;
+  STATE.loadedDeckTags = Array.isArray(w.t) ? w.t.slice() : [];
+  STATE.loadedPlanName = typeof w.p === 'string' ? w.p : null;
+  STATE.basePlanZones = null;
+  if (STATE.loadedPlanName) {
+    const saved = STATE.loadedDeckName ? readDeckPayload(STATE.loadedDeckName) : null;
+    if (saved && saved.zones && listPlans(STATE.loadedDeckName).some(p => p.name === STATE.loadedPlanName)) {
+      STATE.basePlanZones = { main: saved.zones.main || [], side: saved.zones.side || [] };
+    } else {
+      STATE.loadedPlanName = null;
+    }
+  }
+  if (w.b && typeof w.b === 'object') {
+    const base = unpackZones(w.b.z, cards);
+    const zones = {};
+    for (const z of SESSION_ZONES) {
+      zones[z] = base[z].piles.map(pile => pile.map(inst => STATE.byId.get(inst.cardId).name));
+    }
+    STATE.deckSnapshot = JSON.stringify({ zones, formatLock: w.b.fl != null ? w.b.fl : null });
+  } else {
+    STATE.deckSnapshot = snapshotDeck();
+  }
+}
+
 let sessionSaveTimer = null;
 
 function writeSessionState() {
   sessionSaveTimer = null;
   if (STATE.tagMode) return;
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-      format: STATE.format,
-      rangeStart: STATE.rangeStart,
-      rangeEnd: STATE.rangeEnd,
-      formatLock: STATE.formatLock,
-      zones: snapshotZonesByName(STATE.zones),
-      loadedDeckName: STATE.loadedDeckName,
-      loadedDeckFolder: STATE.loadedDeckFolder,
-      loadedDeckTags: (STATE.loadedDeckTags || []).slice(),
-      loadedPlanName: STATE.loadedPlanName,
-      basePlanZones: STATE.basePlanZones,
-      deckSnapshot: STATE.deckSnapshot,
-      stashedByDataset: STATE.stashedByDataset,
-      sealedFragment: STATE.sealedFragment,
-    }));
-  } catch (_) {}
+    const payload = { v: 2, f: STATE.format, ...packWorkingDeck() };
+    if (STATE.rangeStart != null) payload.rs = STATE.rangeStart;
+    if (STATE.rangeEnd != null) payload.re = STATE.rangeEnd;
+    if (STATE.formatLock != null) payload.fl = STATE.formatLock;
+    if (STATE.sealedFragment != null) payload.sf = STATE.sealedFragment;
+    const stash = {};
+    for (const ds of DATASETS) {
+      if (STATE.stashedByDataset[ds]) stash[ds] = STATE.stashedByDataset[ds];
+    }
+    if (Object.keys(stash).length) payload.s = stash;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Could not save working deck for restore:', e);
+  }
 }
 
 function scheduleSessionSave() {
@@ -1338,32 +1609,45 @@ function readSessionState() {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const obj = JSON.parse(raw);
-    if (!obj || typeof obj !== 'object' || !obj.zones) return null;
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj.v === 2) {
+      return {
+        ...obj,
+        format: obj.f,
+        rangeStart: obj.rs,
+        rangeEnd: obj.re,
+        sealedFragment: obj.sf,
+      };
+    }
+    if (!obj.zones) return null;
     return obj;
   } catch (_) { return null; }
 }
 
 function applySessionState(payload) {
   if (datasetForFormat(payload.format) !== currentDataset()) return;
-  STATE.zones = rehydrateZonesFromNames(payload.zones);
-  STATE.loadedDeckName = typeof payload.loadedDeckName === 'string' ? payload.loadedDeckName : null;
-  STATE.loadedDeckFolder = typeof payload.loadedDeckFolder === 'string' ? payload.loadedDeckFolder : null;
-  STATE.loadedDeckTags = Array.isArray(payload.loadedDeckTags) ? payload.loadedDeckTags.slice() : [];
-  STATE.loadedPlanName = typeof payload.loadedPlanName === 'string' ? payload.loadedPlanName : null;
-  STATE.basePlanZones = payload.basePlanZones || null;
-  if (STATE.loadedPlanName && (!STATE.loadedDeckName
-      || !listPlans(STATE.loadedDeckName).some(p => p.name === STATE.loadedPlanName))) {
-    STATE.loadedPlanName = null;
-    STATE.basePlanZones = null;
+  if (payload.v === 2) {
+    setFormatLock(typeof payload.fl === 'string' ? payload.fl : null);
+    applyWorkingDeck(payload);
+    const stash = payload.s && typeof payload.s === 'object' ? payload.s : {};
+    for (const ds of DATASETS) STATE.stashedByDataset[ds] = stash[ds] || null;
+  } else {
+    STATE.zones = rehydrateZonesFromNames(payload.zones);
+    STATE.loadedDeckName = typeof payload.loadedDeckName === 'string' ? payload.loadedDeckName : null;
+    STATE.loadedDeckFolder = typeof payload.loadedDeckFolder === 'string' ? payload.loadedDeckFolder : null;
+    STATE.loadedDeckTags = Array.isArray(payload.loadedDeckTags) ? payload.loadedDeckTags.slice() : [];
+    STATE.loadedPlanName = typeof payload.loadedPlanName === 'string' ? payload.loadedPlanName : null;
+    STATE.basePlanZones = payload.basePlanZones || null;
+    if (STATE.loadedPlanName && (!STATE.loadedDeckName
+        || !listPlans(STATE.loadedDeckName).some(p => p.name === STATE.loadedPlanName))) {
+      STATE.loadedPlanName = null;
+      STATE.basePlanZones = null;
+    }
+    if (typeof payload.deckSnapshot === 'string') STATE.deckSnapshot = payload.deckSnapshot;
+    else markDeckClean();
+    setFormatLock(typeof payload.formatLock === 'string' ? payload.formatLock : null);
   }
-  if (payload.stashedByDataset && typeof payload.stashedByDataset === 'object') {
-    STATE.stashedByDataset.revolution = payload.stashedByDataset.revolution || null;
-    STATE.stashedByDataset.voyager = payload.stashedByDataset.voyager || null;
-  }
-  if (typeof payload.deckSnapshot === 'string') STATE.deckSnapshot = payload.deckSnapshot;
-  else markDeckClean();
   STATE.sealedFragment = typeof payload.sealedFragment === 'string' ? payload.sealedFragment : null;
-  setFormatLock(typeof payload.formatLock === 'string' ? payload.formatLock : null);
   runSearch(document.getElementById('search').value);
   renderAll();
   resetHistory();
@@ -1380,15 +1664,7 @@ function wireSessionPersistence() {
 async function switchDataset(toDataset) {
   const from = currentDataset();
   if (from === toDataset) return;
-  const outgoingStash = {
-    zones: snapshotZonesByName(STATE.zones),
-    loadedDeckName: STATE.loadedDeckName,
-    loadedDeckFolder: STATE.loadedDeckFolder,
-    loadedDeckTags: (STATE.loadedDeckTags || []).slice(),
-    loadedPlanName: STATE.loadedPlanName,
-    basePlanZones: STATE.basePlanZones,
-    deckSnapshot: STATE.deckSnapshot,
-  };
+  const outgoingStash = packWorkingDeck();
   const savedZones = STATE.zones;
   STATE.zones = freshZones();
   let data;
@@ -1402,13 +1678,7 @@ async function switchDataset(toDataset) {
   applyCardData(data);
   const incoming = STATE.stashedByDataset[toDataset];
   if (incoming) {
-    STATE.zones = rehydrateZonesFromNames(incoming.zones);
-    STATE.loadedDeckName = incoming.loadedDeckName;
-    STATE.loadedDeckFolder = incoming.loadedDeckFolder;
-    STATE.loadedDeckTags = (incoming.loadedDeckTags || []).slice();
-    STATE.loadedPlanName = incoming.loadedPlanName;
-    STATE.basePlanZones = incoming.basePlanZones;
-    STATE.deckSnapshot = incoming.deckSnapshot;
+    applyWorkingDeck(incoming);
   } else {
     STATE.zones = freshZones();
     STATE.loadedDeckName = null;
@@ -1543,6 +1813,11 @@ function isLegal(card) {
 function isLegalBase(card) {
   if (!card) return true;
   if (STATE.format === 'voyager') return true;
+  if (STATE.format === 'field') {
+    if (STATE.fieldPool === 'all') return true;
+    return (STATE.byCanonical.get(card.canonical) || [card])
+      .some(p => p.legalities && p.legalities[STATE.fieldPool] === 'legal');
+  }
   const printings = STATE.byCanonical.get(card.canonical) || [card];
   if (STATE.format === 'eternal') {
     return printings.some(p => p.fmt_eternal === 'legal');
@@ -1579,9 +1854,10 @@ function renderRangePickers() {
   if (STATE.rangeEnd)   endSel.value   = STATE.rangeEnd;
 }
 
-const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets', voyager: 'Voyager' };
-
-function datasetForFormat(fmt) { return fmt === 'voyager' ? 'voyager' : 'revolution'; }
+function datasetForFormat(fmt) {
+  if (fmt === 'voyager' || fmt === 'field') return fmt;
+  return 'revolution';
+}
 function currentDataset() { return datasetForFormat(STATE.format); }
 
 function visibleZoneOrder() {
@@ -1592,23 +1868,41 @@ function visibleZoneOrder() {
 
 function syncFormatUI() {
   const btn = document.getElementById('format-btn');
-  if (btn) btn.textContent = (FORMAT_LABELS[STATE.format] || 'Standard') + ' \u25BE';
+  const fmtLabel = STATE.format === 'field' && STATE.fieldPool !== 'all'
+    ? 'Field Test: ' + FIELD_POOL_LABELS[STATE.fieldPool]
+    : (FORMAT_LABELS[STATE.format] || 'Standard');
+  if (btn) btn.textContent = fmtLabel + ' \u25BE';
   document.querySelectorAll('#format-menu button').forEach(b => {
     b.classList.toggle('active', b.dataset.format === STATE.format);
   });
   const wrap = document.getElementById('range-pickers');
   if (wrap) wrap.classList.toggle('hidden', STATE.format !== 'range');
+  const poolWrap = document.getElementById('field-pool-picker');
+  if (poolWrap) {
+    poolWrap.classList.toggle('hidden', STATE.format !== 'field');
+    poolWrap.querySelectorAll('button[data-pool]').forEach(b => {
+      b.classList.toggle('active', b.dataset.pool === STATE.fieldPool);
+      if (b.dataset.pool !== 'all' && currentDataset() === 'field') {
+        b.dataset.title = Object.values(STATE.setsByCode)
+          .filter(m => m.pool === b.dataset.pool)
+          .map(m => m.longname ? `${m.code} — ${m.longname}` : m.code)
+          .join('\n');
+      }
+    });
+  }
   const startSel = document.getElementById('range-start');
   const endSel   = document.getElementById('range-end');
   if (startSel && STATE.rangeStart) startSel.value = STATE.rangeStart;
   if (endSel && STATE.rangeEnd)     endSel.value   = STATE.rangeEnd;
   const refreshBtn = document.getElementById('btn-refresh');
   if (refreshBtn) {
-    refreshBtn.title = currentDataset() === 'voyager'
-      ? 'Re-fetch card data from the upstream Voyager list'
-      : 'Re-fetch card data from the upstream Revolution repo';
+    refreshBtn.title = {
+      voyager: 'Re-fetch card data from the upstream Voyager list',
+      field: 'Re-fetch card data from the upstream Field Test list',
+    }[currentDataset()] || 'Re-fetch card data from the upstream Revolution repo';
   }
   document.body.classList.toggle('voyager-mode', currentDataset() === 'voyager');
+  document.body.classList.toggle('field-mode', currentDataset() === 'field');
   const favLink = document.querySelector('link[rel="icon"][type="image/webp"]');
   if (favLink) {
     favLink.href = currentDataset() === 'voyager' ? 'favicon-silver.webp' : 'favicon.webp';
@@ -1687,7 +1981,108 @@ function colorSortKey(card) {
   return '2' + pad + sorted;
 }
 
+const TEXT_CARD_FRAMES = {
+  W: '#e9e2c8', U: '#9fbfdc', B: '#8a8483', R: '#d98f72', G: '#93b384',
+  gold: '#d6bf72', colorless: '#b9b6b2', land: '#bba68c',
+};
+const TEXT_CARD_PIPS = {
+  W: '#f8f4d8', U: '#b3cfe8', B: '#b0a8a4', R: '#eba184', G: '#9fc191', C: '#d7d2ce',
+};
+const _textCardCache = new WeakMap();
+
+function textCardPip(sym) {
+  const parts = sym.toUpperCase().split('/');
+  const fills = parts.map(p => TEXT_CARD_PIPS[p] || TEXT_CARD_PIPS.C);
+  const bg = fills.length > 1
+    ? `linear-gradient(135deg, ${fills[0]} 50%, ${fills[1]} 50%)`
+    : fills[0];
+  const label = parts.length > 1 ? '' : (sym === 'T' ? '↷' : sym.toUpperCase());
+  return `<span class="pip" style="background:${bg}">${escapeHtml(label)}</span>`;
+}
+
+function textCardRich(text) {
+  return escapeHtml(text)
+    .replace(/\([^()]*\)/g, m => `<i>${m}</i>`)
+    .replace(/\{([^}]+)\}/g, (_, sym) => textCardPip(sym));
+}
+
+function textCardFrame(card) {
+  if ((card.types || []).includes('Land') && !card.colors) {
+    const ci = card.ci || '';
+    if (ci.length === 1) return TEXT_CARD_FRAMES[ci];
+    return ci.length > 1 ? TEXT_CARD_FRAMES.gold : TEXT_CARD_FRAMES.land;
+  }
+  const cols = card.colors || '';
+  if (cols.length === 1) return TEXT_CARD_FRAMES[cols] || TEXT_CARD_FRAMES.colorless;
+  return cols.length > 1 ? TEXT_CARD_FRAMES.gold : TEXT_CARD_FRAMES.colorless;
+}
+
+function textCardFontSize(text, boxW, boxH) {
+  const paras = text.split('\n').filter(Boolean);
+  for (let fs = 30; fs > 11; fs--) {
+    const perLine = Math.floor(boxW / (fs * 0.52));
+    let lines = 0;
+    for (const para of paras) lines += Math.max(1, Math.ceil(para.length / perLine));
+    if (lines * fs * 1.25 + paras.length * fs * 0.35 <= boxH) return fs;
+  }
+  return 11;
+}
+
+function textCardUrl(card) {
+  const hit = _textCardCache.get(card);
+  if (hit) return hit;
+  const name = card.fullName || card.canonical || card.name;
+  const cost = card.rawManaCost || '';
+  const costPips = (cost.match(/\{[^}]+\}/g) || []).length;
+  const nameRoom = 410 - costPips * 30;
+  const nameFs = Math.max(15, Math.min(30, Math.floor(nameRoom / (Math.max(1, name.length) * 0.66))));
+  const text = card.text || '';
+  const textFs = textCardFontSize(text, 404, 440);
+  const pt = card.power || card.toughness
+    ? `${card.power}/${card.toughness}`
+    : (card.loyalty ? card.loyalty : '');
+  const setMeta = STATE.setsByCode[card.set];
+  const footBits = [card.set, card.num, card.rarity].filter(Boolean);
+  if (setMeta && setMeta.pool) footBits.push(FIELD_POOL_LABELS[setMeta.pool] || setMeta.pool);
+  const paras = text.split('\n')
+    .map(line => line.trim() === '---' ? '<hr/>' : `<p>${textCardRich(line)}</p>`).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="488" height="680" viewBox="0 0 488 680">`
+    + `<style>`
+    + `.c{box-sizing:border-box;width:488px;height:680px;padding:20px;border-radius:24px;background:#161514;font-family:Georgia,'DejaVu Serif',serif;color:#141210;}`
+    + `.f{box-sizing:border-box;height:100%;border-radius:12px;background:${textCardFrame(card)};padding:12px;display:flex;flex-direction:column;gap:10px;}`
+    + `.bar{background:rgba(255,255,255,.55);border-radius:10px;padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}`
+    + `.nm{font-weight:bold;font-size:${nameFs}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}`
+    + `.ty{font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}`
+    + `.tx{flex:1;background:rgba(255,255,255,.72);border-radius:8px;padding:12px 14px;font-size:${textFs}px;line-height:1.25;overflow:hidden;}`
+    + `.tx p{margin:0 0 .35em;}`
+    + `.tx hr{border:0;border-top:1px solid rgba(0,0,0,.35);margin:.4em 0;}`
+    + `.ft{display:flex;justify-content:space-between;align-items:center;font-size:17px;color:#2a2622;padding:0 4px;}`
+    + `.pt{font-weight:bold;font-size:28px;background:rgba(255,255,255,.72);border-radius:8px;padding:2px 12px;color:#141210;}`
+    + `.pip{display:inline-block;width:1.05em;height:1.05em;line-height:1.05em;border-radius:50%;text-align:center;font-size:.85em;font-weight:bold;font-style:normal;vertical-align:-.1em;margin:0 .04em;box-shadow:0 1px 0 rgba(0,0,0,.45);color:#141210;}`
+    + `.bar .pip{font-size:24px;}`
+    + `</style>`
+    + `<foreignObject x="0" y="0" width="488" height="680">`
+    + `<div xmlns="http://www.w3.org/1999/xhtml" class="c"><div class="f">`
+    + `<div class="bar"><span class="nm">${escapeHtml(name)}</span><span>${textCardRich(cost)}</span></div>`
+    + `<div class="bar"><span class="ty">${escapeHtml(card.type || '')}</span></div>`
+    + `<div class="tx">${paras}</div>`
+    + `<div class="ft"><span>${escapeHtml(footBits.join(' · '))}</span>${pt ? `<span class="pt">${escapeHtml(pt)}</span>` : ''}</div>`
+    + `</div></div></foreignObject></svg>`;
+  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  _textCardCache.set(card, url);
+  return url;
+}
+
+function swapToTextCard(img, face) {
+  if (!face || !face.picUrl) return false;
+  const url = textCardUrl(face);
+  if (img.src === url) return false;
+  img.src = url;
+  return true;
+}
+
 function imgUrl(card) {
+  if (card && card.textOnly) return textCardUrl(card);
   if (card && card.picUrl) return card.picUrl;
   const base = `${IMG_BASE}/${card.set}/${encodeURIComponent(card.num)}.jpg`;
   return card.imgVersion ? `${base}?v=${card.imgVersion}` : base;
@@ -3349,7 +3744,7 @@ function renderSearchResults() {
         chip.textContent = p.variant || p.set;
         const setMeta = STATE.setsByCode[p.set];
         const baseTitle = setMeta
-          ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})\nClick to add this printing`
+          ? `${setTitle(setMeta, p.set)}\nClick to add this printing`
           : p.set;
         chip.dataset.title = p.variant ? `${p.variant} — ${baseTitle}` : baseTitle;
         chip.addEventListener('mousedown', (ev) => {
@@ -3933,6 +4328,8 @@ function makeRow(zoneName, row) {
 
 
 const PILE_OFFSET_Y = 30;
+const COMPRESSED_OFFSET_RATIO = 0.19;
+const COMPRESSED_COUNT_RATIO = 0.165;
 const CARD_NOMINAL_WIDTH = 130;
 const CARD_MIN_WIDTH = 110;
 const CARD_MAX_WIDTH = 160;
@@ -4073,9 +4470,7 @@ function openPrintingPicker(anchor, printings, currentId, onPick) {
     chip.className = 'version-chip' + (p.id === currentId ? ' current' : '');
     chip.textContent = p.variant || p.set || '?';
     const setMeta = STATE.setsByCode[p.set];
-    const baseTitle = setMeta
-      ? `${setMeta.longname || p.set} (${setMeta.releasedate || '?'})`
-      : (p.set || '');
+    const baseTitle = setTitle(setMeta, p.set);
     chip.dataset.title = p.variant ? `${p.variant} — ${baseTitle}` : baseTitle;
     chip.addEventListener('mousedown', (ev) => ev.stopPropagation());
     chip.addEventListener('click', (ev) => {
@@ -4102,9 +4497,9 @@ function openPrintingPicker(anchor, printings, currentId, onPick) {
   STATE._versionPicker = { el: picker };
 }
 
-function openVersionPicker(anchor, inst, card) {
+function openVersionPicker(anchor, inst, card, group) {
   const printings = STATE.byCanonical.get(card.canonical) || [card];
-  openPrintingPicker(anchor, printings, inst.cardId, (p) => swapVersion(inst, p.id));
+  openPrintingPicker(anchor, printings, inst.cardId, (p) => swapVersion(inst, p.id, group));
 }
 
 function closeVersionPicker() {
@@ -4113,7 +4508,7 @@ function closeVersionPicker() {
   STATE._versionPicker = null;
 }
 
-function swapVersion(inst, newCardId) {
+function swapVersion(inst, newCardId, group) {
   const origCard = STATE.byId.get(inst.cardId);
   const canon = origCard && origCard.canonical;
   const targetUids = (STATE.selection.size > 0 && STATE.selection.has(inst.uid))
@@ -4123,7 +4518,7 @@ function swapVersion(inst, newCardId) {
         const c = STATE.byId.get(f.inst.cardId);
         return c && c.canonical === canon;
       })
-    : [inst.uid];
+    : (group || [inst]).map(i => i.uid);
   const oldToNewNames = [];
   for (const uid of targetUids) {
     const f = findInstance(uid);
@@ -4185,7 +4580,7 @@ function wireVersionPicker() {
   window.addEventListener('resize', closeVersionPicker);
 }
 
-function makeFlipButton(inst, card, slot) {
+function makeFlipButton(inst, card, slot, group) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'flip-btn';
@@ -4197,7 +4592,8 @@ function makeFlipButton(inst, card, slot) {
   btn.addEventListener('click', (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
-    inst.flipped = !inst.flipped;
+    const flipped = !inst.flipped;
+    for (const i of (group || [inst])) i.flipped = flipped;
     const face = currentFace(inst, card);
     const img = slot.querySelector('img');
     if (img) {
@@ -4284,27 +4680,57 @@ function makeSlotButtons(inst, card) {
   return wrap;
 }
 
+function groupPileByCard(pile) {
+  const groups = new Map();
+  for (const inst of pile) {
+    const g = groups.get(inst.cardId);
+    if (g) g.push(inst);
+    else groups.set(inst.cardId, [inst]);
+  }
+  return [...groups.values()];
+}
+
 function makePileEl(pile, pileIdx) {
   const el = document.createElement('div');
   el.className = 'pile';
   el.dataset.pileIdx = String(pileIdx);
-  el.style.setProperty('--stack', String(Math.max(0, pile.length - 1)));
+  const compressed = STATE.pileStyle === 'compressed';
+  const groups = compressed ? groupPileByCard(pile) : pile.map(inst => [inst]);
+  const topAt = (steps, counts) => compressed
+    ? `calc(var(--card-width) * ${(steps * COMPRESSED_OFFSET_RATIO + counts * COMPRESSED_COUNT_RATIO).toFixed(2)})`
+    : `${steps * PILE_OFFSET_Y}px`;
+  let steps = 0;
+  let counts = 0;
+  let lastTop = '0px';
 
-  pile.forEach((inst, slotIdx) => {
+  groups.forEach((group, slotIdx) => {
+    const selectedInGroup = group.filter(i => STATE.selection.has(i.uid));
+    const inst = selectedInGroup[selectedInGroup.length - 1] || group[group.length - 1];
     const card = STATE.byId.get(inst.cardId);
     const slot = document.createElement('div');
     slot.className = 'card-slot' + (isLegal(card) ? '' : ' illegal')
-                                 + (STATE.selection.has(inst.uid) ? ' selected' : '');
-    slot.style.top = (slotIdx * PILE_OFFSET_Y) + 'px';
+                                 + (selectedInGroup.length > 0 ? ' selected' : '');
+    lastTop = topAt(steps, counts);
+    slot.style.top = lastTop;
+    steps += 1;
+    if (compressed) counts += 1;
     slot.style.zIndex = String(slotIdx + 1);
     slot.draggable = true;
     slot.dataset.uid = String(inst.uid);
+    if (group.length > 1) slot.dataset.uids = group.map(i => i.uid).join(',');
+    if (compressed) {
+      const count = document.createElement('span');
+      count.className = 'copy-count';
+      count.textContent = 'x' + group.length;
+      slot.appendChild(count);
+    }
     if (card) {
       const face0 = currentFace(inst, card);
       const img = document.createElement('img');
       img.alt = face0.canonical || face0.name || card.canonical;
       img.src = imgUrl(face0);
       img.addEventListener('error', () => {
+        if (swapToTextCard(img, currentFace(inst, card))) return;
         slot.classList.add('no-image');
         slot.textContent = face0.canonical || face0.name || '???';
       });
@@ -4321,8 +4747,11 @@ function makePileEl(pile, pileIdx) {
     slot.addEventListener('click', (ev) => {
       if (ev.shiftKey || ev.ctrlKey || ev.metaKey) {
         ev.stopPropagation();
-        if (STATE.selection.has(inst.uid)) STATE.selection.delete(inst.uid);
-        else STATE.selection.add(inst.uid);
+        if (group.some(i => STATE.selection.has(i.uid))) {
+          for (const i of group) STATE.selection.delete(i.uid);
+        } else {
+          STATE.selection.add(group[group.length - 1].uid);
+        }
         renderPiles();
       } else {
         if (STATE.selection.size > 0) {
@@ -4337,7 +4766,13 @@ function makePileEl(pile, pileIdx) {
                   '— slot size:', slot.offsetWidth, 'x', slot.offsetHeight,
                   '— selection:', [...STATE.selection]);
       ev.dataTransfer.effectAllowed = 'move';
-      const uids = uidsToDrag(inst.uid);
+      let uids;
+      if (group.some(i => STATE.selection.has(i.uid))) {
+        uids = [...STATE.selection];
+      } else {
+        STATE.selection.clear();
+        uids = group.map(i => i.uid);
+      }
       ev.dataTransfer.setData('text/uids', uids.join(','));
       startDragGhost(ev, uids,
         slot.offsetWidth, slot.offsetHeight,
@@ -4366,15 +4801,16 @@ function makePileEl(pile, pileIdx) {
     if (card) {
       if (STATE.focusedZone !== 'hand') slot.appendChild(makeSlotButtons(inst, card));
       if (card.back) {
-        slot.appendChild(makeFlipButton(inst, card, slot));
+        slot.appendChild(makeFlipButton(inst, card, slot, group));
       }
       const printings = STATE.byCanonical.get(card.canonical);
       if (printings && printings.length > 1) {
-        slot.appendChild(makeVersionButton((btn) => openVersionPicker(btn, inst, card)));
+        slot.appendChild(makeVersionButton((btn) => openVersionPicker(btn, inst, card, group)));
       }
     }
     el.appendChild(slot);
   });
+  el.style.setProperty('--stack-offset', lastTop);
 
   el.addEventListener('dragover', (ev) => {
     ev.preventDefault();
@@ -4445,6 +4881,7 @@ function makeSearchSlot(card, item) {
   img.alt = face0.canonical || face0.name || card.canonical || '';
   img.dataset.src = imgUrl(face0);
   img.addEventListener('error', () => {
+    if (swapToTextCard(img, currentFace(item, card))) return;
     slot.classList.add('no-image');
     slot.textContent = face0.canonical || face0.name || '???';
   });
@@ -4816,27 +5253,34 @@ function wireToolbar() {
 function wireFormatDropdown() {
   const formatBtn = document.getElementById('format-btn');
   const formatMenu = document.getElementById('format-menu');
-  formatBtn.addEventListener('click', (ev) => {
+  const formatButtons = [...formatMenu.querySelectorAll('button')];
+  const setFormatBusy = (busy) => {
+    if (formatBtn) formatBtn.disabled = busy;
+    for (const b of formatButtons) b.disabled = busy;
+  };
+  if (formatBtn) formatBtn.addEventListener('click', (ev) => {
     ev.stopPropagation();
     formatMenu.classList.toggle('hidden');
   });
-  formatMenu.querySelectorAll('button').forEach(btn => {
+  formatButtons.forEach(btn => {
     btn.addEventListener('click', async (ev) => {
       ev.stopPropagation();
       const newFormat = btn.dataset.format;
       const crossesDataset = datasetForFormat(newFormat) !== currentDataset();
-      if (newFormat !== 'range') formatMenu.classList.add('hidden');
+      const keepOpen = newFormat === 'range'
+        || (newFormat === 'field' && document.getElementById('field-pool-picker'));
+      if (!keepOpen && formatBtn) formatMenu.classList.add('hidden');
       if (crossesDataset) {
-        formatBtn.disabled = true;
+        setFormatBusy(true);
         try {
           await switchDataset(datasetForFormat(newFormat));
         } catch (e) {
           console.error(e);
-          alert('Could not load Voyager cards: ' + (e.message || e));
-          formatBtn.disabled = false;
+          alert(`Could not load ${FORMAT_LABELS[newFormat]} cards: ` + (e.message || e));
+          setFormatBusy(false);
           return;
         }
-        formatBtn.disabled = false;
+        setFormatBusy(false);
       }
       STATE.format = newFormat;
       savePrefs();
@@ -4850,7 +5294,20 @@ function wireFormatDropdown() {
   document.getElementById('range-pickers').addEventListener('click', (ev) => {
     ev.stopPropagation();
   });
-  document.addEventListener('click', () => {
+  const poolPicker = document.getElementById('field-pool-picker');
+  if (poolPicker) {
+    poolPicker.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const b = ev.target.closest('button[data-pool]');
+      if (!b) return;
+      STATE.fieldPool = b.dataset.pool;
+      savePrefs();
+      syncFormatUI();
+      runSearch(document.getElementById('search').value);
+      renderAll();
+    });
+  }
+  if (formatBtn) document.addEventListener('click', () => {
     formatMenu.classList.add('hidden');
   });
   const startSel = document.getElementById('range-start');
@@ -4883,9 +5340,9 @@ function wireFloatingActions() {
     refreshBtn.disabled = true;
     refreshBtn.textContent = 'Updating\u2026';
     try {
-      const wasVoyager = currentDataset() === 'voyager';
+      const ds = currentDataset();
       await refreshCurrentDataset();
-      const prefix = wasVoyager ? new URL(VOYAGER_URL).origin + '/' : IMG_BASE;
+      const prefix = { voyager: new URL(VOYAGER_URL).origin + '/', field: FIELD_PICS_BASE }[ds] || IMG_BASE;
       await pruneImageCache(prefix, currentImageUrls());
       refreshBtn.textContent = 'Updated \u2713';
       setTimeout(() => { refreshBtn.textContent = original; }, 1500);
@@ -4899,12 +5356,52 @@ function wireFloatingActions() {
   });
 
   const themeBtn = document.getElementById('btn-theme');
-  themeBtn.addEventListener('click', () => {
+  if (themeBtn) themeBtn.addEventListener('click', () => {
     STATE.theme = STATE.theme === 'light' ? 'dark' : 'light';
     applyTheme();
     savePrefs();
   });
+  document.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.addEventListener('click', () => {
+      STATE.theme = b.dataset.themeChoice;
+      applyTheme();
+      savePrefs();
+    });
+  });
   applyTheme();
+
+  const syncPileStyle = () => {
+    document.querySelectorAll('[data-pile-style]').forEach(b => {
+      b.classList.toggle('active', b.dataset.pileStyle === STATE.pileStyle);
+    });
+  };
+  document.querySelectorAll('[data-pile-style]').forEach(b => {
+    b.addEventListener('click', () => {
+      if (STATE.pileStyle === b.dataset.pileStyle) return;
+      STATE.pileStyle = b.dataset.pileStyle;
+      savePrefs();
+      syncPileStyle();
+      renderPiles();
+    });
+  });
+  syncPileStyle();
+
+  const settingsBtn = document.getElementById('btn-settings');
+  const settingsPanel = document.getElementById('settings-panel');
+  const settingsCorner = document.getElementById('settings-corner');
+  if (settingsBtn && settingsPanel) {
+    const setOpen = (open) => {
+      settingsPanel.classList.toggle('hidden', !open);
+      settingsCorner.classList.toggle('open', open);
+    };
+    settingsBtn.addEventListener('click', () => setOpen(settingsPanel.classList.contains('hidden')));
+    document.addEventListener('mousedown', (ev) => {
+      if (!settingsPanel.classList.contains('hidden') && !settingsCorner.contains(ev.target)) setOpen(false);
+    }, true);
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && !settingsPanel.classList.contains('hidden')) setOpen(false);
+    });
+  }
 
   const clearImgsBtn = document.getElementById('btn-clear-imgs');
   clearImgsBtn.addEventListener('click', async () => {
@@ -4957,12 +5454,8 @@ function wireFloatingActions() {
 function currentImageUrls() {
   const urls = new Set();
   for (const card of STATE.cards) {
-    const u = imgUrl(card);
-    if (u) urls.add(u);
-    if (card.back) {
-      const bu = imgUrl(card.back);
-      if (bu) urls.add(bu);
-    }
+    if (!card.textOnly) urls.add(imgUrl(card));
+    if (card.back && !card.back.textOnly) urls.add(imgUrl(card.back));
   }
   return urls;
 }
@@ -5155,19 +5648,21 @@ function wireRegionSelect() {
     active.rectEl.style.height = (y2 - y1) + 'px';
 
     const keyAttr = active.mode === 'search' ? 'cardId' : 'uid';
+    const slotKeys = (slot) => {
+      const raw = (keyAttr === 'uid' && slot.dataset.uids) || slot.dataset[keyAttr] || '';
+      return raw.split(',').map(n => parseInt(n, 10)).filter(k => !isNaN(k));
+    };
     const nextSel = new Set(active.baseSelection);
     const slots = document.querySelectorAll('#piles .pile .card-slot');
     for (const slot of slots) {
       const r = slot.getBoundingClientRect();
       const intersects = r.right >= x1 && r.left <= x2 && r.bottom >= y1 && r.top <= y2;
       if (intersects) {
-        const k = parseInt(slot.dataset[keyAttr], 10);
-        if (!isNaN(k)) nextSel.add(k);
+        for (const k of slotKeys(slot)) nextSel.add(k);
       }
     }
     for (const slot of slots) {
-      const k = parseInt(slot.dataset[keyAttr], 10);
-      const wantSel = nextSel.has(k);
+      const wantSel = slotKeys(slot).some(k => nextSel.has(k));
       const hasSel = slot.classList.contains('selected');
       if (wantSel && !hasSel) slot.classList.add('selected');
       else if (!wantSel && hasSel) slot.classList.remove('selected');
@@ -5211,7 +5706,8 @@ function showPreview(card, ev, avoidEl, immediate) {
       img.src = url;
       show();
     } else {
-      img.onload = () => { img.onload = null; show(); };
+      img.onload = () => { img.onload = null; img.onerror = null; show(); };
+      img.onerror = () => { img.onerror = null; swapToTextCard(img, card); };
       img.src = url;
     }
     const dragImg = document.getElementById('drag-img');
@@ -5536,8 +6032,8 @@ const SAVED_DECK_PREFIX = 'rev-deckbuilder-savedeck:';
 
 function deckFormatVisibleInCurrentFormat(deckFormat) {
   const dfmt = deckFormat || 'standard';
-  if (STATE.format === 'voyager') return dfmt === 'voyager';
-  if (dfmt === 'voyager') return false;
+  if (datasetForFormat(dfmt) !== currentDataset()) return false;
+  if (currentDataset() !== 'revolution') return true;
   if (STATE.format === 'standard') return dfmt === 'standard';
   return true;
 }
@@ -5698,6 +6194,7 @@ function saveDeckToStorage(name, opts) {
     format: STATE.format,
     rangeStart: STATE.rangeStart,
     rangeEnd: STATE.rangeEnd,
+    ...(STATE.format === 'field' ? { fieldPool: STATE.fieldPool } : {}),
     formatLock: STATE.formatLock,
     folder,
     tags,
@@ -5745,6 +6242,10 @@ function loadDeckFromStorage(name) {
     STATE.format = payload.format;
     STATE.rangeStart = payload.rangeStart || null;
     STATE.rangeEnd = payload.rangeEnd || null;
+    savePrefs();
+    syncFormatUI();
+  } else if (payload.format === 'field' && FIELD_POOLS.concat('all').includes(payload.fieldPool)) {
+    STATE.fieldPool = payload.fieldPool;
     savePrefs();
     syncFormatUI();
   }
@@ -6984,14 +7485,15 @@ async function loadSavedDeckFromUrlFragment() {
     alert('No saved deck named “' + name + '” was found.');
     return;
   }
-  if ((payload.format || 'standard') !== 'voyager' && currentDataset() !== 'revolution') {
+  const targetDataset = datasetForFormat(payload.format || 'standard');
+  if (targetDataset !== currentDataset()) {
     try {
-      await switchDataset('revolution');
+      await switchDataset(targetDataset);
     } catch (e) {
       alert('Could not switch datasets to open “' + name + '”: ' + (e && e.message ? e.message : e));
       return;
     }
-    STATE.format = 'standard';
+    STATE.format = targetDataset === 'revolution' ? 'standard' : targetDataset;
     savePrefs();
     syncFormatUI();
     renderAll();

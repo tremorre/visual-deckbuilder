@@ -3,7 +3,7 @@ import { createDeckCodec } from './codec.js';
 import { decodeLegacy } from './legacy.js';
 import { BASIC_NAMES, parseRenames } from './catalog.js';
 
-export const VERSION = 4;
+export const VERSION = 5;
 export const modelPath = version => `share/v${version}/model.json`;
 
 // Shipped models store each card as [name, firstName, set, ci, legal, playMask]
@@ -38,7 +38,21 @@ export function createDeckUrl(model, { renames = '', loadModel = null } = {}) {
   function lookup(name) {
     return names.get(name) ?? names.get(bare(name));
   }
+  // An alt-art printing, "Name (Label)" or "Name ★", is the same card as
+  // Name, whether or not the model knows the printing.
+  function variantStem(name) {
+    const m = /^(.*\S)\s*(?:\([^()]+\)|\u2605)$/.exec(bare(name));
+    return m ? m[1] : null;
+  }
   function resolve(name) {
+    let found;
+    for (let cur = name; cur; cur = variantStem(cur)) {
+      const id = resolveExact(cur);
+      if (id !== undefined) found = id;
+    }
+    return found;
+  }
+  function resolveExact(name) {
     let id = lookup(name);
     if (id !== undefined) return id;
     // Renamed cards: the model may predate the rename (walk back) or the
@@ -67,8 +81,11 @@ export function createDeckUrl(model, { renames = '', loadModel = null } = {}) {
     return cur;
   }
   function basicOf(name) {
-    const b = basicAliases[name] ?? basicAliases[bare(name)] ?? bare(name);
-    return BASIC_NAMES.includes(b) ? b : null;
+    for (let cur = name; cur; cur = variantStem(cur)) {
+      const b = basicAliases[cur] ?? basicAliases[bare(cur)] ?? bare(cur);
+      if (BASIC_NAMES.includes(b)) return b;
+    }
+    return null;
   }
   function present(deck, cards) {
     return {
