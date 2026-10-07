@@ -26,4 +26,19 @@
     decode: async (payload) => (await ready).decode(payload),
     ready,
   };
+
+  let field = null;
+  const fieldReady = () => field ??= (async () => {
+    const [lib, resp] = await Promise.all([
+      import(new URL('share/field.js', scriptUrl)),
+      fetch(new URL('share/field/pool.json', root), { cache: 'no-cache' }),
+    ]);
+    if (!resp.ok) throw new Error('Could not load the Field Test share list');
+    return lib.createFieldDeckUrl(await resp.json());
+  })();
+
+  window.FieldDeckUrl = {
+    encode: async (entries) => (await fieldReady()).encode(entries),
+    decode: async (payload) => (await fieldReady()).decode(payload),
+  };
 })();

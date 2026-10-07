@@ -17,6 +17,7 @@ const FIELD_STORAGE_KEY = `rev-deckbuilder-field-v${STORAGE_VERSION}`;
 
 const DATASETS = ['revolution', 'voyager', 'field'];
 const FORMAT_LABELS = { standard: 'Standard', eternal: 'Eternal', range: 'Sets', voyager: 'Voyager', field: 'Field Test' };
+const REVOLUTION_FORMATS = ['standard', 'eternal', 'range'];
 const FIELD_POOLS = ['war', 'famine', 'pestilence', 'death'];
 const FIELD_POOL_LABELS = { all: 'All pools', war: 'War', famine: 'Famine', pestilence: 'Pestilence', death: 'Death' };
 const _datasetSessionCache = { revolution: null, voyager: null, field: null };
@@ -51,6 +52,7 @@ const STATE = {
   formatLock: null,
   sealedFragment: null,
   fieldPool: 'all',
+  lastRevFormat: 'standard',
   stashedByDataset: { revolution: null, voyager: null, field: null },
   listSort: 'type',
   pileSort: 'type',
@@ -260,7 +262,7 @@ function wireDragTrash() {
   loadPrefs();
 
   const startHash = location.hash || '';
-  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#open='))
+  const sessionPayload = (startHash.startsWith('#d=') || startHash.startsWith('#f=') || startHash.startsWith('#open='))
     ? null : readSessionState();
   if (sessionPayload && FORMAT_LABELS[sessionPayload.format]) {
     STATE.format = sessionPayload.format;
@@ -515,6 +517,7 @@ function loadPrefs() {
     const obj = JSON.parse(raw);
     if (obj && typeof obj === 'object') {
       if (FORMAT_LABELS[obj.format]) STATE.format = obj.format;
+      if (REVOLUTION_FORMATS.includes(obj.lastRevFormat)) STATE.lastRevFormat = obj.lastRevFormat;
       if (FIELD_POOLS.concat('all').includes(obj.fieldPool)) STATE.fieldPool = obj.fieldPool;
       if (typeof obj.rangeStart === 'string') STATE.rangeStart = obj.rangeStart;
       if (typeof obj.rangeEnd === 'string')   STATE.rangeEnd   = obj.rangeEnd;
@@ -528,12 +531,14 @@ function loadPrefs() {
 }
 
 function savePrefs() {
+  if (REVOLUTION_FORMATS.includes(STATE.format)) STATE.lastRevFormat = STATE.format;
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       format: STATE.format,
       rangeStart: STATE.rangeStart,
       rangeEnd: STATE.rangeEnd,
       fieldPool: STATE.fieldPool,
+      lastRevFormat: STATE.lastRevFormat,
       formatLock: STATE.formatLock,
       theme: STATE.theme,
       pileStyle: STATE.pileStyle,
@@ -1872,9 +1877,12 @@ function syncFormatUI() {
     ? 'Field Test: ' + FIELD_POOL_LABELS[STATE.fieldPool]
     : (FORMAT_LABELS[STATE.format] || 'Standard');
   if (btn) btn.textContent = fmtLabel + ' \u25BE';
-  document.querySelectorAll('#format-menu button').forEach(b => {
-    b.classList.toggle('active', b.dataset.format === STATE.format);
+  document.querySelectorAll('#format-menu button, #rev-format-picker button').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === STATE.format
+      || (b.dataset.format === 'revolution' && currentDataset() === 'revolution'));
   });
+  const revWrap = document.getElementById('rev-format-picker');
+  if (revWrap) revWrap.classList.toggle('hidden', currentDataset() !== 'revolution');
   const wrap = document.getElementById('range-pickers');
   if (wrap) wrap.classList.toggle('hidden', STATE.format !== 'range');
   const poolWrap = document.getElementById('field-pool-picker');
@@ -5253,7 +5261,7 @@ function wireToolbar() {
 function wireFormatDropdown() {
   const formatBtn = document.getElementById('format-btn');
   const formatMenu = document.getElementById('format-menu');
-  const formatButtons = [...formatMenu.querySelectorAll('button')];
+  const formatButtons = [...document.querySelectorAll('#format-menu button, #rev-format-picker button')];
   const setFormatBusy = (busy) => {
     if (formatBtn) formatBtn.disabled = busy;
     for (const b of formatButtons) b.disabled = busy;
@@ -5265,10 +5273,13 @@ function wireFormatDropdown() {
   formatButtons.forEach(btn => {
     btn.addEventListener('click', async (ev) => {
       ev.stopPropagation();
-      const newFormat = btn.dataset.format;
+      const newFormat = btn.dataset.format === 'revolution'
+        ? (currentDataset() === 'revolution' ? STATE.format : STATE.lastRevFormat)
+        : btn.dataset.format;
       const crossesDataset = datasetForFormat(newFormat) !== currentDataset();
       const keepOpen = newFormat === 'range'
-        || (newFormat === 'field' && document.getElementById('field-pool-picker'));
+        || (newFormat === 'field' && document.getElementById('field-pool-picker'))
+        || (btn.dataset.format === 'revolution' && document.getElementById('rev-format-picker'));
       if (!keepOpen && formatBtn) formatMenu.classList.add('hidden');
       if (crossesDataset) {
         setFormatBusy(true);
@@ -7305,11 +7316,35 @@ function wireCopyTxt() {
 function wireShare() {
   const btn = document.getElementById('btn-share');
   btn.addEventListener('click', async () => {
-    if (currentDataset() !== 'revolution') {
-      alert('Share URL is only available for Revolution decks.');
+    const ds = currentDataset();
+    if (ds === 'voyager') {
+      alert('Share URL is not available for Voyager decks yet.');
       return;
     }
     const original = btn.textContent;
+    if (ds === 'field') {
+      try {
+        const byCanon = new Map();
+        for (const z of ['main', 'side']) {
+          for (const { count, card } of aggregateZone(z)) {
+            if (!byCanon.has(card.canonical)) {
+              const printings = (STATE.byCanonical.get(card.canonical) || [card]).map(p => p.name);
+              byCanon.set(card.canonical, { names: printings, main: 0, side: 0 });
+            }
+            byCanon.get(card.canonical)[z] += count;
+          }
+        }
+        const result = await window.FieldDeckUrl.encode(Array.from(byCanon.values()));
+        await navigator.clipboard.writeText(location.origin + location.pathname + '#f=' + result.b64);
+        btn.textContent = 'URL copied ✓';
+      } catch (e) {
+        console.error(e);
+        btn.textContent = 'Share failed';
+        alert('Could not create share URL: ' + (e && e.message ? e.message : e));
+      }
+      setTimeout(() => { btn.textContent = original; }, 1500);
+      return;
+    }
     try {
       const byName = new Map();
       for (const z of ['main', 'side']) {
@@ -7336,24 +7371,27 @@ function wireShare() {
 
 async function loadDeckFromUrlFragment() {
   const hash = location.hash || '';
-  if (!hash.startsWith('#d=')) return;
+  const isField = hash.startsWith('#f=');
+  if (!hash.startsWith('#d=') && !isField) return;
   const payload = hash.slice(3);
   if (!payload) return;
   const clearHash = () =>
     history.replaceState(null, '', location.pathname + location.search);
 
-  if (currentDataset() !== 'revolution') {
+  const target = isField ? 'field' : 'revolution';
+  if (currentDataset() !== target) {
+    const label = isField ? FORMAT_LABELS.field : 'Revolution';
     const ok = confirm(
-      'This share URL is a Revolution deck. Switch to Revolution to load it?');
+      `This share URL is a ${label} deck. Switch to ${label} to load it?`);
     if (!ok) { clearHash(); return; }
     try {
-      await switchDataset('revolution');
+      await switchDataset(target);
     } catch (e) {
-      alert('Could not switch to Revolution: ' + (e && e.message ? e.message : e));
+      alert(`Could not switch to ${label}: ` + (e && e.message ? e.message : e));
       clearHash();
       return;
     }
-    STATE.format = 'standard';
+    STATE.format = isField ? 'field' : 'standard';
     savePrefs();
     syncFormatUI();
     renderAll();
@@ -7365,7 +7403,9 @@ async function loadDeckFromUrlFragment() {
   }
 
   try {
-    const decoded = await window.DeckUrl.decode(payload);
+    const decoded = isField
+      ? { cards: (await window.FieldDeckUrl.decode(payload)).cards, basics: {} }
+      : await window.DeckUrl.decode(payload);
     const lines = [];
     for (const [name, c] of Object.entries(decoded.cards)) {
       if (c.main) lines.push(`${c.main} ${name}`);
